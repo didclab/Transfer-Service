@@ -88,5 +88,15 @@ nb-configuration.xml
 #Key
 masterKey.txt
 
-#Logs
+
+# Logs
+logs/*.log
 logs/
+output.log
+
+# Mongo Explorer plugin
+.idea/**/mongoSettings.xml
+
+
+# DockerFile
+Dockerfile
