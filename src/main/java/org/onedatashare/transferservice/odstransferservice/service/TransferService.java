@@ -1,8 +1,7 @@
 package org.onedatashare.transferservice.odstransferservice.service;
 
 
-import org.onedatashare.transferservice.odstransferservice.controller.TransferController;
-import org.onedatashare.transferservice.odstransferservice.model.request.TransferJobRequest;
+import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;

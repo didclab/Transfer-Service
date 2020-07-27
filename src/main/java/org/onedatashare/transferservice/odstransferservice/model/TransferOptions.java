@@ -1,4 +1,4 @@
-package org.onedatashare.transferservice.odstransferservice.model.request;
+package org.onedatashare.transferservice.odstransferservice.model;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;

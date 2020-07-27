@@ -1,11 +1,9 @@
-package org.onedatashare.transferservice.odstransferservice.model.request;
+package org.onedatashare.transferservice.odstransferservice.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import org.onedatashare.transferservice.odstransferservice.model.core.EndpointType;
-import org.onedatashare.transferservice.odstransferservice.model.core.EntityInfo;
 
 
 import java.util.ArrayList;
