@@ -1,19 +1,16 @@
 package org.onedatashare.transferservice.odstransferservice.service.drain;
 
 import org.onedatashare.transferservice.odstransferservice.service.abstracClass.Drain;
-import org.springframework.data.domain.Slice;
-
+import org.onedatashare.transferservice.odstransferservice.model.Slice;
 public class BoxDrainImpl extends Drain {
 
 
     @Override
     public void drain(Slice slice) throws Exception {
-
     }
 
     @Override
     public void finish() throws Exception {
-
     }
 
     @Override

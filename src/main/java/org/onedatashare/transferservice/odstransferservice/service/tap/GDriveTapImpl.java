@@ -1,7 +1,7 @@
 package org.onedatashare.transferservice.odstransferservice.service.tap;
 
 import org.onedatashare.transferservice.odstransferservice.service.abstracClass.Tap;
-import org.springframework.data.domain.Slice;
+import org.onedatashare.transferservice.odstransferservice.model.Slice;
 
 public class GDriveTapImpl extends Tap {
     @Override

@@ -1,7 +1,7 @@
 package org.onedatashare.transferservice.odstransferservice.service.drain;
 
 import org.onedatashare.transferservice.odstransferservice.service.abstracClass.Drain;
-import org.springframework.data.domain.Slice;
+import org.onedatashare.transferservice.odstransferservice.model.Slice;
 
 public class S3DrainImpl extends Drain {
     @Override
