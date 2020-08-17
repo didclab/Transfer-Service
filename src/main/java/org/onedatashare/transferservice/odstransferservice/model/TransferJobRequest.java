@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
+import org.onedatashare.transferservice.odstransferservice.model.credential.EndpointCredential;
 
 
 import java.util.ArrayList;
@@ -24,6 +26,7 @@ public class TransferJobRequest {
     @NoArgsConstructor
     public static class Destination {
         @NonNull private EndpointType type;
+        @NonNull private EndpointCredential credential;
         @NonNull private String credId;
         private EntityInfo info;
     }
@@ -33,6 +36,7 @@ public class TransferJobRequest {
     @NoArgsConstructor
     public static class Source {
         @NonNull private EndpointType type;
+        @NonNull private EndpointCredential credential;
         @NonNull private String credId;
         @NonNull private EntityInfo info;
         @NonNull private ArrayList<EntityInfo> infoList;

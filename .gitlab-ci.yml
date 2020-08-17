@@ -1,0 +1,53 @@
+image: java:8
+
+stages:
+  - test
+  - code-coverage
+  - build
+  - package
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+  DOCKER_IMAGE_NAME: registry.gitlab.com/jgoldverg/Transfer-Service
+  APP_PORT: 8092
+  APP_NAME: Transfer Service
+  IMAGE_TAG: $CI_REGISTRY_IMAGE:latest
+
+before_script:
+  - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  - chmod +x mvnw
+
+#Run maven tests
+maven-test: 
+  stage: test
+  script:
+    - mvn clean test
+  artifacts:
+    paths:
+      - target/
+
+#Rune JaCoCo
+test-coverage:
+  stage: code_coverage
+  script:
+    - mvn clean verify
+  artifacts:
+    paths:
+      - target/
+
+#Build the project
+maven-build:
+  image: maven:3-jdk-8
+  stage: build
+  script:
+    - mvn clean package -DskipTests
+  artifacts:
+    paths:
+      - target/
+
+#Run Docker build and push it to the Gitlab Registry
+docker-build:
+  stage: package
+  script:
+  - docker build -t $DOCKER_IMAGE_NAME registry.gitlab.com/jgoldverg/Transfer-Service .
+  - docker push $IMAGE_TAG

@@ -8,7 +8,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.onedatashare.transferservice.odstransferservice.model.EndpointType;
+import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.service.TransferService;
@@ -49,7 +49,6 @@ public class TransferControllerTest {
         logger.info("Inside TransferControllerTest setup function");
         MockitoAnnotations.initMocks(this);
         mockMvc = MockMvcBuilders.standaloneSetup(transferController).build();
-        when(transferService.submit(any(TransferJobRequest.class))).thenReturn(new ResponseEntity<>("Test", HttpStatus.OK));
     }
 
     @Test
@@ -81,8 +80,6 @@ public class TransferControllerTest {
         transferJobRequest.setPriority(1);
         transferJobRequest.setId("testId");
         transferJobRequest.setOwnerId("testOwnerId");
-        transferJobRequest.setDestination(new TransferJobRequest.Destination(EndpointType.box, "testCredId", new EntityInfo("testId", "testPath", 2l)));
-        transferJobRequest.setSource(new TransferJobRequest.Source(EndpointType.box, "testCredId", new EntityInfo("testId", "testPath", 2l), new ArrayList<>()));
         return transferJobRequest;
     }
 

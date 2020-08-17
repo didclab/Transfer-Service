@@ -13,8 +13,8 @@ public class TransferService {
 
     Logger logger = LoggerFactory.getLogger(TransferService.class);
 
-    public ResponseEntity<String> submit(TransferJobRequest request) {
+    public String submit(TransferJobRequest request) {
         logger.info("Inside submit function");
-        return new ResponseEntity<>("Test", HttpStatus.OK);
+        return "";
     }
 }

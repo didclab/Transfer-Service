@@ -1,10 +1,8 @@
 package org.onedatashare.transferservice.odstransferservice.service.abstracClass;
 
 import lombok.NoArgsConstructor;
-import org.onedatashare.transferservice.odstransferservice.model.EndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.model.credential.EndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
-import org.onedatashare.transferservice.odstransferservice.service.abstracClass.Drain;
-import org.onedatashare.transferservice.odstransferservice.service.abstracClass.Tap;
 
 import java.io.UnsupportedEncodingException;
 
