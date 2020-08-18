@@ -26,15 +26,6 @@ maven-test:
     paths:
       - target/
 
-#Rune JaCoCo
-test-coverage:
-  stage: code_coverage
-  script:
-    - mvn clean verify
-  artifacts:
-    paths:
-      - target/
-
 #Build the project
 maven-build:
   image: maven:3-jdk-8
