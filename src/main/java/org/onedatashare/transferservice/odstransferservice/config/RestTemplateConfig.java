@@ -33,7 +33,7 @@ public class RestTemplateConfig {
     }
 
     @Bean
-    public TaskScheduler taskScheduler() {
+    public TaskScheduler taskHttpScheduler() {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
         scheduler.setThreadNamePrefix("http-pool-scheduler");
         scheduler.setPoolSize(this.poolSize);

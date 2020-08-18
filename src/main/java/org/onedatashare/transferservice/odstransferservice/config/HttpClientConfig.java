@@ -1,5 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.config;
 
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -63,6 +64,7 @@ public class HttpClientConfig {
      * Use this if you do not know if the Rest API u r querying has the "Keep-Alive" in the header.
      * This will ensure no Thread hangs on an infinite connection
      **/
+
     @Bean
     public ConnectionKeepAliveStrategy connectionKeepAliveStrategy() {
         return (httpResponse, httpContext) -> {
@@ -88,6 +90,7 @@ public class HttpClientConfig {
      * @param manager
      * @return
      */
+
     @Bean
     public Runnable idleConnectionMonitor(final PoolingHttpClientConnectionManager manager) {
         return new Runnable() {
