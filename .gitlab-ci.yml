@@ -1,4 +1,7 @@
-image: java:8
+image: docker:latest
+
+services:
+  - docker:dind
 
 stages:
   - test
@@ -13,12 +16,14 @@ variables:
   APP_NAME: Transfer Service
   IMAGE_TAG: $CI_REGISTRY_IMAGE:latest
 
+
 before_script:
   - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   - chmod +x mvnw
 
 #Run maven tests
-maven-test: 
+maven-test:
+  image: maven:3-jdk-8
   stage: test
   script:
     - mvn clean test
@@ -35,7 +40,7 @@ maven-build:
   artifacts:
     paths:
       - target/
-
+ 
 #Run Docker build and push it to the Gitlab Registry
 docker-build:
   stage: package
