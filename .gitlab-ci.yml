@@ -11,7 +11,7 @@ variables:
   APP_PORT: 8092
   DOCKER_DRIVER: overlay
   APP_NAME: Transfer Service
-  IMAGE_TAG: $CI_REGISTRY_IMAGE:latest
+  IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
 
 services:
   - docker:dind
@@ -52,5 +52,5 @@ docker-build:
   script:
   - docker info
   - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-  - docker build -t $DOCKER_IMAGE_NAME .
+  - docker build -t $IMAGE_TAG .
   - docker push $IMAGE_TAG
