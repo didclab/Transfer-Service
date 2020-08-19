@@ -6,7 +6,7 @@ stages:
   - package
 
 variables:
-  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+  MAVEN_OPTS: "-Dmaven.repo.local=./.m2/repository"
   DOCKER_IMAGE_NAME: registry.gitlab.com/jgoldverg/Transfer-Service
   APP_PORT: 8092
   DOCKER_DRIVER: overlay
@@ -15,6 +15,13 @@ variables:
 
 services:
   - docker:dind
+
+cache:
+  paths:
+    - ./.m2/repository
+  # keep cache across branch
+  key: "$CI_BUILD_REF_NAME"
+
 
 before_script:
   - chmod +x mvnw
@@ -45,5 +52,5 @@ docker-build:
   script:
   - docker info
   - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-  - docker build -t $DOCKER_IMAGE_NAME registry.gitlab.com/jgoldverg/Transfer-Service .
+  - docker build -t $DOCKER_IMAGE_NAME .
   - docker push $IMAGE_TAG
