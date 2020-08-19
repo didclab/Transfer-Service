@@ -1,8 +1,5 @@
 image: docker:latest
 
-services:
-  - docker:dind
-
 stages:
   - test
   - build
@@ -12,12 +9,14 @@ variables:
   MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
   DOCKER_IMAGE_NAME: registry.gitlab.com/jgoldverg/Transfer-Service
   APP_PORT: 8092
+  DOCKER_DRIVER: overlay
   APP_NAME: Transfer Service
   IMAGE_TAG: $CI_REGISTRY_IMAGE:latest
 
+services:
+  - docker:dind
 
 before_script:
-  - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   - chmod +x mvnw
 
 #Run maven tests
@@ -44,5 +43,7 @@ maven-build:
 docker-build:
   stage: package
   script:
+  - docker info
+  - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   - docker build -t $DOCKER_IMAGE_NAME registry.gitlab.com/jgoldverg/Transfer-Service .
   - docker push $IMAGE_TAG
