@@ -5,7 +5,6 @@ services:
 
 stages:
   - test
-  - code-coverage
   - build
   - package
 
