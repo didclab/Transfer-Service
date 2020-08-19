@@ -96,7 +96,3 @@ output.log
 
 # Mongo Explorer plugin
 .idea/**/mongoSettings.xml
-
-
-# DockerFile
-Dockerfile
