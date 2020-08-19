@@ -7,7 +7,7 @@ stages:
 
 variables:
   MAVEN_OPTS: "-Dmaven.repo.local=./.m2/repository"
-  DOCKER_IMAGE_NAME: registry.gitlab.com/jgoldverg/Transfer-Service
+  DOCKER_IMAGE_NAME: registry.gitlab.com/jgoldverg/transfer-service
   APP_PORT: 8092
   DOCKER_DRIVER: overlay
   APP_NAME: Transfer Service
