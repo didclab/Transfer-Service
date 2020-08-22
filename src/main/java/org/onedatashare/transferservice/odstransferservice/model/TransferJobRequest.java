@@ -1,9 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import lombok.*;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.credential.EndpointCredential;
 
@@ -12,6 +9,7 @@ import java.util.ArrayList;
 
 @Data
 @NoArgsConstructor
+@Getter
 public class TransferJobRequest {
     @NonNull private String ownerId;
     private int priority;
