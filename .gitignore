@@ -15,7 +15,7 @@ hs_err_pid*
 .mvn
 mvnw
 mvnw.cmd
-target/
+target/**
 pom.xml.tag
 pom.xml.releaseBackup
 pom.xml.versionsBackup
