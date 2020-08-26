@@ -65,15 +65,15 @@ public class BatchConfig {
 //        return factory.getObject();
 //    }
 
-    @StepScope
-    @Value("#{jobParameters['listToTransfer']}")
-    public String list;
+//    @StepScope
+//    @Value("#{jobParameters['listToTransfer']}")
+//    public String list;
 
     @Bean
     public Job job(JobBuilderFactory jobBuilderFactory, StepBuilderFactory stepBuilderFactory) {
         Step step = stepBuilderFactory.get("sampleSetp")
                 .<String, String>chunk(10)
-                .reader(multiFileItemReader())
+                .reader(multiFileItemReader(null))
                 .writer(new Writer())
                 .build();
 
@@ -87,7 +87,7 @@ public class BatchConfig {
 
     @StepScope
     @Bean
-    public MultiResourceItemReader multiFileItemReader() {
+    public MultiResourceItemReader multiFileItemReader(@Value("#{jobParameters['listToTransfer']}") String list) {
 
         MultiResourceItemReader<String> resourceItemReader = new MultiResourceItemReader<>();
         FlatFileItemReader<String> reader = new FlatFileItemReader<String>();
