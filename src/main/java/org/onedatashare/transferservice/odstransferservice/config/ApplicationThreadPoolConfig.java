@@ -14,21 +14,30 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 @Configuration
 public class ApplicationThreadPoolConfig{
 
-
-    private final int MAX_POOL_SIZE = 64;
+    private final int TRANSFER_MAX_POOL_SIZE = 64;
 
     @Setter
     @Getter
-    private int POOL_SIZE=32;
-
+    private int TRANSFER_POOL_SIZE=32;
+    private int JOB_POOL_SIZE=6;
+    private int JOB_MAX_POOL_SIZE=12;
     @Bean
     @Lazy
-    @Scope("prototype")
     public TaskExecutor transferTaskExecutor(){
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(POOL_SIZE);
-        executor.setMaxPoolSize(MAX_POOL_SIZE);
+        executor.setCorePoolSize(TRANSFER_POOL_SIZE);
+        executor.setMaxPoolSize(TRANSFER_MAX_POOL_SIZE);
+        executor.initialize();
         return executor;
     }
 
+    @Bean
+    @Lazy
+    public TaskExecutor jobThreadPool(){
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(JOB_POOL_SIZE);
+        executor.setMaxPoolSize(JOB_MAX_POOL_SIZE);
+        executor.initialize();
+        return executor;
+    }
 }

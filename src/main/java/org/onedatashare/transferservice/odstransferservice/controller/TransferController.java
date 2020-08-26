@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -31,6 +32,7 @@ public class TransferController {
     Job job;
 
     @RequestMapping(value = "/start", method = RequestMethod.POST)
+    @Async
     public ResponseEntity<String> start(@RequestBody TransferJobRequest request) throws Exception {
         logger.info("Inside TransferController");
         asyncJobLauncher.run(job, translate(new JobParametersBuilder(), request));
