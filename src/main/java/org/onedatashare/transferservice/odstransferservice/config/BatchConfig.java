@@ -1,35 +1,25 @@
 package org.onedatashare.transferservice.odstransferservice.config;
 
 import lombok.SneakyThrows;
-import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
-import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
-import org.onedatashare.transferservice.odstransferservice.service.TransferService;
 import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
 import org.onedatashare.transferservice.odstransferservice.service.step.Writer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecutionListener;
-import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.configuration.support.JobRegistryBeanPostProcessor;
-import org.springframework.batch.core.configuration.support.MapJobRegistry;
-import org.springframework.batch.core.explore.JobExplorer;
-import org.springframework.batch.core.explore.support.JobExplorerFactoryBean;
 import org.springframework.batch.core.launch.JobLauncher;
-import org.springframework.batch.core.launch.JobOperator;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
-import org.springframework.batch.core.launch.support.SimpleJobOperator;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.MultiResourceItemReader;
-import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
 import org.springframework.batch.item.file.separator.RecordSeparatorPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,13 +28,8 @@ import org.springframework.context.annotation.Configuration;
 
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.transaction.PlatformTransactionManager;
-import sun.java2d.pipe.SpanShapeRenderer;
 
-import javax.sql.DataSource;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -63,7 +48,7 @@ public class BatchConfig {
     public JobLauncher asyncJobLauncher() {
         SimpleJobLauncher jobLauncher = new SimpleJobLauncher();
         jobLauncher.setJobRepository(createJobRepository());
-        jobLauncher.setTaskExecutor(threadPoolConfig.jobThreadPool());
+        jobLauncher.setTaskExecutor(threadPoolConfig.jobRequestThreadPool());
         LOGGER.info("Job launcher for the transfer controller has a thread pool");
         return jobLauncher;
     }
