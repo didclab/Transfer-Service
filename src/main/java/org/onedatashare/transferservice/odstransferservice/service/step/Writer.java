@@ -5,6 +5,12 @@ import org.onedatashare.transferservice.odstransferservice.service.TransferServi
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 
 @Component
@@ -14,6 +20,21 @@ public class Writer implements ItemWriter<String> {
 
     @Override
     public void write(List<? extends String> list) throws Exception {
-        System.out.println("Inside Writer----------");
+
+        System.out.println(list);
+        String directory = System.getProperty("user.home");
+        File file = new File(directory + "//firstTransferTest.mp4");
+        FileWriter fileWriter = new FileWriter(file,true);
+        PrintWriter writer = new PrintWriter(fileWriter,true);
+        for(String str : list){
+            writer.println(str);
+        }
+        writer.close();
+//        Files.write(Paths.get(directory + "//firstTransferTest.txt"), list);
+
+//        try (FileOutputStream fos = new FileOutputStream("pathname")) {
+//            fos.write(list);
+//        }
     }
+
 }

@@ -61,7 +61,7 @@ public class BatchConfig {
 
     @Bean
     public Job job(JobBuilderFactory jobBuilderFactory, StepBuilderFactory stepBuilderFactory) {
-        Step step = stepBuilderFactory.get("sampleSetp")
+        Step step = stepBuilderFactory.get("sampleSetp").listener(listener())
                 .<String, String>chunk(10)
                 .reader(multiResourceItemReader)
                 .processor(new Processor())
@@ -69,7 +69,7 @@ public class BatchConfig {
                 .build();
 
         return jobBuilderFactory.get("job")
-                .incrementer(new RunIdIncrementer()).listener(listener())
+                .incrementer(new RunIdIncrementer())
                 .start(step)
                 .build();
     }
