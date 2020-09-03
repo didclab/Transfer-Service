@@ -30,7 +30,8 @@ public class Reader {
         for (String l : resourceList) {
             //System.out.println("http://techslides.com/demos/sample-videos/small.mp4");
 //            System.out.println("https://www.w3.org/TR/PNG/iso_8859-1.txt");
-            temp[i++]= new UrlResource("http://techslides.com/demos/sample-videos/small.mp4");
+            System.out.println(l);
+            temp[i++]= new UrlResource(l);
         }
 
         resourceItemReader.setResources(temp);

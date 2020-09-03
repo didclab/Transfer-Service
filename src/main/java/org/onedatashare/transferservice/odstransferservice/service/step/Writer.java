@@ -21,9 +21,9 @@ public class Writer implements ItemWriter<String> {
     @Override
     public void write(List<? extends String> list) throws Exception {
 
-        System.out.println(list);
+        //System.out.println(list);
         String directory = System.getProperty("user.home");
-        File file = new File(directory + "//firstTransferTest.mp4");
+        File file = new File(directory + "//tempOutput//firstTransferTest.txt");
         FileWriter fileWriter = new FileWriter(file,true);
         PrintWriter writer = new PrintWriter(fileWriter,true);
         for(String str : list){
