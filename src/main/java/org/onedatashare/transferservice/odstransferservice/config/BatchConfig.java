@@ -63,13 +63,12 @@ public class BatchConfig {
 
     @Bean
     public Job job(JobBuilderFactory jobBuilderFactory, StepBuilderFactory stepBuilderFactory) {
-        Step step = stepBuilderFactory.get("sampleSetp").listener(listener())
-                .<String, String>chunk(10)
+        Step step = stepBuilderFactory.get("SampleStep").listener(listener())
+                .<byte[], byte[]>chunk(10)
                 .reader(multiResourceItemReader)
                 .processor(new Processor())
                 .writer(new Writer())
                 .build();
-
         return jobBuilderFactory.get("job")
                 .incrementer(new RunIdIncrementer())
                 .start(step)

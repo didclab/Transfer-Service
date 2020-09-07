@@ -54,6 +54,7 @@ public class TransferController {
         builder.addString("listToTransfer", sb.toString());
 //        builder.addString("source", request.getSource().toString());
 //        builder.addString("dest", request.getDestination().toString());
+        builder.addString("destPath", request.getDestination().getInfo().getPath());
 //        builder.addString("priority", Integer.toString(request.getPriority()));
 //        builder.addString("transfer-options", request.getOptions().toString());
 //        builder.addString("id", request.getId());
