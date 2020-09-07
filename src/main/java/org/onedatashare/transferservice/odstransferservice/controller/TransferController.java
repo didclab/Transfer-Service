@@ -10,10 +10,13 @@ import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
+
+import javax.inject.Inject;
 
 /**
  * Transfer controller with to initiate transfer request
@@ -23,7 +26,6 @@ import org.springframework.web.bind.annotation.*;
 public class TransferController {
 
     Logger logger = LoggerFactory.getLogger(TransferController.class);
-
 
     @Autowired
     JobLauncher jobLauncher;
@@ -53,7 +55,7 @@ public class TransferController {
 //        builder.addString("source", request.getSource().toString());
 //        builder.addString("dest", request.getDestination().toString());
 //        builder.addString("priority", Integer.toString(request.getPriority()));
-//        //builder.addString("transfer-options", request.getOptions().toString());
+//        builder.addString("transfer-options", request.getOptions().toString());
 //        builder.addString("id", request.getId());
 //        builder.addString("ownerId", request.getOwnerId());
 

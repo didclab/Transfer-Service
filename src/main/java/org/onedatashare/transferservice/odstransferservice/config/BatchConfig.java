@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 
 @Configuration
@@ -31,6 +32,7 @@ public class BatchConfig {
 
     @Autowired
     private ApplicationThreadPoolConfig threadPoolConfig;
+
 
     @Autowired
     DataSourceConfig datasource;

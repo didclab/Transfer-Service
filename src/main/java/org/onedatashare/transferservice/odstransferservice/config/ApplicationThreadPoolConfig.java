@@ -19,11 +19,20 @@ public class ApplicationThreadPoolConfig{
     @Setter
     @Getter
     private int TRANSFER_POOL_SIZE=32;
+    @Setter
+    @Getter
     private int JOB_POOL_SIZE=6;
+    @Setter
+    @Getter
     private int JOB_MAX_POOL_SIZE=12;
+    @Setter
+    @Getter
     private int STEP_POOL_SIZE=10;
+    @Setter
+    @Getter
     private int STEP_MAX_POOL_SIZE=15;
-    @Bean
+
+    @Bean(name = "transferTaskExecutor")
     @Lazy
     public TaskExecutor transferTaskExecutor(){
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
