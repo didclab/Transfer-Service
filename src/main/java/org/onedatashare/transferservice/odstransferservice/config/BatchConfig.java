@@ -23,8 +23,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.scheduling.annotation.EnableScheduling;
-
 
 @Configuration
 public class BatchConfig {
@@ -39,6 +37,14 @@ public class BatchConfig {
 
     @Autowired
     MultiResourceItemReader multiResourceItemReader;
+
+    @Autowired
+    Writer writer;
+
+    @Autowired
+    Processor processor;
+
+
 
     @Bean
     public JobLauncher asyncJobLauncher() {
@@ -64,10 +70,10 @@ public class BatchConfig {
     @Bean
     public Job job(JobBuilderFactory jobBuilderFactory, StepBuilderFactory stepBuilderFactory) {
         Step step = stepBuilderFactory.get("SampleStep").listener(listener())
-                .<byte[], byte[]>chunk(10)
+                .<byte[], byte[]>chunk(12)
                 .reader(multiResourceItemReader)
-                .processor(new Processor())
-                .writer(new Writer())
+                .processor(processor)
+                .writer(writer)
                 .build();
         return jobBuilderFactory.get("job")
                 .incrementer(new RunIdIncrementer())
