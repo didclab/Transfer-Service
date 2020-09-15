@@ -1,7 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.controller;
 
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
-//import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,26 +1,26 @@
 package org.onedatashare.transferservice.odstransferservice.config;
 
 import lombok.SneakyThrows;
+import org.onedatashare.transferservice.odstransferservice.service.listner.DataBaseOperationStepExecutionListener;
 import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
-import org.onedatashare.transferservice.odstransferservice.service.step.Writer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobExecutionListener;
-import org.springframework.batch.core.Step;
+import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.configuration.support.JobRegistryBeanPostProcessor;
 import org.springframework.batch.core.launch.JobLauncher;
-import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
+import org.springframework.batch.core.scope.context.ChunkContext;
+import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.MultiResourceItemReader;
 import org.springframework.batch.item.file.separator.RecordSeparatorPolicy;
+import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -40,6 +40,7 @@ public class BatchConfig {
 
     @Autowired
     private ApplicationThreadPoolConfig threadPoolConfig;
+
 
     @Autowired
     DataSourceConfig datasource;
@@ -66,18 +67,37 @@ public class BatchConfig {
     }
 
     @Bean
-    public Job job(JobBuilderFactory jobBuilderFactory, StepBuilderFactory stepBuilderFactory) {
-        Step step = stepBuilderFactory.get("sampleSetp")
-                .<String, String>chunk(10)
-                .reader(multiFileItemReader(null))
-                .writer(new Writer())
-                .build();
+    public StepExecutionListener crudListener() {
+        return new DataBaseOperationStepExecutionListener();
+    }
 
-        return jobBuilderFactory.get("job")
-                .incrementer(new RunIdIncrementer()).listener(listener())
-                .start(step)
+    @Bean
+    public Job job(JobBuilderFactory jobBuilderFactory, StepBuilderFactory stepBuilderFactory) {
+        Step step = stepBuilderFactory.get("sampleStep").tasklet(new Tasklet() {
+            @Override
+            public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
+                // To Access Job Parameters
+                //       String item = chunkContext.getStepContext().getJobParameters().get("item").toString();
+                System.out.println("The Step has been started");
+                return RepeatStatus.FINISHED;
+            }
+        }).listener(crudListener()).build();
+
+        Step newStep = stepBuilderFactory.get("sampleStep").tasklet(new Tasklet() {
+            @Override
+            public RepeatStatus execute(StepContribution stepContribution, ChunkContext chunkContext) throws Exception {
+                // To Access Job Parameters
+                //       String item = chunkContext.getStepContext().getJobParameters().get("item").toString();
+                System.out.println("The new Step has been started");
+                return RepeatStatus.FINISHED;
+            }
+        }).build();
+
+        return jobBuilderFactory.get("newSampleJob15").start(step)
+                .next(newStep)
                 .build();
     }
+
 
     @StepScope
     @Bean
