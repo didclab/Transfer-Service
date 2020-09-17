@@ -16,7 +16,7 @@ public class DataChunk {
     String basePath;
 
     public void openConnection() throws IOException {
-        URL url = new URL("ftp://localhost:2121/dest/tempOutput/firstTransferTest.txt");
+        URL url = new URL("ftp://user:pass@localhost:2121/dest/tempOutput/firstTransferTest.txt");
 //        URL url = new URL(basePath+fileName);
         URLConnection conn = url.openConnection();
 //        conn.setDoOutput(true);

@@ -11,4 +11,5 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Document
 public class EndpointCredential {
     protected String accountId;
+    protected String password;
 }

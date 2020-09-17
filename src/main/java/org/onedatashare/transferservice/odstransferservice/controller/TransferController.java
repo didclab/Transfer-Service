@@ -66,21 +66,14 @@ public class TransferController {
 
     public JobParameters translate(JobParametersBuilder builder, TransferJobRequest request) {
         System.out.println(request.toString());
-        StringBuilder sb = new StringBuilder("");
-        String basePath = request.getSource().getInfo().getPath();
-        for (EntityInfo entityInfo : request.getSource().getInfoList()) {
-            sb.append(basePath).append(entityInfo.getPath()).append("<::>");
-        }
         builder.addLong("time",System.currentTimeMillis());
-        builder.addString("listToTransfer", sb.toString());
-//        builder.addString("source", request.getSource().toString());
-//        builder.addString("dest", request.getDestination().toString());
-        builder.addString("destPath", request.getDestination().getInfo().getPath());
-//        builder.addString("priority", Integer.toString(request.getPriority()));
-//        builder.addString("transfer-options", request.getOptions().toString());
-//        builder.addString("id", request.getId());
-//        builder.addString("ownerId", request.getOwnerId());
-
+        builder.addString("sourceAccountIdPass", request.getSource().getCredential().getAccountId()
+                + ":" + request.getSource().getCredential().getPassword());
+        builder.addString("destinationAccountIdPass", request.getDestination().getCredential().getAccountId()
+                + ":" + request.getDestination().getCredential().getPassword());
+        builder.addString("sourceBasePath", request.getSource().getInfo().getPath());
+        builder.addString("destBasePath", request.getDestination().getInfo().getPath());
+        builder.addString("fileName", request.getSource().getInfoList().get(0).getPath());
         return builder.toJobParameters();
     }
 }
