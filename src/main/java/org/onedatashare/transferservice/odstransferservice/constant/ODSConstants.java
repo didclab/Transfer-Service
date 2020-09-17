@@ -12,7 +12,10 @@ public class ODSConstants {
     public static final String HTTP_URI_SCHEME = "http://";
     public static final String HTTPS_URI_SCHEME = "https://";
     public static final String DROPBOX_CLIENT_IDENTIFIER = "OneDataShare-DIDCLab";
-
+    public static final String FILE_SIZE = "fileSize";
+    public static final String FILE_PATH = "filePath";
+    public static final String FILE_ID = "file_id";
+    public static final String TIME = "time";
 
     public static final int TRANSFER_SLICE_SIZE = 1<<20;
 

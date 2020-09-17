@@ -1,6 +1,5 @@
 package org.onedatashare.transferservice.odstransferservice.controller;
 
-import com.netflix.discovery.converters.Auto;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.slf4j.Logger;
@@ -8,22 +7,18 @@ import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
-import org.springframework.batch.core.configuration.JobFactory;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
-import org.springframework.batch.core.jsr.configuration.xml.JobFactoryBean;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.core.task.TaskExecutor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
+
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
 /**
  * Transfer controller with to initiate transfer request
@@ -46,7 +41,6 @@ public class TransferController {
     @RequestMapping(value = "/start", method = RequestMethod.POST)
     @Async
     public ResponseEntity<String> start(@RequestBody TransferJobRequest request) throws Exception {
-        logger.info("Inside TransferController");
         JobParameters parameters = translate(new JobParametersBuilder(), request);
         //System.out.println(job+"---->>>"+parameters);
         List<EntityInfo> transferFiles = request.getSource().getInfoList();
@@ -61,9 +55,10 @@ public class TransferController {
         List<JobParameters> ret = new ArrayList<>();
         for(EntityInfo info: request.getSource().getInfoList()){
             JobParametersBuilder builder = new JobParametersBuilder();
-            builder.addString("fileSize", Long.toString(info.getSize()));
-            builder.addString("filePath", info.getPath());
-            builder.addString("id",info.getId());
+            builder.addLong(TIME, System.currentTimeMillis());
+            builder.addString(FILE_SIZE, Long.toString(info.getSize()));
+            builder.addString(FILE_PATH, info.getPath());
+            builder.addString(FILE_ID, info.getId());
             ret.add(builder.toJobParameters());
         }
         return ret;
