@@ -38,15 +38,18 @@ public class TransferController {
     @Autowired
     Job job;
 
+    @Autowired
+    JobLauncher asyncJobLauncher;
+
     @RequestMapping(value = "/start", method = RequestMethod.POST)
     @Async
     public ResponseEntity<String> start(@RequestBody TransferJobRequest request) throws Exception {
-        JobParameters parameters = translate(new JobParametersBuilder(), request);
+//        JobParameters parameters = translate(new JobParametersBuilder(), request);
         //System.out.println(job+"---->>>"+parameters);
         List<EntityInfo> transferFiles = request.getSource().getInfoList();
         List<JobParameters> params = fileToJob(request);
         for(JobParameters par: params){
-            jobLauncher.run(job, par);
+            asyncJobLauncher.run(job, par);
         }
         return ResponseEntity.status(HttpStatus.OK).body("Your batch job has been submitted with \n ID: " + request.getId());
     }
@@ -55,26 +58,30 @@ public class TransferController {
         List<JobParameters> ret = new ArrayList<>();
         for(EntityInfo info: request.getSource().getInfoList()){
             JobParametersBuilder builder = new JobParametersBuilder();
-            builder.addLong(TIME, System.currentTimeMillis());
-            builder.addString(FILE_SIZE, Long.toString(info.getSize()));
-            builder.addString(FILE_PATH, info.getPath());
-            builder.addString(FILE_ID, info.getId());
+            builder.addLong("time",System.currentTimeMillis());
+            builder.addString("sourceAccountIdPass", request.getSource().getCredential().getAccountId()
+                    + ":" + request.getSource().getCredential().getPassword());
+            builder.addString("destinationAccountIdPass", request.getDestination().getCredential().getAccountId()
+                    + ":" + request.getDestination().getCredential().getPassword());
+            builder.addString("sourceBasePath", request.getSource().getInfo().getPath());
+            builder.addString("destBasePath", request.getDestination().getInfo().getPath());
+            builder.addString("fileName", info.getPath());
             ret.add(builder.toJobParameters());
         }
         return ret;
     }
-
-    public JobParameters translate(JobParametersBuilder builder, TransferJobRequest request) {
-        System.out.println(request.toString());
-        builder.addLong("time",System.currentTimeMillis());
-        builder.addString("sourceAccountIdPass", request.getSource().getCredential().getAccountId()
-                + ":" + request.getSource().getCredential().getPassword());
-        builder.addString("destinationAccountIdPass", request.getDestination().getCredential().getAccountId()
-                + ":" + request.getDestination().getCredential().getPassword());
-        builder.addString("sourceBasePath", request.getSource().getInfo().getPath());
-        builder.addString("destBasePath", request.getDestination().getInfo().getPath());
-        builder.addString("fileName", request.getSource().getInfoList().get(0).getPath());
-        return builder.toJobParameters();
-    }
+//
+//    public JobParameters translate(JobParametersBuilder builder, TransferJobRequest request) {
+//        System.out.println(request.toString());
+//        builder.addLong("time",System.currentTimeMillis());
+//        builder.addString("sourceAccountIdPass", request.getSource().getCredential().getAccountId()
+//                + ":" + request.getSource().getCredential().getPassword());
+//        builder.addString("destinationAccountIdPass", request.getDestination().getCredential().getAccountId()
+//                + ":" + request.getDestination().getCredential().getPassword());
+//        builder.addString("sourceBasePath", request.getSource().getInfo().getPath());
+//        builder.addString("destBasePath", request.getDestination().getInfo().getPath());
+//        builder.addString("fileName", request.getSource().getInfoList().get(0).getPath());
+//        return builder.toJobParameters();
+//    }
 }
 

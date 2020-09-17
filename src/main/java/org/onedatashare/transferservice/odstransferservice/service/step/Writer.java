@@ -14,6 +14,7 @@ public class Writer implements ItemWriter<byte[]> {
 
     @Override
     public void write(List<? extends byte[]> list) throws Exception {
+        logger.info("Inside Writer----------------");
         for (byte[] b : list) {
             StreamOutput.getOutputStream().write(b);
         }

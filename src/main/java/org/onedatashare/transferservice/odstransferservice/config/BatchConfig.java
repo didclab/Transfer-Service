@@ -22,6 +22,7 @@ import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 
 @Configuration
@@ -43,6 +44,9 @@ public class BatchConfig {
 
     @Autowired
     Processor processor;
+
+    @Autowired
+    TaskExecutor stepTaskExecutor;
 
     @Bean
     public JobLauncher asyncJobLauncher() {
@@ -68,10 +72,11 @@ public class BatchConfig {
     @Bean
     public Job job(JobBuilderFactory jobBuilderFactory, StepBuilderFactory stepBuilderFactory) {
         Step step = stepBuilderFactory.get("SampleStep")
-                .<byte[], byte[]>chunk(5)
+                .<byte[], byte[]>chunk(2)
                 .reader(flatFileItemReader)
                 //.processor(processor)
                 .writer(writer)
+                .taskExecutor(stepTaskExecutor)
                 .build();
         return jobBuilderFactory.get("job").listener(listener())
                 .incrementer(new RunIdIncrementer())
