@@ -18,6 +18,7 @@ import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
+import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.MultiResourceItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -36,7 +37,7 @@ public class BatchConfig {
     DataSourceConfig datasource;
 
     @Autowired
-    MultiResourceItemReader multiResourceItemReader;
+    FlatFileItemReader flatFileItemReader;
 
     @Autowired
     Writer writer;
@@ -69,13 +70,13 @@ public class BatchConfig {
 
     @Bean
     public Job job(JobBuilderFactory jobBuilderFactory, StepBuilderFactory stepBuilderFactory) {
-        Step step = stepBuilderFactory.get("SampleStep").listener(listener())
-                .<byte[], byte[]>chunk(12)
-                .reader(multiResourceItemReader)
-                .processor(processor)
+        Step step = stepBuilderFactory.get("SampleStep")
+                .<byte[], byte[]>chunk(5)
+                .reader(flatFileItemReader)
+                //.processor(processor)
                 .writer(writer)
                 .build();
-        return jobBuilderFactory.get("job")
+        return jobBuilderFactory.get("job").listener(listener())
                 .incrementer(new RunIdIncrementer())
                 .start(step)
                 .build();
