@@ -7,9 +7,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
@@ -17,6 +17,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
 /**
  * Transfer controller with to initiate transfer request
@@ -27,34 +32,59 @@ public class TransferController {
 
     Logger logger = LoggerFactory.getLogger(TransferController.class);
 
-    @Qualifier("asyncJobLauncher")
-    JobLauncher asyncJobLauncher;
+    @Autowired
+    JobLauncher jobLauncher;
+
+    @Autowired
+    JobBuilderFactory jobBuilderFactory;
 
     @Autowired
     Job job;
 
+    @Autowired
+    JobLauncher asyncJobLauncher;
+
     @RequestMapping(value = "/start", method = RequestMethod.POST)
     @Async
     public ResponseEntity<String> start(@RequestBody TransferJobRequest request) throws Exception {
-        logger.info("Inside TransferController");
-        asyncJobLauncher.run(job, translate(new JobParametersBuilder(), request));
+//        JobParameters parameters = translate(new JobParametersBuilder(), request);
+        //System.out.println(job+"---->>>"+parameters);
+        List<EntityInfo> transferFiles = request.getSource().getInfoList();
+        List<JobParameters> params = fileToJob(request);
+        for(JobParameters par: params){
+            asyncJobLauncher.run(job, par);
+        }
         return ResponseEntity.status(HttpStatus.OK).body("Your batch job has been submitted with \n ID: " + request.getId());
     }
 
-    public JobParameters translate(JobParametersBuilder builder, TransferJobRequest request) {
-        StringBuilder sb = new StringBuilder("");
-        String basePath = request.getSource().getInfo().getPath();
-        for (EntityInfo entityInfo : request.getSource().getInfoList()) {
-            sb.append(basePath).append(entityInfo.getPath()).append("<::>");
+    public List<JobParameters> fileToJob(TransferJobRequest request){
+        List<JobParameters> ret = new ArrayList<>();
+        for(EntityInfo info: request.getSource().getInfoList()){
+            JobParametersBuilder builder = new JobParametersBuilder();
+            builder.addLong("time",System.currentTimeMillis());
+            builder.addString("sourceAccountIdPass", request.getSource().getCredential().getAccountId()
+                    + ":" + request.getSource().getCredential().getPassword());
+            builder.addString("destinationAccountIdPass", request.getDestination().getCredential().getAccountId()
+                    + ":" + request.getDestination().getCredential().getPassword());
+            builder.addString("sourceBasePath", request.getSource().getInfo().getPath());
+            builder.addString("destBasePath", request.getDestination().getInfo().getPath());
+            builder.addString("fileName", info.getPath());
+            ret.add(builder.toJobParameters());
         }
-        builder.addString("listToTransfer", sb.toString());
-        builder.addString("source", request.getSource().toString());
-        builder.addString("dest", request.getDestination().toString());
-        builder.addString("priority", Integer.toString(request.getPriority()));
-        builder.addString("transfer-options", request.getOptions().toString());
-        builder.addString("id", request.getId());
-        builder.addString("ownerId", request.getOwnerId());
-        return builder.toJobParameters();
+        return ret;
     }
+//
+//    public JobParameters translate(JobParametersBuilder builder, TransferJobRequest request) {
+//        System.out.println(request.toString());
+//        builder.addLong("time",System.currentTimeMillis());
+//        builder.addString("sourceAccountIdPass", request.getSource().getCredential().getAccountId()
+//                + ":" + request.getSource().getCredential().getPassword());
+//        builder.addString("destinationAccountIdPass", request.getDestination().getCredential().getAccountId()
+//                + ":" + request.getDestination().getCredential().getPassword());
+//        builder.addString("sourceBasePath", request.getSource().getInfo().getPath());
+//        builder.addString("destBasePath", request.getDestination().getInfo().getPath());
+//        builder.addString("fileName", request.getSource().getInfoList().get(0).getPath());
+//        return builder.toJobParameters();
+//    }
 }
 

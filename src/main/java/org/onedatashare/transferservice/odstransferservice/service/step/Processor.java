@@ -1,13 +1,18 @@
 package org.onedatashare.transferservice.odstransferservice.service.step;
 
-import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
+import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.item.ItemProcessor;
+import org.springframework.stereotype.Component;
 
-public class Processor implements ItemProcessor<TransferJobRequest, String> {
+@Component
+public class Processor implements ItemProcessor<byte[], DataChunk> {
+
+    Logger logger = LoggerFactory.getLogger(Processor.class);
 
     @Override
-    public String process(TransferJobRequest transferJobRequest) throws Exception {
-
+    public DataChunk process(byte[] bytes) throws Exception {
         return null;
     }
 }
