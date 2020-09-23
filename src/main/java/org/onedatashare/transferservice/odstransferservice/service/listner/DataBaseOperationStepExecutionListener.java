@@ -27,7 +27,7 @@ public class DataBaseOperationStepExecutionListener implements StepExecutionList
         long chunkSize = 0;
         //Need a Logic to get extension
         String extension = "pdf";
-        MetaDataDTO metaDataDTO = MetaDataDTO.builder().id(id).source(source).destination(destination).documentType(extension).build();
+        MetaDataDTO metaDataDTO = MetaDataDTO.builder().id(id).source(source).destination(destination).type(extension).build();
         //MetaDataDTO metaDataDTO = new MetaDataDTO(id,source,destination,extension,0,"concurrency",0,0);
         metaDataServiceImplementation.saveOrUpdate(metaDataDTO);
         System.out.println("I am done writing stuff in DB");
@@ -53,9 +53,8 @@ public class DataBaseOperationStepExecutionListener implements StepExecutionList
         //Get Start and End Time
         //Get the difference
         int totalTime = 0;
-        MetaDataDTO metaDataDTO = MetaDataDTO.builder().id(id).transferSpeed(transferSpeed).optimizationParameters(optimization).totalTime(totalTime).build();
+        MetaDataDTO metaDataDTO = MetaDataDTO.builder().id(id).speed(transferSpeed).optimizations(optimization).time(totalTime).build();
         metaDataServiceImplementation.saveOrUpdate(metaDataDTO);
-        System.out.println("I am done writing stuff in DB");
         return null;
     }
 }

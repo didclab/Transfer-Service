@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
@@ -13,28 +14,34 @@ import javax.persistence.Table;
 @Table(name = "job_info")
 @AllArgsConstructor
 @Builder
+@NoArgsConstructor
 public class MetaDataDTO {
     @Id
-    @NonNull
     //Job ID
+    @Column(name = "id")
     private String id;
     //Source EndPoint
+    @Column(name = "source")
     private String source;
     //Destination EndPoint
+    @Column(name = "destination")
     private String destination;
     //Type of the File
-    private String documentType;
+    @Column(name = "type")
+    private String type;
     //Transfer Speed
-    private long transferSpeed;
+    @Column(name = "speed")
+    private int speed;
     //What kind of optimization used
-    private String optimizationParameters;
+    @Column(name = "optimizations")
+    private String optimizations;
     //Chunk Size during transfer
-    private long chunkSize;
+    @Column(name = "chunks")
+    private int chunks;
     //Total time to transfer
-    private long totalTime;
+    @Column(name = "time")
+    private int time;
 
-    public MetaDataDTO() {
-    }
 
     public String getId() {
         return id;
@@ -60,44 +67,44 @@ public class MetaDataDTO {
         this.destination = destination;
     }
 
-    public String getDocumentType() {
-        return documentType;
+    public String getType() {
+        return type;
     }
 
-    public void setDocumentType(String documentType) {
-        this.documentType = documentType;
+    public void setType(String type) {
+        this.type = type;
     }
 
-    public long getTransferSpeed() {
-        return transferSpeed;
+    public int getSpeed() {
+        return speed;
     }
 
-    public void setTransferSpeed(long transferSpeed) {
-        this.transferSpeed = transferSpeed;
+    public void setSpeed(int speed) {
+        this.speed = speed;
     }
 
-    public String getOptimizationParameters() {
-        return optimizationParameters;
+    public String getOptimizations() {
+        return optimizations;
     }
 
-    public void setOptimizationParameters(String optimizationParameters) {
-        this.optimizationParameters = optimizationParameters;
+    public void setOptimizations(String optimizations) {
+        this.optimizations = optimizations;
     }
 
-    public long getChunkSize() {
-        return chunkSize;
+    public int getChunks() {
+        return chunks;
     }
 
-    public void setChunkSize(long chunkSize) {
-        this.chunkSize = chunkSize;
+    public void setChunks(int chunks) {
+        this.chunks = chunks;
     }
 
-    public long getTotalTime() {
-        return totalTime;
+    public int getTime() {
+        return time;
     }
 
-    public void setTotalTime(long totalTime) {
-        this.totalTime = totalTime;
+    public void setTime(int time) {
+        this.time = time;
     }
 
     @Override
@@ -106,11 +113,11 @@ public class MetaDataDTO {
                 "id='" + id + '\'' +
                 ", source='" + source + '\'' +
                 ", destination='" + destination + '\'' +
-                ", documentType='" + documentType + '\'' +
-                ", transferSpeed=" + transferSpeed +
-                ", optimizationParameters='" + optimizationParameters + '\'' +
-                ", chunkSize=" + chunkSize +
-                ", totalTime=" + totalTime +
+                ", type='" + type + '\'' +
+                ", speed=" + speed +
+                ", optimizations='" + optimizations + '\'' +
+                ", chunks=" + chunks +
+                ", time=" + time +
                 '}';
     }
 }
