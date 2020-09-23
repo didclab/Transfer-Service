@@ -11,7 +11,13 @@ public class MetaDataServiceImplementation implements MetaDataService {
     MetaDataRepository metaDataRepository;
     @Override
     public MetaDataDTO saveOrUpdate(MetaDataDTO metaData) {
-        metaDataRepository.save(metaData);
+        System.out.println("Updating: "+metaData.toString());
+        try {
+            metaDataRepository.save(metaData);
+        }
+        catch (Exception ex){
+            ex.getMessage();
+        }
         return metaData;
     }
     //ToDO

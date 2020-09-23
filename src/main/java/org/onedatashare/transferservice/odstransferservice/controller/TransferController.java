@@ -61,6 +61,9 @@ public class TransferController {
         List<JobParameters> ret = new ArrayList<>();
         for(EntityInfo info: request.getSource().getInfoList()){
             JobParametersBuilder builder = new JobParametersBuilder();
+            builder.addString("id",request.getId());
+            builder.addString("source",request.getSource().getType().toString());
+            builder.addString("destination",request.getDestination().getType().toString());
             builder.addLong("time",System.currentTimeMillis());
             builder.addString("sourceAccountIdPass", request.getSource().getCredential().getAccountId()
                     + ":" + request.getSource().getCredential().getPassword());

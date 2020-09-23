@@ -16,17 +16,19 @@ public class DataBaseOperationStepExecutionListener implements StepExecutionList
         System.out.println("Step Starting");
         //Parameters to be filled out at the start of the Step
         JobParameters jobParameters = stepExecution.getJobParameters();
+        System.out.println("ID: "+jobParameters.getString("id"));
         //Job ID
         String id = jobParameters.getString("id");
         //Source of the End Point
         String source = jobParameters.getString("source");
         //Destination of the End Point
-        String destination = jobParameters.getString("dest");
+        String destination = jobParameters.getString("destination");
         //Need a logic to add the chunk size in Job Parameters
         long chunkSize = 0;
         //Need a Logic to get extension
         String extension = "pdf";
-        MetaDataDTO metaDataDTO = MetaDataDTO.builder().id(id).source(source).destination(destination).build();
+        MetaDataDTO metaDataDTO = MetaDataDTO.builder().id(id).source(source).destination(destination).documentType(extension).build();
+        //MetaDataDTO metaDataDTO = new MetaDataDTO(id,source,destination,extension,0,"concurrency",0,0);
         metaDataServiceImplementation.saveOrUpdate(metaDataDTO);
         System.out.println("I am done writing stuff in DB");
     }

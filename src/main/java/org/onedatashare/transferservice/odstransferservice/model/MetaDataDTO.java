@@ -10,8 +10,7 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "metadata")
-@NoArgsConstructor
+@Table(name = "job_info")
 @AllArgsConstructor
 @Builder
 public class MetaDataDTO {
@@ -33,6 +32,9 @@ public class MetaDataDTO {
     private long chunkSize;
     //Total time to transfer
     private long totalTime;
+
+    public MetaDataDTO() {
+    }
 
     public String getId() {
         return id;
@@ -96,5 +98,19 @@ public class MetaDataDTO {
 
     public void setTotalTime(long totalTime) {
         this.totalTime = totalTime;
+    }
+
+    @Override
+    public String toString() {
+        return "MetaDataDTO{" +
+                "id='" + id + '\'' +
+                ", source='" + source + '\'' +
+                ", destination='" + destination + '\'' +
+                ", documentType='" + documentType + '\'' +
+                ", transferSpeed=" + transferSpeed +
+                ", optimizationParameters='" + optimizationParameters + '\'' +
+                ", chunkSize=" + chunkSize +
+                ", totalTime=" + totalTime +
+                '}';
     }
 }
