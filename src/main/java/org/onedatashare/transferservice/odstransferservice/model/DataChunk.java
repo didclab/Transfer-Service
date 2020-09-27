@@ -1,9 +1,11 @@
 package org.onedatashare.transferservice.odstransferservice.model;
 
 import lombok.Data;
-import org.apache.commons.io.FileUtils;
 
-import java.io.*;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
 

@@ -13,7 +13,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,6 +61,9 @@ public class TransferController {
         List<JobParameters> ret = new ArrayList<>();
         for(EntityInfo info: request.getSource().getInfoList()){
             JobParametersBuilder builder = new JobParametersBuilder();
+            builder.addString("id",request.getId());
+            builder.addString("source",request.getSource().getType().toString());
+            builder.addString("destination",request.getDestination().getType().toString());
             builder.addLong("time",System.currentTimeMillis());
             builder.addString("sourceAccountIdPass", request.getSource().getCredential().getAccountId()
                     + ":" + request.getSource().getCredential().getPassword());
