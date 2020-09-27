@@ -10,7 +10,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Component;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.MalformedURLException;
 
 @Component
 public class Reader {
@@ -21,19 +23,17 @@ public class Reader {
     @Bean
     public FlatFileItemReader flatFileItemReader(@Value("#{jobParameters['fileName']}") String fName,
                                                   @Value("#{jobParameters['sourceAccountIdPass']}") String sAccountIdPass,
-                                                  @Value("#{jobParameters['sourceBasePath']}") String sBasePath) throws IOException {
-        logger.info("Inside Flat reader");
-
+                                                  @Value("#{jobParameters['sourceBasePath']}") String sBasePath) throws MalformedURLException {
         FlatFileItemReader<byte[]> reader = new FlatFileItemReader<>();
-        reader.setResource(new UrlResource(sBasePath.substring(0, 6) + sAccountIdPass + "@" + sBasePath.substring(6) + fName));
-        reader.setLineMapper(new LineMapper<byte[]>() {
-            @Override
-            public byte[] mapLine(String line, int lineNumber) throws Exception {
+            logger.info("Inside Flat reader");
+            UrlResource urlResource = new UrlResource(sBasePath.substring(0, 6) + sAccountIdPass + "@" + sBasePath.substring(6) + fName);
+            reader.setResource(urlResource);
+            reader.setLineMapper((line, lineNumber) -> {
                 //System.out.println(lineNumber);
                 line += "\n";
                 return line.getBytes();
-            }
-        });
+            });
+
         return reader;
     }
 }

@@ -1,6 +1,7 @@
 package org.onedatashare.transferservice.odstransferservice.config;
 
 import lombok.SneakyThrows;
+import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.CustomRetryListener;
 import org.onedatashare.transferservice.odstransferservice.service.listner.DataBaseOperationStepExecutionListener;
 import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
 import org.onedatashare.transferservice.odstransferservice.service.step.Processor;
@@ -21,15 +22,20 @@ import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
+import org.springframework.batch.item.ItemStreamException;
 import org.springframework.batch.item.file.FlatFileItemReader;
+import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.retry.RetryListener;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 
 
 @Configuration
@@ -80,6 +86,10 @@ public class BatchConfig extends DefaultBatchConfigurer {
     }
 
     @Bean
+    public RetryListener retryListener() {
+        return new CustomRetryListener();
+    }
+    @Bean
     @SneakyThrows
     protected JobRepository createJobRepository(){
         JobRepositoryFactoryBean factory = new JobRepositoryFactoryBean();
@@ -98,6 +108,10 @@ public class BatchConfig extends DefaultBatchConfigurer {
                 .<byte[], byte[]>chunk(2)
                 .reader(flatFileItemReader)
                 .writer(writer)
+                .faultTolerant()
+                .retry(IllegalStateException.class)
+                .retryLimit(2)
+                .listener(retryListener())
                 .taskExecutor(stepTaskExecutor)
                 .build();
         return jobBuilderFactory.get("job").listener(listener())
