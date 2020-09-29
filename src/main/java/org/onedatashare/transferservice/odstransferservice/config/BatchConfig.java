@@ -87,7 +87,7 @@ public class BatchConfig {
                 .reader(customReader)
                 //.processor(processor)
                 .writer(writer)
-                .taskExecutor(stepTaskExecutor)
+                //.taskExecutor(stepTaskExecutor)
                 .build();
         return jobBuilderFactory.get("job").listener(listener())
                 .incrementer(new RunIdIncrementer())

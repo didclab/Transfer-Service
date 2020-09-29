@@ -1,5 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service.step;
 
+import lombok.SneakyThrows;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 import org.slf4j.Logger;
@@ -33,7 +34,7 @@ public class Reader {
 //                                                  @Value("#{jobParameters['sourceBasePath']}") String sBasePath) throws IOException {
 //        logger.info("Inside Flat reader");
 //
-//        FlatFileItemReader<byte[]> reader = new FlatFileItemReader<>();
+        FlatFileItemReader<byte[]> reader = new FlatFileItemReader<>();
 //        reader.setResource(new UrlResource(sBasePath.substring(0, 6) + sAccountIdPass + "@" + sBasePath.substring(6) + fName));
 //        reader.setLineMapper(new LineMapper<byte[]>() {
 //            @Override
@@ -53,8 +54,8 @@ public class Reader {
                                      @Value("#{jobParameters['sourceBasePath']}") String sBasePath) throws IOException {
         logger.info("Inside CustomReader");
         CustomReader<byte[]> reader = new CustomReader<>();
+        logger.info(sBasePath.substring(0, 6) + sAccountIdPass + "@" + sBasePath.substring(6) + fName);
         reader.setResource(new UrlResource(sBasePath.substring(0, 6) + sAccountIdPass + "@" + sBasePath.substring(6) + fName));
         return reader;
     }
-
 }
