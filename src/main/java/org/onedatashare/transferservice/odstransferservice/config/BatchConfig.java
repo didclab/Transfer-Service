@@ -2,7 +2,9 @@ package org.onedatashare.transferservice.odstransferservice.config;
 
 import lombok.SneakyThrows;
 import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
+import org.onedatashare.transferservice.odstransferservice.service.step.CustomReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.Processor;
+import org.onedatashare.transferservice.odstransferservice.service.step.Reader;
 import org.onedatashare.transferservice.odstransferservice.service.step.Writer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +27,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 
+import java.io.File;
+
 @Configuration
 public class BatchConfig {
     public static final Logger LOGGER = LoggerFactory.getLogger(BatchConfig.class);
@@ -36,8 +40,14 @@ public class BatchConfig {
     @Autowired
     DataSourceConfig datasource;
 
+//    @Autowired
+//    FlatFileItemReader flatFileItemReader;
+
     @Autowired
-    FlatFileItemReader flatFileItemReader;
+    CustomReader customReader;
+
+//    @Autowired
+//    Reader reader;
 
     @Autowired
     Writer writer;
@@ -59,7 +69,7 @@ public class BatchConfig {
 
     @Bean
     @SneakyThrows
-    protected JobRepository createJobRepository(){
+    protected JobRepository createJobRepository() {
         JobRepositoryFactoryBean factory = new JobRepositoryFactoryBean();
         factory.setDataSource(datasource.getH2DataSource());
         factory.setTransactionManager(new DataSourceTransactionManager(datasource.getH2DataSource()));
@@ -71,9 +81,10 @@ public class BatchConfig {
 
     @Bean
     public Job job(JobBuilderFactory jobBuilderFactory, StepBuilderFactory stepBuilderFactory) {
+        LOGGER.info("Inside job---");
         Step step = stepBuilderFactory.get("SampleStep")
                 .<byte[], byte[]>chunk(2)
-                .reader(flatFileItemReader)
+                .reader(customReader)
                 //.processor(processor)
                 .writer(writer)
                 .taskExecutor(stepTaskExecutor)
@@ -85,7 +96,7 @@ public class BatchConfig {
     }
 
     @Bean
-    public JobRegistryBeanPostProcessor jobRegistryBeanPostProcessor(JobRegistry jobRegistry){
+    public JobRegistryBeanPostProcessor jobRegistryBeanPostProcessor(JobRegistry jobRegistry) {
         JobRegistryBeanPostProcessor jobRegistryBeanPostProcessor = new JobRegistryBeanPostProcessor();
         jobRegistryBeanPostProcessor.setJobRegistry(jobRegistry);
         return jobRegistryBeanPostProcessor;
