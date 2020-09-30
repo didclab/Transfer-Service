@@ -1,6 +1,7 @@
 package org.onedatashare.transferservice.odstransferservice.model;
 
 import lombok.SneakyThrows;
+import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,7 @@ public class StreamInput {
         ftpClient.connect("localhost", 2121);
         ftpClient.login("user", "pass");
         ftpClient.changeWorkingDirectory("/Downloads/outputTransfer");
+        ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
         ftpClient.setKeepAlive(true);
         this.source = ftpClient;
     }
