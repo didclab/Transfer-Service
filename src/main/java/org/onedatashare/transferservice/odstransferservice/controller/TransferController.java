@@ -2,6 +2,7 @@ package org.onedatashare.transferservice.odstransferservice.controller;
 
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
+import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.CrudService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
@@ -20,8 +21,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
 /**
  * Transfer controller with to initiate transfer request
@@ -44,13 +43,14 @@ public class TransferController {
     @Autowired
     JobLauncher asyncJobLauncher;
 
+    @Autowired
+    CrudService crudService;
+
     @RequestMapping(value = "/start", method = RequestMethod.POST)
     @Async
     public ResponseEntity<String> start(@RequestBody TransferJobRequest request) throws Exception {
-//        JobParameters parameters = translate(new JobParametersBuilder(), request);
-        //System.out.println(job+"---->>>"+parameters);
-        List<EntityInfo> transferFiles = request.getSource().getInfoList();
         List<JobParameters> params = fileToJob(request);
+        crudService.insertIntoDatabase(request);
         for(JobParameters par: params){
             asyncJobLauncher.run(job, par);
         }

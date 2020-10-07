@@ -18,5 +18,7 @@ public class Writer implements ItemWriter<byte[]> {
         for (byte[] b : list) {
             StreamOutput.getOutputStream().write(b);
         }
+
     }
+
 }

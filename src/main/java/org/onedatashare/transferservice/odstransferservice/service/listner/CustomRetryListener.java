@@ -1,4 +1,4 @@
-package org.onedatashare.transferservice.odstransferservice.service.DatabaseService;
+package org.onedatashare.transferservice.odstransferservice.service.listner;
 
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
@@ -15,7 +15,7 @@ public class CustomRetryListener implements RetryListener {
 
     @Override
     public <T, E extends Throwable> void close(RetryContext retryContext, RetryCallback<T, E> retryCallback, Throwable throwable) {
-        System.out.println("Did not work. Sending an Error Message");
+
     }
 
     @Override

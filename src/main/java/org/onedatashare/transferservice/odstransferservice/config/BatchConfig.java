@@ -1,8 +1,7 @@
 package org.onedatashare.transferservice.odstransferservice.config;
 
 import lombok.SneakyThrows;
-import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.CustomRetryListener;
-import org.onedatashare.transferservice.odstransferservice.service.listner.DataBaseOperationStepExecutionListener;
+import org.onedatashare.transferservice.odstransferservice.service.listner.CustomRetryListener;
 import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
 import org.onedatashare.transferservice.odstransferservice.service.step.Processor;
 import org.onedatashare.transferservice.odstransferservice.service.step.Writer;
@@ -11,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.configuration.annotation.DefaultBatchConfigurer;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
@@ -22,9 +20,7 @@ import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
-import org.springframework.batch.item.ItemStreamException;
 import org.springframework.batch.item.file.FlatFileItemReader;
-import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,8 +30,6 @@ import org.springframework.retry.RetryListener;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 
 
 @Configuration
@@ -81,11 +75,6 @@ public class BatchConfig extends DefaultBatchConfigurer {
     }
 
     @Bean
-    public StepExecutionListener crudListener() {
-        return new DataBaseOperationStepExecutionListener();
-    }
-
-    @Bean
     public RetryListener retryListener() {
         return new CustomRetryListener();
     }
@@ -104,16 +93,16 @@ public class BatchConfig extends DefaultBatchConfigurer {
     @Bean
     public Job job(JobBuilderFactory jobBuilderFactory, StepBuilderFactory stepBuilderFactory) {
         Step step = stepBuilderFactory.get("SampleStep")
-                .listener(crudListener())
                 .<byte[], byte[]>chunk(2)
                 .reader(flatFileItemReader)
                 .writer(writer)
                 .faultTolerant()
-                .retry(IllegalStateException.class)
+                .retry(Exception.class)
                 .retryLimit(2)
                 .listener(retryListener())
                 .taskExecutor(stepTaskExecutor)
                 .build();
+
         return jobBuilderFactory.get("job").listener(listener())
                 .incrementer(new RunIdIncrementer())
                 .start(step)
