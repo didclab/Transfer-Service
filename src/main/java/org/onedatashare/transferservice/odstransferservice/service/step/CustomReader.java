@@ -3,6 +3,7 @@ package org.onedatashare.transferservice.odstransferservice.service.step;
 import lombok.SneakyThrows;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
+import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.StreamInput;
 import org.onedatashare.transferservice.odstransferservice.model.StreamOutput;
 import org.slf4j.Logger;
@@ -24,7 +25,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
 
-public class CustomReader<T> extends AbstractItemCountingItemStreamItemReader<byte[]> implements ResourceAwareItemReaderItemStream<byte[]>, InitializingBean {
+public class CustomReader<T> extends AbstractItemCountingItemStreamItemReader<DataChunk> implements ResourceAwareItemReaderItemStream<DataChunk>, InitializingBean {
 
     public static final String DEFAULT_CHARSET = Charset.defaultCharset().name();
     Logger logger = LoggerFactory.getLogger(CustomReader.class);
@@ -60,21 +61,26 @@ public class CustomReader<T> extends AbstractItemCountingItemStreamItemReader<by
 
     /**
      * This will create the Input/Output Streams for the reader.
+     *
      * @return
      */
     @SneakyThrows
     @Override
-    protected byte[] doRead() {
+    protected DataChunk doRead() {
         byte[] data = new byte[4];
-        int flag =this.reader.read(data);
-        if(flag == -1){
+        int flag = this.reader.read(data);
+//        reader.
+        if (flag == -1) {
             return null;
         }
-        return data;
+        DataChunk dc = new DataChunk();
+        dc.setData(data);
+        return dc;
     }
 
     /**
      * This will create the FTPClient connection
+     *
      * @throws Exception
      */
     @Override
@@ -88,7 +94,7 @@ public class CustomReader<T> extends AbstractItemCountingItemStreamItemReader<by
             //set as exceptions
             logger.warn("Input resource is not readable " + this.resource.getDescription());
         } else {
-            logger.info(this.resource.getFilename());
+            logger.info("fileName is : " + this.resource.getFilename());
             this.reader = StreamInput.createInputStream(this.resource.getFilename());
             StreamOutput.createOutputStream(this.resource.getFilename());
             this.noInput = false;

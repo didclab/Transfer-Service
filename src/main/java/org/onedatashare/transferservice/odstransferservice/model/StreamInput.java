@@ -16,10 +16,11 @@ public class StreamInput {
 
     @SneakyThrows
     public void clientCreateSource() {
+        logger.info("Creating source ftp resource...");
         FTPClient ftpClient = new FTPClient();
         ftpClient.connect("localhost", 2121);
         ftpClient.login("user", "pass");
-        ftpClient.changeWorkingDirectory("/Downloads/outputTransfer");
+        ftpClient.changeWorkingDirectory("/source");
         ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
         ftpClient.setKeepAlive(true);
         this.source = ftpClient;
@@ -27,10 +28,7 @@ public class StreamInput {
 
 
     public static InputStream createInputStream(String fileName) throws IOException {
-        InputStream stream = source.retrieveFileStream(fileName);
-        int read = stream.read();
-        logger.info("The value of FTP read " + read);
-        return stream;
+        return source.retrieveFileStream(fileName);
     }
 
 }

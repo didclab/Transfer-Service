@@ -20,7 +20,7 @@ public class StreamOutput {
         FTPClient ftpClient = new FTPClient();
         ftpClient.connect("localhost", 2121);
         ftpClient.login("user", "pass");
-        ftpClient.changeWorkingDirectory("/Documents/");
+        ftpClient.changeWorkingDirectory("/dest/tempOutput");
         ftpClient.setKeepAlive(true);
         ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
         this.destination = ftpClient;
