@@ -1,11 +1,14 @@
 package org.onedatashare.transferservice.odstransferservice.config;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
+import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
+import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
 import org.onedatashare.transferservice.odstransferservice.service.step.CustomReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.Processor;
-import org.onedatashare.transferservice.odstransferservice.service.step.Reader;
-import org.onedatashare.transferservice.odstransferservice.service.step.Writer;
+import org.onedatashare.transferservice.odstransferservice.service.step.FTPWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
@@ -14,20 +17,24 @@ import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.configuration.support.JobRegistryBeanPostProcessor;
+import org.springframework.batch.core.job.flow.Flow;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
-import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.core.io.UrlResource;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 
-import java.io.File;
+import java.util.List;
 
 @Configuration
 public class BatchConfig {
@@ -43,14 +50,14 @@ public class BatchConfig {
 //    @Autowired
 //    FlatFileItemReader flatFileItemReader;
 
-    @Autowired
-    CustomReader customReader;
+//    @Autowired
+//    CustomReader customReader;
 
 //    @Autowired
 //    Reader reader;
 
     @Autowired
-    Writer writer;
+    FTPWriter ftpWriter;
 
     @Autowired
     Processor processor;
@@ -79,21 +86,35 @@ public class BatchConfig {
         return factory.getObject();
     }
 
+    @StepScope
+    @SneakyThrows
+    @Lazy
     @Bean
-    public Job job(JobBuilderFactory jobBuilderFactory, StepBuilderFactory stepBuilderFactory) {
-        LOGGER.info("Inside job---");
-        Step step = stepBuilderFactory.get("SampleStep")
-                .<byte[], byte[]>chunk(2)
-                .reader(customReader)
-                //.processor(processor)
-                .writer(writer)
-                //.taskExecutor(stepTaskExecutor)
-                .build();
-        return jobBuilderFactory.get("job").listener(listener())
-                .incrementer(new RunIdIncrementer())
-                .start(step)
-                .build();
+    public CustomReader customReader(@Value("#{jobParameters['sourceBasePath']}") String basePath, @Value("#{jobParameters['sourceCredential']}") String accountId, @Value("#{jobParameters['INFO_LIST']}") String infoList){
+        List<EntityInfo> fileList = new ObjectMapper().readValue(infoList, new TypeReference<List<EntityInfo>>(){});
+        CustomReader<DataChunk> reader = new CustomReader<>();
+        for(EntityInfo info: fileList){
+            String fileName = info.getPath();
+            reader.setResource(new UrlResource(basePath.substring(0,6)+accountId+"@" + basePath.substring(6) + fileName));
+        }
+        return reader;
     }
+
+//    @Bean
+//    public Job job(JobBuilderFactory jobBuilderFactory, StepBuilderFactory stepBuilderFactory) {
+//        LOGGER.info("Inside job---");
+//        Step step = stepBuilderFactory.get("SampleStep")
+//                .<byte[], byte[]>chunk(2)
+//                .reader(customReader(null, null, null))
+//                //.processor(processor)
+//                .writer(ftpWriter)
+//                //.taskExecutor(stepTaskExecutor)
+//                .build();
+//        return jobBuilderFactory.get("job").listener(listener())
+//                .incrementer(new RunIdIncrementer())
+//                .start(step)
+//                .build();
+//    }
 
     @Bean
     public JobRegistryBeanPostProcessor jobRegistryBeanPostProcessor(JobRegistry jobRegistry) {

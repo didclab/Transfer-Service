@@ -1,26 +1,24 @@
 package org.onedatashare.transferservice.odstransferservice.service.step;
 
+import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.StreamOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
-import java.nio.file.Files;
 import java.util.List;
 
 @Component
-public class Writer implements ItemWriter<byte[]> {
-    Logger logger = LoggerFactory.getLogger(Writer.class);
-    public void write(List<? extends byte[]> list) throws Exception {
-        for(byte[] elem : list){
-            logger.info(new String(elem));
+public class FTPWriter implements ItemWriter<DataChunk> {
+    Logger logger = LoggerFactory.getLogger(FTPWriter.class);
+    public void write(List<? extends DataChunk> list) throws Exception {
+        for(DataChunk elem : list){
+            logger.info(new String(elem.getData()));
         }
         logger.info("Inside Writer----------------");
-        for (byte[] b : list) {
-
-            StreamOutput.getOutputStream().write(b);
+        for (DataChunk b : list) {
+            StreamOutput.getOutputStream().write(b.getData());
             StreamOutput.getOutputStream().flush();
         }
     }

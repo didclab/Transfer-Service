@@ -4,7 +4,6 @@ import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
-import org.onedatashare.transferservice.odstransferservice.service.step.Writer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

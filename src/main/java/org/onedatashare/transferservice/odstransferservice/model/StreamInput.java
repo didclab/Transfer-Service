@@ -11,7 +11,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 public class StreamInput {
-    Logger logger = LoggerFactory.getLogger(StreamOutput.class);
+    static Logger logger = LoggerFactory.getLogger(StreamInput.class);
     public static FTPClient source;
 
     @SneakyThrows
@@ -27,7 +27,10 @@ public class StreamInput {
 
 
     public static InputStream createInputStream(String fileName) throws IOException {
-        return source.retrieveFileStream(fileName);
+        InputStream stream = source.retrieveFileStream(fileName);
+        int read = stream.read();
+        logger.info("The value of FTP read " + read);
+        return stream;
     }
 
 }

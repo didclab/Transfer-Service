@@ -2,11 +2,13 @@ package org.onedatashare.transferservice.odstransferservice.controller;
 
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
+import org.onedatashare.transferservice.odstransferservice.service.JobControl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
@@ -32,9 +35,11 @@ public class TransferController {
     JobLauncher jobLauncher;
 
     @Autowired
-    JobBuilderFactory jobBuilderFactory;
+    JobControl jc;
 
     @Autowired
+    JobBuilderFactory jobBuilderFactory;
+
     Job job;
 
     @Autowired
@@ -45,6 +50,8 @@ public class TransferController {
     public ResponseEntity<String> start(@RequestBody TransferJobRequest request) throws Exception {
         JobParameters parameters = translate(new JobParametersBuilder(), request);
         //System.out.println(job+"---->>>"+parameters);
+        jc.setRequest(request);
+        job = jc.createJobDefinition();
         asyncJobLauncher.run(job, parameters);
         return ResponseEntity.status(HttpStatus.OK).body("Your batch job has been submitted with \n ID: " + request.getId());
     }
@@ -78,7 +85,6 @@ public class TransferController {
         builder.addString(DESTINATION_ACCOUNT_ID_PASS, request.getDestination().getCredential().getAccountId() + ":" + request.getDestination().getCredential().getPassword());
         builder.addString(PRIORITY,String.valueOf(request.getPriority()));
         builder.addString(OWNER_ID,request.getOwnerId());
-//        builder.addString(TRANSFER_OPTIONS, request.getOptions().toString());
         return builder.toJobParameters();
     }
 }
