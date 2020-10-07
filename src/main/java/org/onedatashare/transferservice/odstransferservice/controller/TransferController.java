@@ -14,7 +14,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,13 +43,9 @@ public class TransferController {
     @RequestMapping(value = "/start", method = RequestMethod.POST)
     @Async
     public ResponseEntity<String> start(@RequestBody TransferJobRequest request) throws Exception {
-//        JobParameters parameters = translate(new JobParametersBuilder(), request);
+        JobParameters parameters = translate(new JobParametersBuilder(), request);
         //System.out.println(job+"---->>>"+parameters);
-        List<EntityInfo> transferFiles = request.getSource().getInfoList();
-        List<JobParameters> params = fileToJob(request);
-        for(JobParameters par: params){
-            asyncJobLauncher.run(job, par);
-        }
+        asyncJobLauncher.run(job, parameters);
         return ResponseEntity.status(HttpStatus.OK).body("Your batch job has been submitted with \n ID: " + request.getId());
     }
 
@@ -58,30 +53,33 @@ public class TransferController {
         List<JobParameters> ret = new ArrayList<>();
         for(EntityInfo info: request.getSource().getInfoList()){
             JobParametersBuilder builder = new JobParametersBuilder();
-            builder.addLong("time",System.currentTimeMillis());
-            builder.addString("sourceAccountIdPass", request.getSource().getCredential().getAccountId()
+            builder.addLong(TIME,System.currentTimeMillis());
+            builder.addString(SOURCE_ACCOUNT_ID_PASS, request.getSource().getCredential().getAccountId()
                     + ":" + request.getSource().getCredential().getPassword());
-            builder.addString("destinationAccountIdPass", request.getDestination().getCredential().getAccountId()
+            builder.addString(DESTINATION_ACCOUNT_ID_PASS, request.getDestination().getCredential().getAccountId()
                     + ":" + request.getDestination().getCredential().getPassword());
-            builder.addString("sourceBasePath", request.getSource().getInfo().getPath());
-            builder.addString("destBasePath", request.getDestination().getInfo().getPath());
-            builder.addString("fileName", info.getPath());
+            builder.addString(SOURCE_BASE_PATH, request.getSource().getInfo().getPath());
+            builder.addString(DEST_BASE_PATH, request.getDestination().getInfo().getPath());
+            builder.addString(FILE_NAME, info.getPath());
             ret.add(builder.toJobParameters());
         }
         return ret;
     }
-//
-//    public JobParameters translate(JobParametersBuilder builder, TransferJobRequest request) {
-//        System.out.println(request.toString());
-//        builder.addLong("time",System.currentTimeMillis());
-//        builder.addString("sourceAccountIdPass", request.getSource().getCredential().getAccountId()
-//                + ":" + request.getSource().getCredential().getPassword());
-//        builder.addString("destinationAccountIdPass", request.getDestination().getCredential().getAccountId()
-//                + ":" + request.getDestination().getCredential().getPassword());
-//        builder.addString("sourceBasePath", request.getSource().getInfo().getPath());
-//        builder.addString("destBasePath", request.getDestination().getInfo().getPath());
-//        builder.addString("fileName", request.getSource().getInfoList().get(0).getPath());
-//        return builder.toJobParameters();
-//    }
+
+    public JobParameters translate(JobParametersBuilder builder, TransferJobRequest request) {
+        System.out.println(request.toString());
+        builder.addLong(TIME,System.currentTimeMillis());
+        builder.addString(SOURCE_CREDENTIAL, request.getSource().getCredential().toString());
+        builder.addString(DEST_CREDENTIAL, request.getDestination().getCredential().toString());
+        builder.addString(SOURCE_BASE_PATH, request.getSource().getInfo().getPath());
+        builder.addString(DEST_BASE_PATH, request.getDestination().getInfo().getPath());
+        builder.addString(INFO_LIST, request.getSource().getInfoList().toString());
+        builder.addString(SOURCE_ACCOUNT_ID_PASS, request.getSource().getCredential().getAccountId() + ":" + request.getSource().getCredential().getPassword());
+        builder.addString(DESTINATION_ACCOUNT_ID_PASS, request.getDestination().getCredential().getAccountId() + ":" + request.getDestination().getCredential().getPassword());
+        builder.addString(PRIORITY,String.valueOf(request.getPriority()));
+        builder.addString(OWNER_ID,request.getOwnerId());
+//        builder.addString(TRANSFER_OPTIONS, request.getOptions().toString());
+        return builder.toJobParameters();
+    }
 }
 
