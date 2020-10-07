@@ -1,5 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service.step;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import org.apache.commons.net.ftp.FTPClient;
@@ -58,14 +59,11 @@ public class Reader {
     @SneakyThrows
     @Bean
     public CustomReader customReader(@Value("#{jobParameters['sourceBasePath']}") String basePath, @Value("#{jobParameters['sourceCredential']}") String accountId, @Value("#{jobParameters['INFO_LIST']}") String infoList){
-        List<EntityInfo> fileList = new ObjectMapper().readValue(infoList, >)
+        List<EntityInfo> fileList = new ObjectMapper().readValue(infoList, new TypeReference<List<EntityInfo>>(){});
         CustomReader<DataChunk> reader = new CustomReader<>();
-        for(EntityInfo info: source.getInfoList()){
+        for(EntityInfo info: fileList){
             String fileName = info.getPath();
             reader.setResource(new UrlResource(basePath.substring(0,6)+accountId+"@" + basePath.substring(6) + fileName));
-//            reader.setResource(new ByteArrayResource());
-//            reader.setResource(new FileUrlResource());
-
         }
         return reader;
     }
