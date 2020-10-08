@@ -9,15 +9,27 @@ import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.listener.JobExecutionListenerSupport;
 
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
+
 public class JobCompletionListener extends JobExecutionListenerSupport {
     Logger logger = LoggerFactory.getLogger(JobCompletionListener.class);
 
-    String dBasePath;
-    String fName;
-    String dAccountIdPass;
-    String url;
     StreamOutput streamOutput;
     StreamInput streamInput;
+
+    String sServerName;
+    String dServerName;
+    String sAccountId;
+    String dAccountId;
+    String sPass;
+    String dPass;
+    int sPort;
+    int dPort;
+    String fName;
+
+    String sBasePath;
+    String dBasePath;
+
 
     @SneakyThrows
     @Override
@@ -26,14 +38,25 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
         Thread t = Thread.currentThread();
         String name = t.getName();
         logger.info("Thread name= " + name);
-        dBasePath = jobExecution.getJobParameters().getString("destBasePath");
-        fName = jobExecution.getJobParameters().getString("fileName");
-        dAccountIdPass = jobExecution.getJobParameters().getString("destinationAccountIdPass");
-        url = dBasePath.substring(0, 6) + dAccountIdPass + "@" + dBasePath.substring(6) + fName;
+        sBasePath = jobExecution.getJobParameters().getString(SOURCE_BASE_PATH);
+        dBasePath = jobExecution.getJobParameters().getString(DEST_BASE_PATH);
+        fName = jobExecution.getJobParameters().getString(FILE_NAME);
+        String[] sAccountIdPass = jobExecution.getJobParameters().getString(SOURCE_ACCOUNT_ID_PASS).split(":");
+        String[] dAccountIdPass = jobExecution.getJobParameters().getString(DESTINATION_ACCOUNT_ID_PASS).split(":");
+        String[] sCredential = jobExecution.getJobParameters().getString(SOURCE_CREDENTIAL_ID).split(":");
+        String[] dCredential = jobExecution.getJobParameters().getString(DEST_CREDENTIAL_ID).split(":");
+        sAccountId = sAccountIdPass[0];
+        sPass = sAccountIdPass[1];
+        dAccountId = dAccountIdPass[0];
+        dPass = dAccountIdPass[1];
+        sServerName = sCredential[0];
+        sPort = Integer.parseInt(sCredential[1]);
+        dServerName = dCredential[0];
+        dPort = Integer.parseInt(dCredential[1]);
         streamInput = new StreamInput();
         streamOutput = new StreamOutput();
-        streamInput.clientCreateSource();
-        streamOutput.clientCreateDest();
+        streamInput.clientCreateSource(sServerName, sPort, sAccountId, sPass, sBasePath.substring(13 + sAccountId.length() + sPass.length()));
+        streamOutput.clientCreateDest(dServerName, dPort, dAccountId, dPass, dBasePath.substring(13 + dAccountId.length() + dPass.length()));
     }
 
     @SneakyThrows

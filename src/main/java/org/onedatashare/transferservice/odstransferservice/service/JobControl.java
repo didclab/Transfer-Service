@@ -23,6 +23,7 @@ import org.springframework.batch.core.job.builder.SimpleJobBuilder;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.step.builder.SimpleStepBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
@@ -46,8 +47,8 @@ public class JobControl {
     @Autowired
     private ApplicationContext context;
 
-    @Autowired
-    FTPWriter ftpWriter;
+//    @Autowired
+//    FTPWriter ftpWriter;
 
 //    @Autowired
 //    Processor process;
@@ -59,11 +60,14 @@ public class JobControl {
     StepBuilderFactory stepBuilderFactory;
 
     @SneakyThrows
-    private List<Step> createSteps(List<EntityInfo> infoList) {
+    private List<Step> createSteps(List<EntityInfo> infoList, String basePath, String id, String pass) {
         List<Step> steps = new ArrayList<>();
         for (EntityInfo file : infoList) {
             CustomReader customReader = new CustomReader();
-            UrlResource urlResource = new UrlResource("ftp://user:pass@localhost:2121/source/" + file.getPath());
+            FTPWriter ftpWriter = new FTPWriter();
+            String url = basePath.substring(0, 6) + id + ":" + pass + "@" + basePath.substring(6);
+            System.out.println("this is url: "+url);
+            UrlResource urlResource = new UrlResource(url + file.getPath());
             customReader.setResource(urlResource);
             SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(file.getPath()).<DataChunk, DataChunk>chunk(getChunckSize());
             switch (request.getSource().getType()) {
@@ -80,7 +84,9 @@ public class JobControl {
     @Lazy
     @Bean
     public Job createJobDefinition() {
-        List<Step> steps = createSteps(request.getSource().getInfoList());
+        List<Step> steps = createSteps(request.getSource().getInfoList(),
+                request.getSource().getInfo().getPath(), request.getSource().getCredential().getAccountId(),
+                request.getSource().getCredential().getPassword());
         SimpleJobBuilder builder = jobBuilderFactory.get(request.getOwnerId())
                 .listener(context.getBean(JobCompletionListener.class))
                 .incrementer(new RunIdIncrementer()).start(steps.get(0));

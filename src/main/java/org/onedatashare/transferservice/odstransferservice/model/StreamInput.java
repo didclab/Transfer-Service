@@ -15,16 +15,17 @@ public class StreamInput {
     public static FTPClient source;
 
     @SneakyThrows
-    public void clientCreateSource() {
-        logger.info("Creating source ftp resource...");
+    public void clientCreateSource(String serverName, int port, String username, String password, String basePath) {
+//        System.out.println(basePath + " ---:--- ");
         FTPClient ftpClient = new FTPClient();
-        ftpClient.connect("localhost", 2121);
-        ftpClient.login("user", "pass");
-        ftpClient.changeWorkingDirectory("/source");
+        ftpClient.connect(serverName, port);
+        ftpClient.login(username, password);
+        ftpClient.changeWorkingDirectory(basePath);
         ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
         ftpClient.setKeepAlive(true);
         this.source = ftpClient;
     }
+
 
 
     public static InputStream createInputStream(String fileName) throws IOException {

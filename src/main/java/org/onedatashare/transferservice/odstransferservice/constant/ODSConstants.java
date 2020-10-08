@@ -23,8 +23,8 @@ public class ODSConstants {
     public static final String FILE_NAME = "fileName";
     public static final String SOURCE = "source";
     public static final String DESTINATION = "destination";
-    public static final String SOURCE_CREDENTIAL = "sourceCredential";
-    public static final String DEST_CREDENTIAL = "destCredential";
+    public static final String SOURCE_CREDENTIAL_ID = "sourceCredential";
+    public static final String DEST_CREDENTIAL_ID = "destCredential";
     public static final String INFO_LIST = "infoList";
     public static final String PRIORITY = "priority";
     public static final String OWNER_ID = "ownerId";

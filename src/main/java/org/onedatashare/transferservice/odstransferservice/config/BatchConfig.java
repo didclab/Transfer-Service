@@ -56,11 +56,11 @@ public class BatchConfig {
 //    @Autowired
 //    Reader reader;
 
-    @Autowired
-    FTPWriter ftpWriter;
+//    @Autowired
+//    FTPWriter ftpWriter;
 
-    @Autowired
-    Processor processor;
+//    @Autowired
+//    Processor processor;
 
     @Autowired
     TaskExecutor stepTaskExecutor;

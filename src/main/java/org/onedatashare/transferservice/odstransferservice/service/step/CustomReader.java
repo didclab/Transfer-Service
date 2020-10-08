@@ -8,6 +8,9 @@ import org.onedatashare.transferservice.odstransferservice.model.StreamInput;
 import org.onedatashare.transferservice.odstransferservice.model.StreamOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.StepExecution;
+import org.springframework.batch.core.annotation.AfterStep;
+import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ReaderNotOpenException;
 import org.springframework.batch.item.file.BufferedReaderFactory;
 import org.springframework.batch.item.file.DefaultBufferedReaderFactory;
@@ -42,6 +45,14 @@ public class CustomReader<T> extends AbstractItemCountingItemStreamItemReader<Da
     private boolean noInput;
 
 
+    @BeforeStep
+    public void beforeStep(StepExecution stepExecution){
+        System.out.println("This is before Step--------"+ stepExecution.getJobParameters());
+    }
+    @AfterStep
+    public void afterStep() throws IOException {
+        reader.close();
+    }
     public CustomReader() {
         this.encoding = DEFAULT_CHARSET;
         this.bufferedReaderFactory = new DefaultBufferedReaderFactory();

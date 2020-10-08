@@ -16,16 +16,16 @@ public class StreamOutput {
     static FTPClient destination;
 
     @SneakyThrows
-    public void clientCreateDest() {
+    public void clientCreateDest(String serverName, int port, String username, String password, String basePath) {
+//        System.out.println(basePath + " ---:--- ");
         FTPClient ftpClient = new FTPClient();
-        ftpClient.connect("localhost", 2121);
-        ftpClient.login("user", "pass");
-        ftpClient.changeWorkingDirectory("/dest/tempOutput");
+        ftpClient.connect(serverName, port);
+        ftpClient.login(username, password);
+        ftpClient.changeWorkingDirectory(basePath);
         ftpClient.setKeepAlive(true);
         ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
         this.destination = ftpClient;
     }
-
     public static OutputStream outputStream;
 
     public static void setOutputStream(OutputStream os) {

@@ -58,8 +58,8 @@ public class TransferController {
 
     public List<JobParameters> fileToJob(TransferJobRequest request){
         List<JobParameters> ret = new ArrayList<>();
+        JobParametersBuilder builder = new JobParametersBuilder();
         for(EntityInfo info: request.getSource().getInfoList()){
-            JobParametersBuilder builder = new JobParametersBuilder();
             builder.addLong(TIME,System.currentTimeMillis());
             builder.addString(SOURCE_ACCOUNT_ID_PASS, request.getSource().getCredential().getAccountId()
                     + ":" + request.getSource().getCredential().getPassword());
@@ -76,8 +76,8 @@ public class TransferController {
     public JobParameters translate(JobParametersBuilder builder, TransferJobRequest request) {
         System.out.println(request.toString());
         builder.addLong(TIME,System.currentTimeMillis());
-        builder.addString(SOURCE_CREDENTIAL, request.getSource().getCredential().toString());
-        builder.addString(DEST_CREDENTIAL, request.getDestination().getCredential().toString());
+        builder.addString(SOURCE_CREDENTIAL_ID, request.getSource().getCredId());
+        builder.addString(DEST_CREDENTIAL_ID, request.getDestination().getCredId());
         builder.addString(SOURCE_BASE_PATH, request.getSource().getInfo().getPath());
         builder.addString(DEST_BASE_PATH, request.getDestination().getInfo().getPath());
         builder.addString(INFO_LIST, request.getSource().getInfoList().toString());
