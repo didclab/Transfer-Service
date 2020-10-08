@@ -32,24 +32,9 @@ public class Reader {
         UrlResource urlResource = new UrlResource(sBasePath.substring(0, 6) + sAccountIdPass + "@" + sBasePath.substring(6) + fName);
         reader.setResource(urlResource);
         reader.setLineMapper((line, lineNumber) -> {
-            //System.out.println(lineNumber);
             line += "\n";
             return line.getBytes();
         });
-//        try {
-//            client.connect("localhost",2121);
-//            client.login("user","pass");
-//            FTPFile[] ftpFiles = client.listDirectories("");
-//
-//            for(FTPFile file:ftpFiles){
-//                InputStream iStream=client.retrieveFileStream(file.getName());
-//                File fileName = File.createTempFile("tmp", null);
-//                System.out.println(file.getName());
-//            }
-//        }
-//        catch (Exception ex){
-//            ex.printStackTrace();
-//        }
 
         return reader;
     }

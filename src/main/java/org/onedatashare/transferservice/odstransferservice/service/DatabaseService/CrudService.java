@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 public class CrudService {
     @Autowired
     MetaDataInterfaceImplementation metaDataServiceImplementation;
-    public void insertIntoDatabase(TransferJobRequest transferJobRequest){
+    public void insertBeforeTransfer(TransferJobRequest transferJobRequest){
         MetaDataDTO metaDataDTO = MetaDataDTO.builder().id(transferJobRequest.getId())
                                     .source(transferJobRequest.getSource().getType().toString())
                                     .destination(transferJobRequest.getDestination().getType().toString())
@@ -17,4 +17,10 @@ public class CrudService {
                                     .chunks(10).build();
         metaDataServiceImplementation.saveOrUpdate(metaDataDTO);
     }
+
+    public void insertAfterTransfer(MetaDataDTO metaDataDTO){
+        metaDataServiceImplementation.saveOrUpdate(metaDataDTO);
+    }
+
+
 }

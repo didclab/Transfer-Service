@@ -50,7 +50,7 @@ public class TransferController {
     @Async
     public ResponseEntity<String> start(@RequestBody TransferJobRequest request) throws Exception {
         List<JobParameters> params = fileToJob(request);
-        crudService.insertIntoDatabase(request);
+        crudService.insertBeforeTransfer(request);
         for(JobParameters par: params){
             asyncJobLauncher.run(job, par);
         }

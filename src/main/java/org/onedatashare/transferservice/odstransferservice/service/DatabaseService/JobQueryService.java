@@ -2,7 +2,9 @@ package org.onedatashare.transferservice.odstransferservice.service.DatabaseServ
 
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobInstance;
+import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.explore.JobExplorer;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -10,6 +12,8 @@ import org.springframework.stereotype.Service;
 public class JobQueryService {
     @Autowired
     JobExplorer jobExplorer;
+    @Autowired
+    JobRepository jobRepository;
 
     public JobExecution getJobExecution(JobInstance jobInstance) {
         return jobExplorer.getLastJobExecution(jobInstance);
@@ -18,8 +22,8 @@ public class JobQueryService {
         return jobExplorer.getLastJobInstance(jobName);
     }
 
-    //ToDO
-    //Write Query for Steps
-    //When Each File will be as a Single Step
+    public StepExecution getLastStepExecution(JobInstance jobInstance, String stepName) {
+        return jobRepository.getLastStepExecution(jobInstance,stepName);
+    }
 
 }
