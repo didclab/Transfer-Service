@@ -8,7 +8,6 @@ import org.onedatashare.transferservice.odstransferservice.controller.TransferCo
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
-import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
 import org.onedatashare.transferservice.odstransferservice.service.step.CustomReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.FTPWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.Processor;
@@ -66,7 +65,7 @@ public class JobControl {
             CustomReader customReader = new CustomReader();
             FTPWriter ftpWriter = new FTPWriter();
             String url = basePath.substring(0, 6) + id + ":" + pass + "@" + basePath.substring(6);
-            System.out.println("this is url: "+url);
+//            System.out.println("this is url: "+url);
             UrlResource urlResource = new UrlResource(url + file.getPath());
             customReader.setResource(urlResource);
             SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(file.getPath()).<DataChunk, DataChunk>chunk(getChunckSize());
@@ -88,7 +87,7 @@ public class JobControl {
                 request.getSource().getInfo().getPath(), request.getSource().getCredential().getAccountId(),
                 request.getSource().getCredential().getPassword());
         SimpleJobBuilder builder = jobBuilderFactory.get(request.getOwnerId())
-                .listener(context.getBean(JobCompletionListener.class))
+//                .listener(context.getBean(JobCompletionListener.class))
                 .incrementer(new RunIdIncrementer()).start(steps.get(0));
         logger.info(steps.remove(0).getName() + " in Job Control create job def\n");
         for (Step step : steps) {

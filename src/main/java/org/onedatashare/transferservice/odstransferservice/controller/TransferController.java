@@ -51,26 +51,10 @@ public class TransferController {
         JobParameters parameters = translate(new JobParametersBuilder(), request);
         //System.out.println(job+"---->>>"+parameters);
         jc.setRequest(request);
+        jc.setChunckSize(10);
         job = jc.createJobDefinition();
         asyncJobLauncher.run(job, parameters);
         return ResponseEntity.status(HttpStatus.OK).body("Your batch job has been submitted with \n ID: " + request.getId());
-    }
-
-    public List<JobParameters> fileToJob(TransferJobRequest request){
-        List<JobParameters> ret = new ArrayList<>();
-        JobParametersBuilder builder = new JobParametersBuilder();
-        for(EntityInfo info: request.getSource().getInfoList()){
-            builder.addLong(TIME,System.currentTimeMillis());
-            builder.addString(SOURCE_ACCOUNT_ID_PASS, request.getSource().getCredential().getAccountId()
-                    + ":" + request.getSource().getCredential().getPassword());
-            builder.addString(DESTINATION_ACCOUNT_ID_PASS, request.getDestination().getCredential().getAccountId()
-                    + ":" + request.getDestination().getCredential().getPassword());
-            builder.addString(SOURCE_BASE_PATH, request.getSource().getInfo().getPath());
-            builder.addString(DEST_BASE_PATH, request.getDestination().getInfo().getPath());
-            builder.addString(FILE_NAME, info.getPath());
-            ret.add(builder.toJobParameters());
-        }
-        return ret;
     }
 
     public JobParameters translate(JobParametersBuilder builder, TransferJobRequest request) {

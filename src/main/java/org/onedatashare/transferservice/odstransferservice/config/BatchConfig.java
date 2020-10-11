@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
-import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
 import org.onedatashare.transferservice.odstransferservice.service.step.CustomReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.Processor;
 import org.onedatashare.transferservice.odstransferservice.service.step.FTPWriter;
@@ -46,21 +45,6 @@ public class BatchConfig {
 
     @Autowired
     DataSourceConfig datasource;
-
-//    @Autowired
-//    FlatFileItemReader flatFileItemReader;
-
-//    @Autowired
-//    CustomReader customReader;
-
-//    @Autowired
-//    Reader reader;
-
-//    @Autowired
-//    FTPWriter ftpWriter;
-
-//    @Autowired
-//    Processor processor;
 
     @Autowired
     TaskExecutor stepTaskExecutor;
@@ -123,9 +107,9 @@ public class BatchConfig {
         return jobRegistryBeanPostProcessor;
     }
 
-    @Bean
-    public JobExecutionListener listener() {
-        return new JobCompletionListener();
-    }
+//    @Bean
+//    public JobExecutionListener listener() {
+//        return new JobCompletionListener();
+//    }
 
 }
