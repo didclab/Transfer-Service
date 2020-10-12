@@ -20,9 +20,7 @@ public class ODSConstants {
     public static final String DESTINATION_ACCOUNT_ID_PASS = "destinationAccountIdPass";
     public static final String SOURCE_BASE_PATH = "sourceBasePath";
     public static final String DEST_BASE_PATH = "destBasePath";
-    public static final String FILE_NAME = "fileName";
     public static final String SOURCE = "source";
-    public static final String DESTINATION = "destination";
     public static final String SOURCE_CREDENTIAL_ID = "sourceCredential";
     public static final String DEST_CREDENTIAL_ID = "destCredential";
     public static final String INFO_LIST = "infoList";

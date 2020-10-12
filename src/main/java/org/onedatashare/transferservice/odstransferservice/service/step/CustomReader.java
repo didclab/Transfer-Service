@@ -17,7 +17,6 @@ import org.springframework.util.ClassUtils;
 
 import java.io.*;
 import java.nio.charset.Charset;
-import java.util.Arrays;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
@@ -25,17 +24,9 @@ public class CustomReader<T> extends AbstractItemCountingItemStreamItemReader<Da
 
     public static final String DEFAULT_CHARSET = Charset.defaultCharset().name();
     Logger logger = LoggerFactory.getLogger(CustomReader.class);
-    //    int current = 0;
     private Resource resource;
-    //    private SimpleBinaryBufferedReaderFactory simpleBinaryBufferedReaderFactory;
-//    private DefaultBufferedReaderFactory defaultBufferedReaderFactory;
-//    private final BufferedReaderFactory bufferedReaderFactory;
-//    private InputStream reader;
-//    private OutputStream outputStream;
-//    private long sizeBuffer;
-    //No need now if we use our own ItemReader
     private final String encoding;
-//    private boolean noInput;
+
 
 
     OutputStream outputStream;
@@ -55,10 +46,10 @@ public class CustomReader<T> extends AbstractItemCountingItemStreamItemReader<Da
 
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) throws IOException {
-        System.out.println("Before step in custom reader------");
+        logger.info("Before step for : "+stepExecution.getStepName());
         sBasePath = stepExecution.getJobParameters().getString(SOURCE_BASE_PATH);
         dBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
-        fName = stepExecution.getJobParameters().getString(FILE_NAME);
+        fName = stepExecution.getStepName();
         String[] sAccountIdPass = stepExecution.getJobParameters().getString(SOURCE_ACCOUNT_ID_PASS).split(":");
         String[] dAccountIdPass = stepExecution.getJobParameters().getString(DESTINATION_ACCOUNT_ID_PASS).split(":");
         String[] sCredential = stepExecution.getJobParameters().getString(SOURCE_CREDENTIAL_ID).split(":");
@@ -73,15 +64,9 @@ public class CustomReader<T> extends AbstractItemCountingItemStreamItemReader<Da
         dPort = Integer.parseInt(dCredential[1]);
     }
 
-    //    @AfterStep
-//    public void afterStep() throws IOException {
-//        reader.close();
-//    }
     public CustomReader() {
         this.encoding = DEFAULT_CHARSET;
-//        this.bufferedReaderFactory = new DefaultBufferedReaderFactory();
         this.setName(ClassUtils.getShortName(CustomReader.class));
-//        this.noInput = false;
     }
 
 
@@ -105,6 +90,7 @@ public class CustomReader<T> extends AbstractItemCountingItemStreamItemReader<Da
         DataChunk dc = new DataChunk();
         dc.setOutputStream(outputStream);
         dc.setData(data);
+        dc.setFileName(fName);
         return dc;
     }
 
@@ -119,12 +105,8 @@ public class CustomReader<T> extends AbstractItemCountingItemStreamItemReader<Da
             //set as exceptions
             logger.warn("Input resource is not readable " + this.resource.getDescription());
         } else {
-            logger.info("fileName is : " + this.resource.getFilename());
             clientCreateSourceStream(sServerName, sPort, sAccountId, sPass, sBasePath.substring(13 + sAccountId.length() + sPass.length()), fName);
-            clientCreateDest(dServerName, dPort, dAccountId, dPass, dBasePath.substring(13 + dAccountId.length() + dPass.length()), fName);
-            //STREAM ARE COMING NULL
-            System.out.println("inputStream is :" + inputStream);
-            System.out.println("outputStream is :" + outputStream);
+            clientCreateDestStream(dServerName, dPort, dAccountId, dPass, dBasePath.substring(13 + dAccountId.length() + dPass.length()), fName);
         }
     }
 
@@ -142,28 +124,29 @@ public class CustomReader<T> extends AbstractItemCountingItemStreamItemReader<Da
 
     @SneakyThrows
     public void clientCreateSourceStream(String serverName, int port, String username, String password, String basePath, String fName) {
+        logger.info("Inside clientCreateSourceStream for : "+fName);
+
         FTPClient ftpClient = new FTPClient();
         ftpClient.connect(serverName, port);
         ftpClient.login(username, password);
         ftpClient.changeWorkingDirectory(basePath);
         ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
         ftpClient.setKeepAlive(true);
-        System.out.println("FileName list : " + Arrays.toString(ftpClient.listNames()));
-//        System.out.println("source status: " + ftpClient.getStatus());
-//        ftpClient.enterLocalPassiveMode();
-        ftpClient.completePendingCommand();//If used then FTPClient connection is stuck for infinite time.
+        ftpClient.enterLocalPassiveMode();
+//        ftpClient.completePendingCommand();
         this.inputStream = ftpClient.retrieveFileStream(fName);
     }
 
     @SneakyThrows
-    public void clientCreateDest(String serverName, int port, String username, String password, String basePath, String fName) {
+    public void clientCreateDestStream(String serverName, int port, String username, String password, String basePath, String fName) {
+        logger.info("Inside clientCreateDestStream for : "+fName);
         FTPClient ftpClient = new FTPClient();
         ftpClient.connect(serverName, port);
         ftpClient.login(username, password);
         ftpClient.changeWorkingDirectory(basePath);
         ftpClient.setKeepAlive(true);
         ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
-        System.out.println("dest status: " + ftpClient.getStatus());
+//        System.out.println("dest status: " + ftpClient.getStatus());
 //        ftpClient.completePendingCommand();
         this.outputStream = ftpClient.storeFileStream(fName);
     }

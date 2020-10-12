@@ -3,13 +3,8 @@ package org.onedatashare.transferservice.odstransferservice.service.step;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.batch.core.JobExecution;
-import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
-import org.springframework.batch.core.annotation.BeforeStep;
-import org.springframework.batch.core.annotation.BeforeWrite;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -25,7 +20,7 @@ public class FTPWriter implements ItemWriter<DataChunk> {
         writer.close();
     }
     public void write(List<? extends DataChunk> list) throws Exception {
-        logger.info("Inside Writer----------------");
+        logger.info("Inside Writer---writing chunk of : "+list.get(0).getFileName());
         if(writer == null){
             writer = list.get(0).getOutputStream();
         }
