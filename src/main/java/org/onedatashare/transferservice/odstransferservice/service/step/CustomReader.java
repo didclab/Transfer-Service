@@ -4,6 +4,7 @@ import lombok.SneakyThrows;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
+import org.onedatashare.transferservice.odstransferservice.model.EntityInfoMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
@@ -26,8 +27,10 @@ public class CustomReader<T> extends AbstractItemCountingItemStreamItemReader<Da
     Logger logger = LoggerFactory.getLogger(CustomReader.class);
     private Resource resource;
     private final String encoding;
+    private final int chunk = 4096;
 
 
+    long fsize;
 
     OutputStream outputStream;
     InputStream inputStream;
@@ -46,7 +49,7 @@ public class CustomReader<T> extends AbstractItemCountingItemStreamItemReader<Da
 
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) throws IOException {
-        logger.info("Before step for : "+stepExecution.getStepName());
+        logger.info("Before step for : " + stepExecution.getStepName());
         sBasePath = stepExecution.getJobParameters().getString(SOURCE_BASE_PATH);
         dBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
         fName = stepExecution.getStepName();
@@ -62,6 +65,8 @@ public class CustomReader<T> extends AbstractItemCountingItemStreamItemReader<Da
         sPort = Integer.parseInt(sCredential[1]);
         dServerName = dCredential[0];
         dPort = Integer.parseInt(dCredential[1]);
+        fsize = EntityInfoMap.getHm().getOrDefault(fName, 0l);
+        System.out.println("Fsize is ----------: "+fsize);
     }
 
     public CustomReader() {
@@ -82,15 +87,21 @@ public class CustomReader<T> extends AbstractItemCountingItemStreamItemReader<Da
     @SneakyThrows
     @Override
     protected DataChunk doRead() {
-        byte[] data = new byte[4];
+        if(fsize <=0)
+            return null;
+        byte[] data = new byte[chunk < fsize ? chunk : (int) fsize];
+        fsize -= chunk;
+
         int flag = this.inputStream.read(data);
         if (flag == -1) {
             return null;
         }
+
         DataChunk dc = new DataChunk();
         dc.setOutputStream(outputStream);
         dc.setData(data);
         dc.setFileName(fName);
+
         return dc;
     }
 
@@ -124,7 +135,7 @@ public class CustomReader<T> extends AbstractItemCountingItemStreamItemReader<Da
 
     @SneakyThrows
     public void clientCreateSourceStream(String serverName, int port, String username, String password, String basePath, String fName) {
-        logger.info("Inside clientCreateSourceStream for : "+fName);
+        logger.info("Inside clientCreateSourceStream for : " + fName);
 
         FTPClient ftpClient = new FTPClient();
         ftpClient.connect(serverName, port);
@@ -139,7 +150,7 @@ public class CustomReader<T> extends AbstractItemCountingItemStreamItemReader<Da
 
     @SneakyThrows
     public void clientCreateDestStream(String serverName, int port, String username, String password, String basePath, String fName) {
-        logger.info("Inside clientCreateDestStream for : "+fName);
+        logger.info("Inside clientCreateDestStream for : " + fName);
         FTPClient ftpClient = new FTPClient();
         ftpClient.connect(serverName, port);
         ftpClient.login(username, password);

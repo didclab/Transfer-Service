@@ -14,4 +14,5 @@ public class DataChunk {
     byte[] data;
     String fileName;
     String basePath;
+    long size;
 }

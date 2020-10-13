@@ -1,6 +1,7 @@
 package org.onedatashare.transferservice.odstransferservice.controller;
 
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
+import org.onedatashare.transferservice.odstransferservice.model.EntityInfoMap;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.service.JobControl;
 import org.slf4j.Logger;
@@ -16,9 +17,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+
+import java.util.*;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
@@ -49,6 +49,11 @@ public class TransferController {
     @Async
     public ResponseEntity<String> start(@RequestBody TransferJobRequest request) throws Exception {
         JobParameters parameters = translate(new JobParametersBuilder(), request);
+        Map<String,Long> hm = new HashMap<>();
+        for(EntityInfo ei:request.getSource().getInfoList()){
+            hm.put(ei.getPath(),ei.getSize());
+        }
+        EntityInfoMap.setHm(hm);
         //System.out.println(job+"---->>>"+parameters);
         jc.setRequest(request);
         jc.setChunckSize(10);
