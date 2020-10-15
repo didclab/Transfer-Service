@@ -10,8 +10,9 @@ import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 //import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
-import org.onedatashare.transferservice.odstransferservice.service.step.CustomReader;
-import org.onedatashare.transferservice.odstransferservice.service.step.FTPWriter;
+import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
+import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPReader;
+import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
@@ -94,13 +95,13 @@ public class JobControl {
         List<Flow> flows = new ArrayList<>();
         for (EntityInfo file : infoList) {
 
-            CustomReader customReader = new CustomReader();
+            FTPReader ftpReader = new FTPReader();
             FTPWriter ftpWriter = new FTPWriter();
             String url = basePath.substring(0, 6) + id + ":" + pass + "@" + basePath.substring(6);
             SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(file.getPath()).<DataChunk, DataChunk>chunk(7);
             switch (request.getSource().getType()) {
                 case ftp:
-                    child.reader(customReader).writer(ftpWriter).build();
+                    child.reader(ftpReader).writer(ftpWriter).build();
                     break;
             }
             flows.add(new FlowBuilder<Flow>(id + basePath).start(child.build()).build());
@@ -133,6 +134,24 @@ public class JobControl {
 //        }
 //        return steps;
 //    }
+
+    /**
+     * @return
+     * @throws MalformedURLException
+     */
+    @Lazy
+    @Bean
+    public Job createParallelJobDefinition() throws MalformedURLException {
+        logger.info("create parallel job definition function");
+        List<Flow> flows = createConcurrentFlow(request.getSource().getInfoList(),
+                request.getSource().getInfo().getPath(), request.getSource().getCredential().getAccountId(),
+                request.getSource().getCredential().getPassword());
+        Flow[] fl = new Flow[flows.size()];
+        Flow f = new FlowBuilder<SimpleFlow>("splitFlow").split(threadPoolConfig.stepTaskExecutor()).add(flows.toArray(fl))
+                .build();
+        return jobBuilderFactory.get(request.getOwnerId()).listener(new JobCompletionListener())
+                .incrementer(new RunIdIncrementer()).start(f).build().build();
+    }
 
     @Lazy
     @Bean

@@ -1,4 +1,4 @@
-package org.onedatashare.transferservice.odstransferservice.service.step;
+package org.onedatashare.transferservice.odstransferservice.service.step.ftp;
 
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.slf4j.Logger;
@@ -15,10 +15,12 @@ public class FTPWriter implements ItemWriter<DataChunk> {
     Logger logger = LoggerFactory.getLogger(FTPWriter.class);
 
     OutputStream writer = null;
+
     @AfterStep
     public void afterStep() throws IOException {
         writer.close();
     }
+
     public void write(List<? extends DataChunk> list) throws Exception {
         logger.info("Inside Writer---writing chunk of : "+list.get(0).getFileName());
         if(writer == null){

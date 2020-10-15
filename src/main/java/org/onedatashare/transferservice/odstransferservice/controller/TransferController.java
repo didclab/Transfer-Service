@@ -29,8 +29,6 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
 @RequestMapping("/api/v1/transfer")
 public class TransferController {
 
-    Logger logger = LoggerFactory.getLogger(TransferController.class);
-
     @Autowired
     JobLauncher jobLauncher;
 
@@ -39,8 +37,6 @@ public class TransferController {
 
     @Autowired
     JobBuilderFactory jobBuilderFactory;
-
-    Job job;
 
     @Autowired
     JobLauncher asyncJobLauncher;
@@ -56,9 +52,8 @@ public class TransferController {
         EntityInfoMap.setHm(hm);
         //System.out.println(job+"---->>>"+parameters);
         jc.setRequest(request);
-        jc.setChunckSize(4096);
-        job = jc.createJobDefinition();
-        asyncJobLauncher.run(job, parameters);
+        jc.setChunckSize(SIXTYFOUR_KB); //64kb.
+        asyncJobLauncher.run(jc.createJobDefinition(), parameters);
         return ResponseEntity.status(HttpStatus.OK).body("Your batch job has been submitted with \n ID: " + request.getId());
     }
 

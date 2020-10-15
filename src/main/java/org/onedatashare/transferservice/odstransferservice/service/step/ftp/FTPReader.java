@@ -1,4 +1,4 @@
-package org.onedatashare.transferservice.odstransferservice.service.step;
+package org.onedatashare.transferservice.odstransferservice.service.step.ftp;
 
 import lombok.SneakyThrows;
 import org.apache.commons.net.ftp.FTP;
@@ -13,18 +13,18 @@ import org.springframework.batch.item.file.ResourceAwareItemReaderItemStream;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.io.Resource;
-import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
-import java.io.*;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.Charset;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
-public class CustomReader<T> extends AbstractItemCountingItemStreamItemReader<DataChunk> implements ResourceAwareItemReaderItemStream<DataChunk>, InitializingBean {
+public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataChunk> implements ResourceAwareItemReaderItemStream<DataChunk>, InitializingBean {
 
     public static final String DEFAULT_CHARSET = Charset.defaultCharset().name();
-    Logger logger = LoggerFactory.getLogger(CustomReader.class);
+    Logger logger = LoggerFactory.getLogger(FTPReader.class);
     private Resource resource;
     private final String encoding;
     private final int chunk = 4096;
@@ -69,9 +69,9 @@ public class CustomReader<T> extends AbstractItemCountingItemStreamItemReader<Da
         System.out.println("Fsize is ----------: " + fsize);
     }
 
-    public CustomReader() {
+    public FTPReader() {
         this.encoding = DEFAULT_CHARSET;
-        this.setName(ClassUtils.getShortName(CustomReader.class));
+        this.setName(ClassUtils.getShortName(FTPReader.class));
     }
 
 
@@ -89,8 +89,8 @@ public class CustomReader<T> extends AbstractItemCountingItemStreamItemReader<Da
     protected DataChunk doRead() {
         if (fsize <= 0)
             return null;
-        byte[] data = new byte[chunk < fsize ? chunk : (int) fsize];
-        fsize -= chunk;
+        byte[] data = new byte[SIXTYFOUR_KB < fsize ? SIXTYFOUR_KB : (int) fsize];
+        fsize -= SIXTYFOUR_KB;
 
         int flag = this.inputStream.read(data);
         if (flag == -1) {
