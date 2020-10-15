@@ -12,7 +12,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.*;
 
@@ -66,6 +69,26 @@ public class TransferController {
         builder.addString(PRIORITY,String.valueOf(request.getPriority()));
         builder.addString(OWNER_ID,request.getOwnerId());
         return builder.toJobParameters();
+    }
+  
+      public List<JobParameters> fileToJob(TransferJobRequest request){
+        List<JobParameters> ret = new ArrayList<>();
+        for(EntityInfo info: request.getSource().getInfoList()){
+            JobParametersBuilder builder = new JobParametersBuilder();
+            builder.addString("id",request.getId());
+            builder.addString("source",request.getSource().getType().toString());
+            builder.addString("destination",request.getDestination().getType().toString());
+            builder.addLong("time",System.currentTimeMillis());
+            builder.addString("sourceAccountIdPass", request.getSource().getCredential().getAccountId()
+                    + ":" + request.getSource().getCredential().getPassword());
+            builder.addString("destinationAccountIdPass", request.getDestination().getCredential().getAccountId()
+                    + ":" + request.getDestination().getCredential().getPassword());
+            builder.addString("sourceBasePath", request.getSource().getInfo().getPath());
+            builder.addString("destBasePath", request.getDestination().getInfo().getPath());
+            builder.addString("fileName", info.getPath());
+            ret.add(builder.toJobParameters());
+        }
+        return ret;
     }
 }
 
