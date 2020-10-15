@@ -13,12 +13,12 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
     @SneakyThrows
     @Override
     public void beforeJob(JobExecution jobExecution) {
-        logger.info("BEFOR JOB---------------------" + System.currentTimeMillis());
+        logger.info("BEFOR JOB-------------------present time--" + System.currentTimeMillis());
     }
 
     @SneakyThrows
     @Override
     public void afterJob(JobExecution jobExecution) {
-        logger.info("After JOB--------------------" + System.currentTimeMillis());
+        logger.info("After JOB------------------present time--" + System.currentTimeMillis());
     }
 }

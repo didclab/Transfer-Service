@@ -4,12 +4,8 @@ import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfoMap;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.service.JobControl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
-import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,7 +49,7 @@ public class TransferController {
         //System.out.println(job+"---->>>"+parameters);
         jc.setRequest(request);
         jc.setChunckSize(SIXTYFOUR_KB); //64kb.
-        asyncJobLauncher.run(jc.createJobDefinition(), parameters);
+        asyncJobLauncher.run(jc.concurrentJobDefination(), parameters);
         return ResponseEntity.status(HttpStatus.OK).body("Your batch job has been submitted with \n ID: " + request.getId());
     }
 

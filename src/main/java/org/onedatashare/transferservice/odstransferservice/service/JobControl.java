@@ -135,27 +135,10 @@ public class JobControl {
 //        return steps;
 //    }
 
-    /**
-     * @return
-     * @throws MalformedURLException
-     */
-    @Lazy
-    @Bean
-    public Job createParallelJobDefinition() throws MalformedURLException {
-        logger.info("create parallel job definition function");
-        List<Flow> flows = createConcurrentFlow(request.getSource().getInfoList(),
-                request.getSource().getInfo().getPath(), request.getSource().getCredential().getAccountId(),
-                request.getSource().getCredential().getPassword());
-        Flow[] fl = new Flow[flows.size()];
-        Flow f = new FlowBuilder<SimpleFlow>("splitFlow").split(threadPoolConfig.stepTaskExecutor()).add(flows.toArray(fl))
-                .build();
-        return jobBuilderFactory.get(request.getOwnerId()).listener(new JobCompletionListener())
-                .incrementer(new RunIdIncrementer()).start(f).build().build();
-    }
 
     @Lazy
     @Bean
-    public Job createJobDefinition() throws MalformedURLException {
+    public Job concurrentJobDefination() throws MalformedURLException {
         logger.info("createJobDefination function");
         List<Flow> flows = createConcurrentFlow(request.getSource().getInfoList(),
                 request.getSource().getInfo().getPath(), request.getSource().getCredential().getAccountId(),
@@ -163,7 +146,7 @@ public class JobControl {
         Flow[] fl = new Flow[flows.size()];
         Flow f = new FlowBuilder<SimpleFlow>("splitFlow").split(threadPoolConfig.stepTaskExecutor()).add(flows.toArray(fl))
                 .build();
-        return jobBuilderFactory.get(request.getOwnerId())
+        return jobBuilderFactory.get(request.getOwnerId()).listener(new JobCompletionListener())
                 .incrementer(new RunIdIncrementer()).start(f).build().build();
     }
 }
