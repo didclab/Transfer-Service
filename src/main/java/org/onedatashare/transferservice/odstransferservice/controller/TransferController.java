@@ -56,7 +56,7 @@ public class TransferController {
         EntityInfoMap.setHm(hm);
         //System.out.println(job+"---->>>"+parameters);
         jc.setRequest(request);
-        jc.setChunckSize(10);
+        jc.setChunckSize(4096);
         job = jc.createJobDefinition();
         asyncJobLauncher.run(job, parameters);
         return ResponseEntity.status(HttpStatus.OK).body("Your batch job has been submitted with \n ID: " + request.getId());

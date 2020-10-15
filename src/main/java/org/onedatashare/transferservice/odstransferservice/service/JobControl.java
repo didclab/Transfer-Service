@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.SneakyThrows;
+import org.onedatashare.transferservice.odstransferservice.config.ApplicationThreadPoolConfig;
+import org.onedatashare.transferservice.odstransferservice.config.DataSourceConfig;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
@@ -16,16 +18,23 @@ import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
-import org.springframework.batch.core.job.builder.SimpleJobBuilder;
+import org.springframework.batch.core.job.builder.FlowBuilder;
+import org.springframework.batch.core.job.flow.Flow;
+import org.springframework.batch.core.job.flow.support.SimpleFlow;
+import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.batch.core.launch.support.SimpleJobLauncher;
+import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
 import org.springframework.batch.core.step.builder.SimpleStepBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.core.io.UrlResource;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
 
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,6 +43,37 @@ import java.util.List;
 @Getter
 @Setter
 public class JobControl {
+
+    @Autowired
+    private ApplicationThreadPoolConfig threadPoolConfig;
+
+
+    @Autowired
+    DataSourceConfig datasource;
+
+    @Lazy
+    @Bean
+    public JobLauncher asyncJobLauncher() {
+        SimpleJobLauncher jobLauncher = new SimpleJobLauncher();
+        jobLauncher.setJobRepository(this.createJobRepository());
+        jobLauncher.setTaskExecutor(threadPoolConfig.jobRequestThreadPool());
+        logger.info("Job launcher for the transfer controller has a thread pool");
+        return jobLauncher;
+    }
+
+    //    @Bean
+    @SneakyThrows
+    protected JobRepository createJobRepository() {
+        JobRepositoryFactoryBean factory = new JobRepositoryFactoryBean();
+        factory.setDataSource(datasource.getH2DataSource());
+        factory.setTransactionManager(new DataSourceTransactionManager(datasource.getH2DataSource()));
+        factory.setIsolationLevelForCreate("ISOLATION_SERIALIZABLE");
+        factory.setTablePrefix("BATCH_");
+        factory.setMaxVarCharLength(1000);
+        return factory.getObject();
+    }
+
+
     int chunckSize; //by default this is the file size
     public TransferJobRequest request;
     Step parent;
@@ -49,43 +89,62 @@ public class JobControl {
     @Autowired
     StepBuilderFactory stepBuilderFactory;
 
-    @SneakyThrows
-    private List<Step> createSteps(List<EntityInfo> infoList, String basePath, String id, String pass) {
-        List<Step> steps = new ArrayList<>();
+    private List<Flow> createConcurrentFlow(List<EntityInfo> infoList, String basePath, String id, String pass) throws MalformedURLException {
+        logger.info("CreateConcurrentFlow function");
+        List<Flow> flows = new ArrayList<>();
         for (EntityInfo file : infoList) {
+
             CustomReader customReader = new CustomReader();
             FTPWriter ftpWriter = new FTPWriter();
             String url = basePath.substring(0, 6) + id + ":" + pass + "@" + basePath.substring(6);
-//            System.out.println("this is url: "+url);
-            UrlResource urlResource = new UrlResource(url + file.getPath());
-            customReader.setResource(urlResource);
-            SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(file.getPath()).<DataChunk, DataChunk>chunk(getChunckSize());
+            SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(file.getPath()).<DataChunk, DataChunk>chunk(7);
             switch (request.getSource().getType()) {
                 case ftp:
                     child.reader(customReader).writer(ftpWriter).build();
                     break;
             }
-            steps.add(child.build());
-            logger.warn(urlResource.getFilename());
+            flows.add(new FlowBuilder<Flow>(id + basePath).start(child.build()).build());
+
         }
-        return steps;
+        return flows;
     }
+
+
+//    @SneakyThrows
+//    private List<Step> createSteps(List<EntityInfo> infoList, String basePath, String id, String pass) {
+//        List<Step> steps = new ArrayList<>();
+//
+//        for (EntityInfo file : infoList) {
+////            FlowBuilder fb = new FlowBuilder("flow");
+//            CustomReader customReader = new CustomReader();
+//            FTPWriter ftpWriter = new FTPWriter();
+//            String url = basePath.substring(0, 6) + id + ":" + pass + "@" + basePath.substring(6);
+////            System.out.println("this is url: "+url);
+//            UrlResource urlResource = new UrlResource(url + file.getPath());
+//            customReader.setResource(urlResource);
+//            SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(file.getPath()).<DataChunk, DataChunk>chunk(20);
+//            switch (request.getSource().getType()) {
+//                case ftp:
+//                    child.reader(customReader).writer(ftpWriter).build();
+//                    break;
+//            }
+//            steps.add(child.build());
+//            logger.warn(urlResource.getFilename());
+//        }
+//        return steps;
+//    }
 
     @Lazy
     @Bean
-    public Job createJobDefinition() {
-        List<Step> steps = createSteps(request.getSource().getInfoList(),
+    public Job createJobDefinition() throws MalformedURLException {
+        logger.info("createJobDefination function");
+        List<Flow> flows = createConcurrentFlow(request.getSource().getInfoList(),
                 request.getSource().getInfo().getPath(), request.getSource().getCredential().getAccountId(),
                 request.getSource().getCredential().getPassword());
-        SimpleJobBuilder builder = jobBuilderFactory.get(request.getOwnerId())
-                //.listener(context.getBean(JobCompletionListener.class))
-                .incrementer(new RunIdIncrementer()).start(steps.get(0));
-        logger.info(steps.remove(0).getName() + " in Job Control create job def\n");
-        for (Step step : steps) {
-            logger.info(step.getName() + " in Job Control create job def\n");
-            builder.next(step);
-        }
-        return builder.build();
+        Flow[] fl = new Flow[flows.size()];
+        Flow f = new FlowBuilder<SimpleFlow>("splitFlow").split(threadPoolConfig.stepTaskExecutor()).add(flows.toArray(fl))
+                .build();
+        return jobBuilderFactory.get(request.getOwnerId())
+                .incrementer(new RunIdIncrementer()).start(f).build().build();
     }
-
 }

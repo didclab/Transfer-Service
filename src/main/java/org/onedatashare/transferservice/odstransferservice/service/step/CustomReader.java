@@ -48,7 +48,7 @@ public class CustomReader<T> extends AbstractItemCountingItemStreamItemReader<Da
 
 
     @BeforeStep
-    public void beforeStep(StepExecution stepExecution) throws IOException {
+    public void beforeStep(StepExecution stepExecution){
         logger.info("Before step for : " + stepExecution.getStepName());
         sBasePath = stepExecution.getJobParameters().getString(SOURCE_BASE_PATH);
         dBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
@@ -66,7 +66,7 @@ public class CustomReader<T> extends AbstractItemCountingItemStreamItemReader<Da
         dServerName = dCredential[0];
         dPort = Integer.parseInt(dCredential[1]);
         fsize = EntityInfoMap.getHm().getOrDefault(fName, 0l);
-        System.out.println("Fsize is ----------: "+fsize);
+        System.out.println("Fsize is ----------: " + fsize);
     }
 
     public CustomReader() {
@@ -87,7 +87,7 @@ public class CustomReader<T> extends AbstractItemCountingItemStreamItemReader<Da
     @SneakyThrows
     @Override
     protected DataChunk doRead() {
-        if(fsize <=0)
+        if (fsize <= 0)
             return null;
         byte[] data = new byte[chunk < fsize ? chunk : (int) fsize];
         fsize -= chunk;
@@ -106,19 +106,9 @@ public class CustomReader<T> extends AbstractItemCountingItemStreamItemReader<Da
     }
 
     @Override
-    protected void doOpen() throws Exception {
-        Assert.notNull(this.resource, "Input resource must be set");
-//        this.noInput = true;
-        if (!this.resource.exists()) {
-            //set as exceptions
-            logger.warn("Input resource does not exist " + this.resource.getDescription());
-        } else if (!this.resource.isReadable()) {
-            //set as exceptions
-            logger.warn("Input resource is not readable " + this.resource.getDescription());
-        } else {
-            clientCreateSourceStream(sServerName, sPort, sAccountId, sPass, sBasePath.substring(13 + sAccountId.length() + sPass.length()), fName);
-            clientCreateDestStream(dServerName, dPort, dAccountId, dPass, dBasePath.substring(13 + dAccountId.length() + dPass.length()), fName);
-        }
+    protected void doOpen(){
+        clientCreateSourceStream(sServerName, sPort, sAccountId, sPass, sBasePath.substring(13 + sAccountId.length() + sPass.length()), fName);
+        clientCreateDestStream(dServerName, dPort, dAccountId, dPass, dBasePath.substring(13 + dAccountId.length() + dPass.length()), fName);
     }
 
     @Override
@@ -157,8 +147,6 @@ public class CustomReader<T> extends AbstractItemCountingItemStreamItemReader<Da
         ftpClient.changeWorkingDirectory(basePath);
         ftpClient.setKeepAlive(true);
         ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
-//        System.out.println("dest status: " + ftpClient.getStatus());
-//        ftpClient.completePendingCommand();
         this.outputStream = ftpClient.storeFileStream(fName);
     }
 }
