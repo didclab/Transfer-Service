@@ -13,7 +13,6 @@ public class CrudService {
         MetaDataDTO metaDataDTO = MetaDataDTO.builder().id(transferJobRequest.getId())
                                     .source(transferJobRequest.getSource().getType().toString())
                                     .destination(transferJobRequest.getDestination().getType().toString())
-                                    .type("mp4")
                                     .chunks(10).build();
         metaDataServiceImplementation.saveOrUpdate(metaDataDTO);
     }

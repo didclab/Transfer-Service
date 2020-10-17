@@ -16,7 +16,18 @@ public class ODSConstants {
     public static final String FILE_PATH = "filePath";
     public static final String FILE_ID = "file_id";
     public static final String TIME = "time";
-
+    public static final String SOURCE_ACCOUNT_ID_PASS= "sourceAccountIdPass";
+    public static final String DESTINATION_ACCOUNT_ID_PASS = "destinationAccountIdPass";
+    public static final String SOURCE_BASE_PATH = "sourceBasePath";
+    public static final String DEST_BASE_PATH = "destBasePath";
+    public static final String SOURCE = "source";
+    public static final String SOURCE_CREDENTIAL_ID = "sourceCredential";
+    public static final String DEST_CREDENTIAL_ID = "destCredential";
+    public static final String INFO_LIST = "infoList";
+    public static final String PRIORITY = "priority";
+    public static final String OWNER_ID = "ownerId";
+    public static final String TRANSFER_OPTIONS = "transferOptions";
+    public static final int SIXTYFOUR_KB=4096;
     public static final int TRANSFER_SLICE_SIZE = 1<<20;
 
 }

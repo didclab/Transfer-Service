@@ -27,7 +27,7 @@ public class ApplicationThreadPoolConfig{
     private int JOB_MAX_POOL_SIZE=12;
     @Setter
     @Getter
-    private int STEP_POOL_SIZE=10;
+    private int STEP_POOL_SIZE=5;
     @Setter
     @Getter
     private int STEP_MAX_POOL_SIZE=15;

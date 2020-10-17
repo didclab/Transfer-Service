@@ -7,12 +7,13 @@ import org.springframework.batch.item.ItemProcessor;
 import org.springframework.stereotype.Component;
 
 @Component
-public class Processor implements ItemProcessor<byte[], DataChunk> {
+public class Processor implements ItemProcessor<DataChunk, DataChunk> {
 
     Logger logger = LoggerFactory.getLogger(Processor.class);
 
     @Override
-    public DataChunk process(byte[] bytes) throws Exception {
-        return null;
+    public DataChunk process(DataChunk dc) throws Exception {
+//        System.out.println("Processor :"+dc.getData());
+        return dc;
     }
 }

@@ -20,16 +20,12 @@ public class MetaDataDTO {
     private String source;
     //Destination EndPoint
     private String destination;
-    //Type of the File
-    private String type;
     //Transfer Speed
     private int speed;
     //What kind of optimization used
     private String optimizations;
     //Chunk Size during transfer
     private int chunks;
-    //Total time to transfer
-    private int time;
 
     public String getId() {
         return id;
@@ -55,14 +51,6 @@ public class MetaDataDTO {
         this.destination = destination;
     }
 
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
-    }
-
     public int getSpeed() {
         return speed;
     }
@@ -85,13 +73,5 @@ public class MetaDataDTO {
 
     public void setChunks(int chunks) {
         this.chunks = chunks;
-    }
-
-    public int getTime() {
-        return time;
-    }
-
-    public void setTime(int time) {
-        this.time = time;
     }
 }
