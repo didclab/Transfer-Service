@@ -3,6 +3,7 @@ package org.onedatashare.transferservice.odstransferservice.controller;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfoMap;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
+import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.CrudService;
 import org.onedatashare.transferservice.odstransferservice.service.JobControl;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
@@ -40,18 +41,22 @@ public class TransferController {
     @Autowired
     JobLauncher asyncJobLauncher;
 
+    @Autowired
+    CrudService crudService;
+
     @RequestMapping(value = "/start", method = RequestMethod.POST)
     @Async
     public ResponseEntity<String> start(@RequestBody TransferJobRequest request) throws Exception {
         JobParameters parameters = translate(new JobParametersBuilder(), request);
         Map<String,Long> hm = new HashMap<>();
+        crudService.insertBeforeTransfer(request);
         for(EntityInfo ei:request.getSource().getInfoList()){
             hm.put(ei.getPath(),ei.getSize());
         }
         EntityInfoMap.setHm(hm);
         //System.out.println(job+"---->>>"+parameters);
         jc.setRequest(request);
-        jc.setChunckSize(SIXTYFOUR_KB); //64kb.
+        jc.setChunkSize(SIXTYFOUR_KB); //64kb.
         asyncJobLauncher.run(jc.concurrentJobDefination(), parameters);
         return ResponseEntity.status(HttpStatus.OK).body("Your batch job has been submitted with \n ID: " + request.getId());
     }

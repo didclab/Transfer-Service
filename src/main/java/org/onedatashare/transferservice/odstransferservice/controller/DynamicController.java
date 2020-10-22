@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/transfer/update")
-public class DynamiController {
-    Logger logger = LoggerFactory.getLogger(DynamiController.class);
+public class DynamicController {
+    Logger logger = LoggerFactory.getLogger(DynamicController.class);
 
     @Autowired
     ApplicationThreadPoolConfig config;

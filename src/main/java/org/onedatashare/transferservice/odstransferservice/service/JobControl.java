@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.DefaultBatchConfigurer;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.job.builder.FlowBuilder;
@@ -34,7 +35,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 
+import javax.sql.DataSource;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,14 +46,28 @@ import java.util.List;
 @NoArgsConstructor
 @Getter
 @Setter
-public class JobControl {
+public class JobControl extends DefaultBatchConfigurer {
 
+    private DataSource dataSource;
+    private PlatformTransactionManager transactionManager;
     @Autowired
     private ApplicationThreadPoolConfig threadPoolConfig;
 
-
     @Autowired
     DataSourceConfig datasource;
+
+    @Autowired(required = false)
+    public void setDatasource(DataSource datasource){
+        this.dataSource = datasource;
+        this.transactionManager = new DataSourceTransactionManager(dataSource);
+
+    }
+
+    @Override
+    public PlatformTransactionManager getTransactionManager() {
+        return transactionManager;
+    }
+
 
     @Lazy
     @Bean
@@ -66,8 +83,8 @@ public class JobControl {
     @SneakyThrows
     protected JobRepository createJobRepository() {
         JobRepositoryFactoryBean factory = new JobRepositoryFactoryBean();
-        factory.setDataSource(datasource.getH2DataSource());
-        factory.setTransactionManager(new DataSourceTransactionManager(datasource.getH2DataSource()));
+        factory.setDataSource(dataSource);
+        factory.setTransactionManager(transactionManager);
         factory.setIsolationLevelForCreate("ISOLATION_SERIALIZABLE");
         factory.setTablePrefix("BATCH_");
         factory.setMaxVarCharLength(1000);
@@ -75,7 +92,7 @@ public class JobControl {
     }
 
 
-    int chunckSize; //by default this is the file size
+    int chunkSize; //by default this is the file size
     public TransferJobRequest request;
     Step parent;
     Logger logger = LoggerFactory.getLogger(JobControl.class);
@@ -90,6 +107,7 @@ public class JobControl {
     @Autowired
     StepBuilderFactory stepBuilderFactory;
 
+
     private List<Flow> createConcurrentFlow(List<EntityInfo> infoList, String basePath, String id, String pass) throws MalformedURLException {
         logger.info("CreateConcurrentFlow function");
         List<Flow> flows = new ArrayList<>();
@@ -101,7 +119,11 @@ public class JobControl {
             SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(file.getPath()).<DataChunk, DataChunk>chunk(7);
             switch (request.getSource().getType()) {
                 case ftp:
-                    child.reader(ftpReader).writer(ftpWriter).build();
+                    child.reader(ftpReader).writer(ftpWriter)
+                            .faultTolerant()
+                            .retry(Exception.class)
+                            .retryLimit(2)
+                            .build();
                     break;
             }
             flows.add(new FlowBuilder<Flow>(id + basePath).start(child.build()).build());

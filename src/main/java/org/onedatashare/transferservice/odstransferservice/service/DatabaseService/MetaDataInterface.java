@@ -2,7 +2,7 @@ package org.onedatashare.transferservice.odstransferservice.service.DatabaseServ
 
 import org.onedatashare.transferservice.odstransferservice.model.MetaDataDTO;
 
-public interface MetaDataService {
+public interface MetaDataInterface {
 
     //Insert Statement
     MetaDataDTO saveOrUpdate(MetaDataDTO metaData);
