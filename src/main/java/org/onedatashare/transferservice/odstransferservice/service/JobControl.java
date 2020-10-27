@@ -57,7 +57,7 @@ public class JobControl extends DefaultBatchConfigurer {
     DataSourceConfig datasource;
 
     @Autowired(required = false)
-    public void setDatasource(DataSource datasource){
+    public void setDatasource(DataSource datasource) {
         this.dataSource = datasource;
         this.transactionManager = new DataSourceTransactionManager(dataSource);
 
@@ -115,8 +115,7 @@ public class JobControl extends DefaultBatchConfigurer {
 
             FTPReader ftpReader = new FTPReader();
             FTPWriter ftpWriter = new FTPWriter();
-            String url = basePath.substring(0, 6) + id + ":" + pass + "@" + basePath.substring(6);
-            SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(file.getPath()).<DataChunk, DataChunk>chunk(7);
+            SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(file.getPath()).<DataChunk, DataChunk>chunk(1024);
             switch (request.getSource().getType()) {
                 case ftp:
                     child.reader(ftpReader).writer(ftpWriter)

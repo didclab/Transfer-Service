@@ -27,7 +27,7 @@ public class ODSConstants {
     public static final String PRIORITY = "priority";
     public static final String OWNER_ID = "ownerId";
     public static final String TRANSFER_OPTIONS = "transferOptions";
-    public static final int SIXTYFOUR_KB=4096;
+    public static final int SIXTYFOUR_KB=64000;
     public static final int TRANSFER_SLICE_SIZE = 1<<20;
 
 }
