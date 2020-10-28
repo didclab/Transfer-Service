@@ -32,7 +32,7 @@ public class FTPWriter implements ItemWriter<DataChunk> {
     int dPort;
 
     @BeforeStep
-    public void beforeStep(StepExecution stepExecution){
+    public void beforeStep(StepExecution stepExecution) {
         drainMap = new HashMap<>();
         this.stepName = stepExecution.getStepName();
         dBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
@@ -50,16 +50,18 @@ public class FTPWriter implements ItemWriter<DataChunk> {
         OutputStream steam = drainMap.remove(this.stepName);
         steam.close();
     }
-    public OutputStream getStream(String stepName){
-        if(drainMap.containsKey(stepName)){
+
+    public OutputStream getStream(String stepName) throws IOException {
+        if (drainMap.containsKey(stepName)) {
             return drainMap.get(stepName);
-        }else{
-            return ftpDest(this.dServerName, this.dPort, this.dAccountId, this.dPass, this.dBasePath);
+        } else {
+            ftpDest(this.dServerName, this.dPort, this.dAccountId, this.dPass, this.dBasePath);
+            return drainMap.get(stepName);
         }
     }
 
-    @SneakyThrows
-    public OutputStream ftpDest(String serverName, int port, String username, String password, String basePath){
+    public void ftpDest(String serverName, int port, String username, String password, String basePath) throws IOException {
+        logger.info("Creating ftpDest---");
         FTPClient ftpClient = new FTPClient();
         ftpClient.connect(serverName, port);
         ftpClient.login(username, password);
@@ -68,11 +70,14 @@ public class FTPWriter implements ItemWriter<DataChunk> {
         ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
         ftpClient.setAutodetectUTF8(true);
         ftpClient.setControlKeepAliveTimeout(300);
-        return ftpClient.storeFileStream(this.stepName);
+        drainMap.put(this.stepName, ftpClient.storeFileStream(this.stepName));
     }
+
     public void write(List<? extends DataChunk> list) throws Exception {
-        logger.info("Inside Writer---writing chunk of : "+list.get(0).getFileName());
+        logger.info("Inside Writer---writing chunk of : " + list.get(0).getFileName());
         OutputStream destination = getStream(this.stepName);
+
+        logger.info("hashMap size : " + drainMap.size());
         for (DataChunk b : list) {
             destination.write(b.getData());
             destination.flush();
