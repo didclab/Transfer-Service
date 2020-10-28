@@ -3,6 +3,13 @@ package org.onedatashare.transferservice.odstransferservice.service.step.ftp;
 import lombok.SneakyThrows;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
+import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileSystemOptions;
+import org.apache.commons.vfs2.VFS;
+import org.apache.commons.vfs2.auth.StaticUserAuthenticator;
+import org.apache.commons.vfs2.impl.DefaultFileSystemConfigBuilder;
+import org.apache.commons.vfs2.provider.ftp.FtpFileSystemConfigBuilder;
+import org.apache.commons.vfs2.provider.ftp.FtpFileType;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +36,8 @@ public class FTPWriter implements ItemWriter<DataChunk> {
     private String dServerName;
     private String dPass;
     private int dPort;
+
+    FileObject foDest;
 
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
@@ -58,6 +67,9 @@ public class FTPWriter implements ItemWriter<DataChunk> {
 
     public void ftpDest(String serverName, int port, String username, String password, String basePath) throws IOException {
         logger.info("Creating ftpDest---");
+
+        //***GETTING STREAM USING FTPClient
+
         FTPClient ftpClient = new FTPClient();
         ftpClient.connect(serverName, port);
         ftpClient.login(username, password);
@@ -68,6 +80,21 @@ public class FTPWriter implements ItemWriter<DataChunk> {
 //        ftpClient.setAutodetectUTF8(true);
 //        ftpClient.setControlKeepAliveTimeout(300);
         drainMap.put(this.stepName, ftpClient.storeFileStream(this.stepName));
+
+
+        //***GETTING STREAM USING APACHE COMMONS VFS2
+
+//        FileSystemOptions opts = new FileSystemOptions();
+//        FtpFileSystemConfigBuilder.getInstance().setPassiveMode(opts, true);
+//        FtpFileSystemConfigBuilder.getInstance().setFileType(opts, FtpFileType.BINARY);
+//        FtpFileSystemConfigBuilder.getInstance().setAutodetectUtf8(opts, true);
+//        FtpFileSystemConfigBuilder.getInstance().setControlEncoding(opts,"UTF-8");
+//        StaticUserAuthenticator auth = new StaticUserAuthenticator(null, username, password);
+//        DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
+//        foDest = VFS.getManager().resolveFile("ftp://"+serverName+":"+port+"/"+basePath + this.stepName, opts);
+//        foDest.createFile();
+//        drainMap.put(this.stepName,foDest.getContent().getOutputStream());
+
     }
 
     public void write(List<? extends DataChunk> list) throws Exception {

@@ -48,10 +48,8 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
 
 
     //***VFS2 SETTING
+    FileObject foSrc;
 
-//    FileObject foSrc;
-//    FileObject foDest;
-//    FileSystemOptions opts;
 
 
     @BeforeStep
@@ -66,14 +64,6 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         sPort = Integer.parseInt(sCredential[1]);
         sPass = sAccountIdPass[1];
         fsize = EntityInfoMap.getHm().getOrDefault(fName, 0l);
-
-     //**VFS2 SETTING***
-
-//        this.opts = new FileSystemOptions();
-//        FtpFileSystemConfigBuilder.getInstance().setPassiveMode(this.opts, true);
-//        FtpFileSystemConfigBuilder.getInstance().setFileType(this.opts, FtpFileType.BINARY);
-//        FtpFileSystemConfigBuilder.getInstance().setAutodetectUtf8(opts, true);
-//        FtpFileSystemConfigBuilder.getInstance().setControlEncoding(this.opts,"UTF-8");
     }
 
     public FTPReader() {
@@ -138,26 +128,32 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
 
         //***GETTING STREAM USING APACHE COMMONS VFS2
 
-//        StaticUserAuthenticator auth = new StaticUserAuthenticator(null, username, password);
-//        DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
-//        foSrc = VFS.getManager().resolveFile("ftp://localhost:21/source/" + fName, opts);
-//        this.inputStream = foSrc.getContent().getInputStream();
+        FileSystemOptions opts = new FileSystemOptions();
+        FtpFileSystemConfigBuilder.getInstance().setPassiveMode(opts, true);
+        FtpFileSystemConfigBuilder.getInstance().setFileType(opts, FtpFileType.BINARY);
+        FtpFileSystemConfigBuilder.getInstance().setAutodetectUtf8(opts, true);
+        FtpFileSystemConfigBuilder.getInstance().setControlEncoding(opts,"UTF-8");
+        StaticUserAuthenticator auth = new StaticUserAuthenticator(null, username, password);
+        DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
+        foSrc = VFS.getManager().resolveFile("ftp://localhost:21/source/" + fName, opts);
+        this.inputStream = foSrc.getContent().getInputStream();
 
 
         //***GETTING STREAM USING FTP CLIENT***
 
-        FTPClient ftpClient = new FTPClient();
-        ftpClient.connect(serverName, port);
-        ftpClient.login(username, password);
-        ftpClient.changeWorkingDirectory(basePath);
-        ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
-        ftpClient.setKeepAlive(true);
-        ftpClient.enterLocalPassiveMode();
-        ftpClient.setControlKeepAliveTimeout(300);
-//        ftpClient.setUseEPSVwithIPv4(true);
-//        ftpClient.setControlEncoding("UTF-8");
-//        ftpClient.setFileTransferMode(FTP.STREAM_TRANSFER_MODE);
-//        ftpClient.completePendingCommand();
-        this.inputStream = ftpClient.retrieveFileStream(fName);
+//        FTPClient ftpClient = new FTPClient();
+//        ftpClient.connect(serverName, port);
+//        ftpClient.login(username, password);
+//        ftpClient.changeWorkingDirectory(basePath);
+//        ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
+//        ftpClient.setKeepAlive(true);
+//        ftpClient.enterLocalPassiveMode();
+//        ftpClient.setControlKeepAliveTimeout(300);
+////        ftpClient.setUseEPSVwithIPv4(true);
+////        ftpClient.setControlEncoding("UTF-8");
+////        ftpClient.setFileTransferMode(FTP.STREAM_TRANSFER_MODE);
+////        ftpClient.completePendingCommand();
+//        this.inputStream = ftpClient.retrieveFileStream(fName);
+
     }
 }
