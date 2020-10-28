@@ -38,7 +38,6 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
     private Resource resource;
 
     long fsize;
-    OutputStream outputStream;
     InputStream inputStream;
     String sBasePath;
     String fName;
@@ -46,11 +45,6 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
     String sPass;
     String sServerName;
     int sPort;
-    String dBasePath;
-    String dAccountId;
-    String dServerName;
-    String dPass;
-    int dPort;
 
 
     //***VFS2 SETTING
@@ -64,21 +58,14 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
     public void beforeStep(StepExecution stepExecution) {
         logger.info("Before step for : " + stepExecution.getStepName());
         sBasePath = stepExecution.getJobParameters().getString(SOURCE_BASE_PATH);
-        dBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
         fName = stepExecution.getStepName();
         String[] sAccountIdPass = stepExecution.getJobParameters().getString(SOURCE_ACCOUNT_ID_PASS).split(":");
-        String[] dAccountIdPass = stepExecution.getJobParameters().getString(DESTINATION_ACCOUNT_ID_PASS).split(":");
-        String[] dCredential = stepExecution.getJobParameters().getString(DEST_CREDENTIAL_ID).split(":");
         String[] sCredential = stepExecution.getJobParameters().getString(SOURCE_CREDENTIAL_ID).split(":");
         sAccountId = sAccountIdPass[0];
         sServerName = sCredential[0];
         sPort = Integer.parseInt(sCredential[1]);
         sPass = sAccountIdPass[1];
         fsize = EntityInfoMap.getHm().getOrDefault(fName, 0l);
-        dAccountId = dAccountIdPass[0];
-        dPass = dAccountIdPass[1];
-        dServerName = dCredential[0];
-        dPort = Integer.parseInt(dCredential[1]);
 
      //**VFS2 SETTING***
 
@@ -119,7 +106,6 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         }
 
         DataChunk dc = new DataChunk();
-        dc.setOutputStream(outputStream);
         dc.setData(data);
         dc.setFileName(fName);
 
@@ -130,7 +116,6 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
     @Override
     protected void doOpen() {
         clientCreateSourceStream(sServerName, sPort, sAccountId, sPass, sBasePath, fName);
-        clientCreateDestStream(dServerName, dPort, dAccountId, dPass, dBasePath, fName);
     }
 
     @Override
@@ -164,44 +149,9 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         ftpClient.setKeepAlive(true);
         ftpClient.enterLocalPassiveMode();
 //        ftpClient.setUseEPSVwithIPv4(true);
-//        ftpClient.setAutodetectUTF8(true);
 //        ftpClient.setControlEncoding("UTF-8");
-//        ftpClient.setControlKeepAliveTimeout(300);
 //        ftpClient.setFileTransferMode(FTP.STREAM_TRANSFER_MODE);
 //        ftpClient.completePendingCommand();
         this.inputStream = ftpClient.retrieveFileStream(fName);
     }
-
-    @SneakyThrows
-    public void clientCreateDestStream(String serverName, int port, String username, String password, String basePath, String fName) {
-        logger.info("Inside clientCreateDestStream for : " + fName + " " + username);
-
-        //***GETTING STREAM USING APACHE COMMONS VFS2
-
-//        StaticUserAuthenticator auth = new StaticUserAuthenticator(null, username, password);
-//        DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
-//        foDest = VFS.getManager().resolveFile("ftp://localhost:21/dest/tempOutput/"+fName, opts);
-////        foDest = VFS.getManager().resolveFile("ftp://3.137.215.170/home/ftpuser/hello/" + fName, opts);
-//        foDest.createFile();
-//        this.outputStream = foDest.getContent().getOutputStream();
-
-
-        //***GETTING STREAM USING FTP CLIENT***
-
-        FTPClient ftpClient = new FTPClient();
-        ftpClient.connect(serverName, port);
-        ftpClient.login(username, password);
-        ftpClient.changeWorkingDirectory(basePath);
-        ftpClient.setKeepAlive(true);
-        ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
-//        ftpClient.setUseEPSVwithIPv4(true);
-//        ftpClient.enterLocalPassiveMode();
-//        ftpClient.setAutodetectUTF8(true);
-//        ftpClient.setControlEncoding("UTF-8");
-//        ftpClient.setControlKeepAliveTimeout(300);
-//        ftpClient.setFileTransferMode(FTP.STREAM_TRANSFER_MODE);
-//        ftpClient.completePendingCommand();
-        this.outputStream = ftpClient.storeFileStream(fName);
-    }
-
 }
