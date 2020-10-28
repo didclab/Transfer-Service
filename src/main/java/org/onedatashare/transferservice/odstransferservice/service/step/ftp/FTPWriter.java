@@ -23,13 +23,12 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
 public class FTPWriter implements ItemWriter<DataChunk> {
     Logger logger = LoggerFactory.getLogger(FTPWriter.class);
     String stepName;
-    OutputStream writer = null;
     HashMap<String, OutputStream> drainMap;
-    String dBasePath;
-    String dAccountId;
-    String dServerName;
-    String dPass;
-    int dPort;
+    private String dBasePath;
+    private String dAccountId;
+    private String dServerName;
+    private String dPass;
+    private int dPort;
 
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
@@ -42,7 +41,6 @@ public class FTPWriter implements ItemWriter<DataChunk> {
         this.dPass = dAccountIdPass[1];
         this.dServerName = dCredential[0];
         this.dPort = Integer.parseInt(dCredential[1]);
-
     }
 
     @AfterStep
@@ -52,12 +50,10 @@ public class FTPWriter implements ItemWriter<DataChunk> {
     }
 
     public OutputStream getStream(String stepName) throws IOException {
-        if (drainMap.containsKey(stepName)) {
-            return drainMap.get(stepName);
-        } else {
+        if (!drainMap.containsKey(stepName)) {
             ftpDest(this.dServerName, this.dPort, this.dAccountId, this.dPass, this.dBasePath);
-            return drainMap.get(stepName);
         }
+        return drainMap.get(stepName);
     }
 
     public void ftpDest(String serverName, int port, String username, String password, String basePath) throws IOException {
@@ -65,18 +61,18 @@ public class FTPWriter implements ItemWriter<DataChunk> {
         FTPClient ftpClient = new FTPClient();
         ftpClient.connect(serverName, port);
         ftpClient.login(username, password);
+        ftpClient.makeDirectory(this.dBasePath);
         ftpClient.changeWorkingDirectory(basePath);
         ftpClient.setKeepAlive(true);
         ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
-        ftpClient.setAutodetectUTF8(true);
-        ftpClient.setControlKeepAliveTimeout(300);
+//        ftpClient.setAutodetectUTF8(true);
+//        ftpClient.setControlKeepAliveTimeout(300);
         drainMap.put(this.stepName, ftpClient.storeFileStream(this.stepName));
     }
 
     public void write(List<? extends DataChunk> list) throws Exception {
         logger.info("Inside Writer---writing chunk of : " + list.get(0).getFileName());
         OutputStream destination = getStream(this.stepName);
-
         logger.info("hashMap size : " + drainMap.size());
         for (DataChunk b : list) {
             destination.write(b.getData());

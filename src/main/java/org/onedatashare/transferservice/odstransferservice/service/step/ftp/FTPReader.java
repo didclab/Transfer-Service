@@ -91,14 +91,19 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         this.resource = resource;
     }
 
+    public int chunkSize(){
+        return SIXTYFOUR_KB < fsize ? SIXTYFOUR_KB : (int) fsize;
+    }
+
     @SneakyThrows
     @Override
     protected DataChunk doRead() {
         if (fsize <= 0) {
             return null;
         }
-        byte[] data = new byte[SIXTYFOUR_KB < fsize ? SIXTYFOUR_KB : (int) fsize];
-        fsize -= SIXTYFOUR_KB;
+        int chunkSize = chunkSize();
+        byte[] data = new byte[chunkSize];
+        fsize -= chunkSize;
 
         int flag = this.inputStream.read(data);
         if (flag == -1) {
@@ -108,7 +113,7 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         DataChunk dc = new DataChunk();
         dc.setData(data);
         dc.setFileName(fName);
-
+        dc.setSize(chunkSize);
         return dc;
     }
 
@@ -148,6 +153,7 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
         ftpClient.setKeepAlive(true);
         ftpClient.enterLocalPassiveMode();
+        ftpClient.setControlKeepAliveTimeout(300);
 //        ftpClient.setUseEPSVwithIPv4(true);
 //        ftpClient.setControlEncoding("UTF-8");
 //        ftpClient.setFileTransferMode(FTP.STREAM_TRANSFER_MODE);
