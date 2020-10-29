@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
@@ -49,7 +50,6 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
 
     //***VFS2 SETTING
     FileObject foSrc;
-
 
 
     @BeforeStep
@@ -81,30 +81,48 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         this.resource = resource;
     }
 
-    public int chunkSize(){
+    public int chunkSize() {
         return SIXTYFOUR_KB < fsize ? SIXTYFOUR_KB : (int) fsize;
     }
 
     @SneakyThrows
     @Override
     protected DataChunk doRead() {
-        if (fsize <= 0) {
-            return null;
-        }
-        int chunkSize = chunkSize();
-        byte[] data = new byte[chunkSize];
-        fsize -= chunkSize;
-
-        int flag = this.inputStream.read(data);
-        if (flag == -1) {
+        byte[] data = new byte[SIXTYFOUR_KB];
+//        fsize -= chunkSize;
+        int byteRead = this.inputStream.read(data);
+//        logger.info("value of flag is : "+flag+" and size of chunk is :"+chunkSize);
+        if (byteRead == -1) {
             return null;
         }
 
         DataChunk dc = new DataChunk();
-        dc.setData(data);
+        dc.setData(Arrays.copyOf(data, byteRead));
         dc.setFileName(fName);
-        dc.setSize(chunkSize);
+//        dc.setSize(chunkSize);
         return dc;
+
+
+//
+//
+//        if (fsize <= 0) {
+//            return null;
+//        }
+//        int chunkSize = chunkSize();
+//        byte[] data = new byte[chunkSize];
+//        fsize -= chunkSize;
+//
+//        int flag = this.inputStream.read(data);
+//        logger.info("value of flag is : "+flag+" and size of chunk is :"+chunkSize);
+//        if (flag == -1) {
+//            return null;
+//        }
+//
+//        DataChunk dc = new DataChunk();
+//        dc.setData(data);
+//        dc.setFileName(fName);
+//        dc.setSize(chunkSize);
+//        return dc;
     }
 
 
@@ -114,8 +132,13 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
     }
 
     @Override
-    protected void doClose() throws IOException {
-        if (inputStream != null) inputStream.close();
+    protected void doClose() {
+        try{
+            if (inputStream != null) inputStream.close();
+        }catch(Exception ex){
+            logger.error("Not able to close the input Stream");
+            ex.printStackTrace();
+        }
     }
 
     @Override
@@ -132,7 +155,7 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         FtpFileSystemConfigBuilder.getInstance().setPassiveMode(opts, true);
         FtpFileSystemConfigBuilder.getInstance().setFileType(opts, FtpFileType.BINARY);
         FtpFileSystemConfigBuilder.getInstance().setAutodetectUtf8(opts, true);
-        FtpFileSystemConfigBuilder.getInstance().setControlEncoding(opts,"UTF-8");
+        FtpFileSystemConfigBuilder.getInstance().setControlEncoding(opts, "UTF-8");
         StaticUserAuthenticator auth = new StaticUserAuthenticator(null, username, password);
         DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
         foSrc = VFS.getManager().resolveFile("ftp://localhost:21/source/" + fName, opts);

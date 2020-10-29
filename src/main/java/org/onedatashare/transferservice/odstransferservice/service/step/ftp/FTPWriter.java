@@ -54,7 +54,7 @@ public class FTPWriter implements ItemWriter<DataChunk> {
 
     @AfterStep
     public void afterStep() throws IOException {
-        OutputStream steam = drainMap.remove(this.stepName);
+        OutputStream steam = drainMap.get(this.stepName);
         steam.close();
     }
 
@@ -70,30 +70,30 @@ public class FTPWriter implements ItemWriter<DataChunk> {
 
         //***GETTING STREAM USING FTPClient
 
-        FTPClient ftpClient = new FTPClient();
-        ftpClient.connect(serverName, port);
-        ftpClient.login(username, password);
-        ftpClient.makeDirectory(this.dBasePath);
-        ftpClient.changeWorkingDirectory(basePath);
-        ftpClient.setKeepAlive(true);
-        ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
-//        ftpClient.setAutodetectUTF8(true);
-//        ftpClient.setControlKeepAliveTimeout(300);
-        drainMap.put(this.stepName, ftpClient.storeFileStream(this.stepName));
+//        FTPClient ftpClient = new FTPClient();
+//        ftpClient.connect(serverName, port);
+//        ftpClient.login(username, password);
+//        ftpClient.makeDirectory(this.dBasePath);
+//        ftpClient.changeWorkingDirectory(basePath);
+//        ftpClient.setKeepAlive(true);
+//        ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
+////        ftpClient.setAutodetectUTF8(true);
+////        ftpClient.setControlKeepAliveTimeout(300);
+//        drainMap.put(this.stepName, ftpClient.storeFileStream(this.stepName));
 
 
         //***GETTING STREAM USING APACHE COMMONS VFS2
 
-//        FileSystemOptions opts = new FileSystemOptions();
-//        FtpFileSystemConfigBuilder.getInstance().setPassiveMode(opts, true);
-//        FtpFileSystemConfigBuilder.getInstance().setFileType(opts, FtpFileType.BINARY);
-//        FtpFileSystemConfigBuilder.getInstance().setAutodetectUtf8(opts, true);
-//        FtpFileSystemConfigBuilder.getInstance().setControlEncoding(opts,"UTF-8");
-//        StaticUserAuthenticator auth = new StaticUserAuthenticator(null, username, password);
-//        DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
-//        foDest = VFS.getManager().resolveFile("ftp://"+serverName+":"+port+"/"+basePath + this.stepName, opts);
-//        foDest.createFile();
-//        drainMap.put(this.stepName,foDest.getContent().getOutputStream());
+        FileSystemOptions opts = new FileSystemOptions();
+        FtpFileSystemConfigBuilder.getInstance().setPassiveMode(opts, true);
+        FtpFileSystemConfigBuilder.getInstance().setFileType(opts, FtpFileType.BINARY);
+        FtpFileSystemConfigBuilder.getInstance().setAutodetectUtf8(opts, true);
+        FtpFileSystemConfigBuilder.getInstance().setControlEncoding(opts,"UTF-8");
+        StaticUserAuthenticator auth = new StaticUserAuthenticator(null, username, password);
+        DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
+        foDest = VFS.getManager().resolveFile("ftp://"+serverName+":"+port+"/"+basePath + this.stepName, opts);
+        foDest.createFile();
+        drainMap.put(this.stepName,foDest.getContent().getOutputStream());
 
     }
 
