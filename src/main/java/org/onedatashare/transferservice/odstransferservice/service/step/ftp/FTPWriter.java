@@ -100,7 +100,6 @@ public class FTPWriter implements ItemWriter<DataChunk> {
     public void write(List<? extends DataChunk> list) throws Exception {
         logger.info("Inside Writer---writing chunk of : " + list.get(0).getFileName());
         OutputStream destination = getStream(this.stepName);
-        logger.info("hashMap size : " + drainMap.size());
         for (DataChunk b : list) {
             destination.write(b.getData());
             destination.flush();

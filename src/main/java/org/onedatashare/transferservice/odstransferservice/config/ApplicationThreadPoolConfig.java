@@ -27,7 +27,7 @@ public class ApplicationThreadPoolConfig{
     private int JOB_MAX_POOL_SIZE=12;
     @Setter
     @Getter
-    private int STEP_POOL_SIZE=5;
+    private int STEP_POOL_SIZE=3;
     @Setter
     @Getter
     private int STEP_MAX_POOL_SIZE=15;
@@ -56,6 +56,13 @@ public class ApplicationThreadPoolConfig{
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(JOB_POOL_SIZE);
         executor.setMaxPoolSize(JOB_MAX_POOL_SIZE);
+        return executor;
+    }
+    @Bean
+    @Lazy
+    public TaskExecutor sequentialThreadPool(){
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(1);
         return executor;
     }
 }

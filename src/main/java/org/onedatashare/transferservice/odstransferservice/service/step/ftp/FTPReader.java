@@ -158,7 +158,7 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         FtpFileSystemConfigBuilder.getInstance().setControlEncoding(opts, "UTF-8");
         StaticUserAuthenticator auth = new StaticUserAuthenticator(null, username, password);
         DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
-        foSrc = VFS.getManager().resolveFile("ftp://localhost:21/source/" + fName, opts);
+        foSrc = VFS.getManager().resolveFile("ftp://"+serverName+":"+port+"/"+basePath + fName, opts);
         this.inputStream = foSrc.getContent().getInputStream();
 
 
