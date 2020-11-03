@@ -13,6 +13,8 @@ import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequ
 import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPWriter;
+import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPReader;
+import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
@@ -115,10 +117,14 @@ public class JobControl extends DefaultBatchConfigurer {
 
             FTPReader ftpReader = new FTPReader();
             FTPWriter ftpWriter = new FTPWriter();
+
+            SFTPReader sftpReader = new SFTPReader();
+            SFTPWriter sftpWriter = new SFTPWriter();
+
             SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(file.getPath()).<DataChunk, DataChunk>chunk(1024);
             switch (request.getSource().getType()) {
                 case ftp:
-                    child.reader(ftpReader).writer(ftpWriter)
+                    child.reader(ftpReader).writer(sftpWriter)
                             .faultTolerant()
                             .retry(Exception.class)
                             .retryLimit(2)
