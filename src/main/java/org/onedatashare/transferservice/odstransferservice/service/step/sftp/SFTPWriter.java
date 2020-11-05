@@ -1,5 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.sftp;
 
+import com.jcraft.jsch.*;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemOptions;
 import org.apache.commons.vfs2.VFS;
@@ -14,9 +15,12 @@ import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +41,12 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
     private int dPort;
 
     FileObject foDest;
+    Session jschSession = null;
+
+//    @Value("${rsaKeyODS}")
+//    String rsaKey;
+
+    private Environment env;
 
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
@@ -68,24 +78,41 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
         logger.info("Inside ftpDest for : " + stepName + " " + dAccountId);
         String tempPass = "";
 
-        //***GETTING STREAM USING APACHE COMMONS VFS2
+        //***GETTING STREAM USING APACHE COMMONS jsch
 
-        FileSystemOptions opts = new FileSystemOptions();
+        JSch jsch = new JSch();
+        try {
+            jsch.addIdentity("/home/vishal/.ssh/ods-bastion-dev.pem");
+            jsch.setKnownHosts("/home/vishal/.ssh/known_hosts");
+            System.out.println(dAccountId + " " + dServerName);
+            jschSession = jsch.getSession(dAccountId, dServerName);
+//            jschSession.setPassword(dPass);
+            jschSession.connect();
+            jschSession.setTimeout(10000);
+            System.out.println("user info : " + jschSession.getUserInfo());
+            Channel sftp = jschSession.openChannel("sftp");
+            ChannelSftp channelSftp = (ChannelSftp) sftp;
+//            sftp.connect();
+            channelSftp.connect();
+            System.out.println("before pwd: ----" + channelSftp.pwd());
+            channelSftp.mkdir(dBasePath);
+            channelSftp.cd(dBasePath);
+            System.out.println("after pwd: ----" + channelSftp.pwd());
+            drainMap.put(this.stepName, channelSftp.put(this.stepName, ChannelSftp.APPEND));
+        } catch (JSchException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-        SftpFileSystemConfigBuilder.getInstance().setStrictHostKeyChecking(opts, "no");
-        File[] identities = {new File("\\home\\vishal\\ods-bastion-dev.pem")};
-        SftpFileSystemConfigBuilder.getInstance().setIdentities(opts, identities);
-        SftpFileSystemConfigBuilder.getInstance().setProxyType(opts, PROXY_STREAM);
-//        SftpFileSystemConfigBuilder.getInstance().setUserInfo(opts,);
-        SftpFileSystemConfigBuilder.getInstance().setConnectTimeoutMillis(opts, 100);
 
 //        StaticUserAuthenticator auth = new StaticUserAuthenticator(null, dAccountId, tempPass);
 //        DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
 //        foDest = VFS.getManager().resolveFile((String.format("sftp://%s:%s@%s/%s/%s", dAccountId, tempPass, dServerName, dBasePath, this.stepName)));
 //        foDest = VFS.getManager().resolveFile("sftp://" + dServerName + "/" + dBasePath + this.stepName, opts);
-        foDest = VFS.getManager().resolveFile(String.format("sftp://%s@%s%s/%s", dAccountId, dServerName, dBasePath, this.stepName), opts);
-        foDest.createFile();
-        drainMap.put(this.stepName, foDest.getContent().getOutputStream());
+//        foDest = VFS.getManager().resolveFile(String.format("sftp://%s@%s%s/%s", dAccountId, dServerName, dBasePath, this.stepName), opts);
+//        foDest.createFile();
+//        drainMap.put(this.stepName, foDest.getContent().getOutputStream());
     }
 
     @Override
