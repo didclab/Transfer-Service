@@ -1,12 +1,8 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.sftp;
 
+import com.jcraft.jsch.*;
 import lombok.SneakyThrows;
 import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSystemOptions;
-import org.apache.commons.vfs2.VFS;
-import org.apache.commons.vfs2.auth.StaticUserAuthenticator;
-import org.apache.commons.vfs2.impl.DefaultFileSystemConfigBuilder;
-import org.apache.commons.vfs2.provider.sftp.SftpFileSystemConfigBuilder;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfoMap;
 import org.slf4j.Logger;
@@ -19,7 +15,6 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.io.Resource;
 import org.springframework.util.ClassUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
@@ -30,7 +25,7 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
 
     Logger logger = LoggerFactory.getLogger(SFTPReader.class);
 
-    long fileSize;
+    long fsize;
     InputStream inputStream;
     String sBasePath;
     String fName;
@@ -43,6 +38,8 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
     //***VFS2 SETTING
     FileObject foSrc;
 
+    Session jschSession = null;
+
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
         logger.info("Before step for : " + stepExecution.getStepName());
@@ -54,7 +51,7 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
         sServerName = sCredential[0];
         sPort = Integer.parseInt(sCredential[1]);
         sPass = sAccountIdPass[1];
-        fileSize = EntityInfoMap.getHm().getOrDefault(fName, 0l);
+        fsize = EntityInfoMap.getHm().getOrDefault(fName, 0l);
     }
 
     public SFTPReader() {
@@ -63,7 +60,6 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
 
     @Override
     public void setResource(Resource resource) {
-
     }
 
     @Override
@@ -115,21 +111,28 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
     public void clientCreateSourceStream() {
         logger.info("Inside clientCreateSourceStream for : " + fName + " " + sAccountId);
 
-
-        //***GETTING STREAM USING APACHE COMMONS VFS2
-
-        FileSystemOptions opts = new FileSystemOptions();
-
-        SftpFileSystemConfigBuilder.getInstance().setStrictHostKeyChecking(opts, "no");
-        File[] identities = {new File("PEM FILE PATH")};
-        SftpFileSystemConfigBuilder.getInstance().setIdentities(opts, identities);
-        SftpFileSystemConfigBuilder.getInstance().setUserDirIsRoot(opts, true);
-        SftpFileSystemConfigBuilder.getInstance().setConnectTimeoutMillis(opts, 100);
-
-        StaticUserAuthenticator auth = new StaticUserAuthenticator(null, sAccountId, sPass);
-        DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
-        foSrc = VFS.getManager().resolveFile("sftp://" + sServerName + ":" + sPort + "/" + sBasePath + fName, opts);
-        this.inputStream = foSrc.getContent().getInputStream();
-
+        JSch jsch = new JSch();
+        try {
+            jsch.addIdentity("/home/vishal/.ssh/ods-bastion-dev.pem");
+            jsch.setKnownHosts("/home/vishal/.ssh/known_hosts");
+            logger.info(sAccountId + " " + sServerName);
+            jschSession = jsch.getSession(sAccountId, sServerName);
+//            jschSession.setPassword(dPass);
+            jschSession.connect();
+            jschSession.setTimeout(10000);
+            Channel sftp = jschSession.openChannel("sftp");
+            ChannelSftp channelSftp = (ChannelSftp) sftp;
+//            sftp.connect();
+            channelSftp.connect();
+            logger.info("before pwd: ----" + channelSftp.pwd());
+            channelSftp.cd(sBasePath);
+            logger.info("after pwd: ----" + channelSftp.pwd());
+            this.inputStream = channelSftp.get(fName);
+        } catch (JSchException e) {
+            logger.error("Error in JSch end");
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -124,13 +124,22 @@ public class JobControl extends DefaultBatchConfigurer {
             SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(file.getPath()).<DataChunk, DataChunk>chunk(1024);
             switch (request.getSource().getType()) {
                 case ftp:
-                    child.reader(ftpReader).writer(sftpWriter)
-                            .faultTolerant()
-                            .retry(Exception.class)
-                            .retryLimit(2)
-                            .build();
+                    child.reader(ftpReader);
                     break;
+                case sftp:
+                    child.reader(sftpReader);
             }
+            switch (request.getDestination().getType()) {
+                case ftp:
+                    child.writer(ftpWriter);
+                    break;
+                case sftp:
+                    child.writer(sftpWriter);
+            }
+            child.faultTolerant()
+                    .retry(Exception.class)
+                    .retryLimit(2)
+                    .build();
             flows.add(new FlowBuilder<Flow>(id + basePath).start(child.build()).build());
 
         }
