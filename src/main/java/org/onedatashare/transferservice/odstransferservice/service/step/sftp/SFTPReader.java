@@ -2,7 +2,6 @@ package org.onedatashare.transferservice.odstransferservice.service.step.sftp;
 
 import com.jcraft.jsch.*;
 import lombok.SneakyThrows;
-import org.apache.commons.vfs2.FileObject;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfoMap;
 import org.slf4j.Logger;
@@ -33,10 +32,6 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
     String sPass;
     String sServerName;
     int sPort;
-
-
-    //***VFS2 SETTING
-    FileObject foSrc;
 
     Session jschSession = null;
 
@@ -111,18 +106,19 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
     public void clientCreateSourceStream() {
         logger.info("Inside clientCreateSourceStream for : " + fName + " " + sAccountId);
 
+
+        //***GETTING STREAM USING APACHE COMMONS jsch
         JSch jsch = new JSch();
         try {
-            jsch.addIdentity("/home/vishal/.ssh/ods-bastion-dev.pem");
-            jsch.setKnownHosts("/home/vishal/.ssh/known_hosts");
-            logger.info(sAccountId + " " + sServerName);
+//            jsch.addIdentity("/home/vishal/.ssh/ods-bastion-dev.pem");
+//            jsch.setKnownHosts("/home/vishal/.ssh/known_hosts");
+            jsch.addIdentity("randomName", sPass.getBytes(), null, null);
             jschSession = jsch.getSession(sAccountId, sServerName);
-//            jschSession.setPassword(dPass);
+            jschSession.setConfig("StrictHostKeyChecking", "no");
             jschSession.connect();
             jschSession.setTimeout(10000);
             Channel sftp = jschSession.openChannel("sftp");
             ChannelSftp channelSftp = (ChannelSftp) sftp;
-//            sftp.connect();
             channelSftp.connect();
             logger.info("before pwd: ----" + channelSftp.pwd());
             channelSftp.cd(sBasePath);

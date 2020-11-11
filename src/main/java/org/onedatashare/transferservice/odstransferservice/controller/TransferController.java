@@ -2,8 +2,10 @@ package org.onedatashare.transferservice.odstransferservice.controller;
 
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfoMap;
+import org.onedatashare.transferservice.odstransferservice.model.RsaCredential;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.CrudService;
+import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.RsaCredInterfaceImpl;
 import org.onedatashare.transferservice.odstransferservice.service.JobControl;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
@@ -44,12 +46,17 @@ public class TransferController {
     @Autowired
     CrudService crudService;
 
+    @Autowired
+    RsaCredInterfaceImpl rsaCredInterface;
+
     @RequestMapping(value = "/start", method = RequestMethod.POST)
     @Async
     public ResponseEntity<String> start(@RequestBody TransferJobRequest request) throws Exception {
         JobParameters parameters = translate(new JobParametersBuilder(), request);
         Map<String,Long> hm = new HashMap<>();
+        RsaCredential rsaCredential = RsaCredential.builder().id(request.getOwnerId()+"source").key(request.getSource().getCredential().getPassword()).build();
         crudService.insertBeforeTransfer(request);
+        rsaCredInterface.saveOrUpdate(rsaCredential);
         for(EntityInfo ei:request.getSource().getInfoList()){
             hm.put(ei.getPath(),ei.getSize());
         }

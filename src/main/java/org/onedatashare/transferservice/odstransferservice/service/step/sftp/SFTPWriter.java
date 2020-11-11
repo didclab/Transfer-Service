@@ -1,7 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.sftp;
 
 import com.jcraft.jsch.*;
-import org.apache.commons.vfs2.FileObject;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 
 import org.slf4j.Logger;
@@ -10,10 +9,7 @@ import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.core.env.Environment;
-
-import java.io.IOException;
-
+import org.springframework.beans.factory.annotation.Value;
 import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.List;
@@ -33,13 +29,11 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
     private String dPass;
     private int dPort;
 
-    FileObject foDest;
     Session jschSession = null;
 
 //    @Value("${rsaKeyODS}")
 //    String rsaKey;
 
-    private Environment env;
     ChannelSftp channelSftp = null;
 
     @BeforeStep
@@ -72,21 +66,22 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
 
     public void ftpDest() {
         logger.info("Inside ftpDest for : " + stepName + " " + dAccountId);
-        String tempPass = "";
 
         //***GETTING STREAM USING APACHE COMMONS jsch
 
         JSch jsch = new JSch();
         try {
-            jsch.addIdentity("/home/vishal/.ssh/ods-bastion-dev.pem");
-            jsch.setKnownHosts("/home/vishal/.ssh/known_hosts");
+//            jsch.addIdentity("/home/vishal/.ssh/ods-bastion-dev.pem");
+//            jsch.setKnownHosts("/home/vishal/.ssh/known_hosts");
+
+            jsch.addIdentity("randomName", dPass.getBytes(), null, null);
+
             jschSession = jsch.getSession(dAccountId, dServerName);
-//            jschSession.setPassword(dPass);
+            jschSession.setConfig("StrictHostKeyChecking", "no");
             jschSession.connect();
             jschSession.setTimeout(10000);
             Channel sftp = jschSession.openChannel("sftp");
             channelSftp = (ChannelSftp) sftp;
-//            sftp.connect();
             channelSftp.connect();
             try {
                 channelSftp.cd(dBasePath);
