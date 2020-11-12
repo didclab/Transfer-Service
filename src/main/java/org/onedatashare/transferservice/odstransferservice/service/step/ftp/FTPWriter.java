@@ -10,13 +10,17 @@ import org.apache.commons.vfs2.auth.StaticUserAuthenticator;
 import org.apache.commons.vfs2.impl.DefaultFileSystemConfigBuilder;
 import org.apache.commons.vfs2.provider.ftp.FtpFileSystemConfigBuilder;
 import org.apache.commons.vfs2.provider.ftp.FtpFileType;
+import org.onedatashare.transferservice.odstransferservice.controller.TransferController;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
+import org.onedatashare.transferservice.odstransferservice.model.EntityInfoMap;
+import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.RsaCredInterfaceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -47,7 +51,8 @@ public class FTPWriter implements ItemWriter<DataChunk> {
         String[] dAccountIdPass = stepExecution.getJobParameters().getString(DESTINATION_ACCOUNT_ID_PASS).split(":");
         String[] dCredential = stepExecution.getJobParameters().getString(DEST_CREDENTIAL_ID).split(":");
         this.dAccountId = dAccountIdPass[0];
-        this.dPass = dAccountIdPass[1];
+//        this.dPass = dAccountIdPass[1];
+        this.dPass = EntityInfoMap.dPass;
         this.dServerName = dCredential[0];
         this.dPort = Integer.parseInt(dCredential[1]);
     }
@@ -58,29 +63,15 @@ public class FTPWriter implements ItemWriter<DataChunk> {
         steam.close();
     }
 
-    public OutputStream getStream(String stepName) throws IOException {
+    public OutputStream getStream(String stepName) throws Exception {
         if (!drainMap.containsKey(stepName)) {
             ftpDest(this.dServerName, this.dPort, this.dAccountId, this.dPass, this.dBasePath);
         }
         return drainMap.get(stepName);
     }
 
-    public void ftpDest(String serverName, int port, String username, String password, String basePath) throws IOException {
+    public void ftpDest(String serverName, int port, String username, String password, String basePath) throws Exception {
         logger.info("Creating ftpDest---");
-
-        //***GETTING STREAM USING FTPClient
-
-//        FTPClient ftpClient = new FTPClient();
-//        ftpClient.connect(serverName, port);
-//        ftpClient.login(username, password);
-//        ftpClient.makeDirectory(this.dBasePath);
-//        ftpClient.changeWorkingDirectory(basePath);
-//        ftpClient.setKeepAlive(true);
-//        ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
-////        ftpClient.setAutodetectUTF8(true);
-////        ftpClient.setControlKeepAliveTimeout(300);
-//        drainMap.put(this.stepName, ftpClient.storeFileStream(this.stepName));
-
 
         //***GETTING STREAM USING APACHE COMMONS VFS2
 

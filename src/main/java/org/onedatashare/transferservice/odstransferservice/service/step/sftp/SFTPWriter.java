@@ -1,15 +1,16 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.sftp;
 
 import com.jcraft.jsch.*;
+import org.onedatashare.transferservice.odstransferservice.controller.TransferController;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 
+import org.onedatashare.transferservice.odstransferservice.model.EntityInfoMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.beans.factory.annotation.Value;
 import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.List;
@@ -31,9 +32,6 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
 
     Session jschSession = null;
 
-//    @Value("${rsaKeyODS}")
-//    String rsaKey;
-
     ChannelSftp channelSftp = null;
 
     @BeforeStep
@@ -44,7 +42,8 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
         String[] dAccountIdPass = stepExecution.getJobParameters().getString(DESTINATION_ACCOUNT_ID_PASS).split(":");
         String[] dCredential = stepExecution.getJobParameters().getString(DEST_CREDENTIAL_ID).split(":");
         this.dAccountId = dAccountIdPass[0];
-        this.dPass = dAccountIdPass[1];
+//        this.dPass = dAccountIdPass[1];
+        this.dPass = EntityInfoMap.dPass;
         this.dServerName = dCredential[0];
         this.dPort = Integer.parseInt(dCredential[1]);
     }

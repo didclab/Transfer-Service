@@ -2,6 +2,7 @@ package org.onedatashare.transferservice.odstransferservice.service.step.sftp;
 
 import com.jcraft.jsch.*;
 import lombok.SneakyThrows;
+import org.onedatashare.transferservice.odstransferservice.controller.TransferController;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfoMap;
 import org.slf4j.Logger;
@@ -45,7 +46,8 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
         sAccountId = sAccountIdPass[0];
         sServerName = sCredential[0];
         sPort = Integer.parseInt(sCredential[1]);
-        sPass = sAccountIdPass[1];
+//        sPass = sAccountIdPass[1];
+        this.sPass = EntityInfoMap.sPass;
         fsize = EntityInfoMap.getHm().getOrDefault(fName, 0l);
     }
 
@@ -105,7 +107,6 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
     @SneakyThrows
     public void clientCreateSourceStream() {
         logger.info("Inside clientCreateSourceStream for : " + fName + " " + sAccountId);
-
 
         //***GETTING STREAM USING APACHE COMMONS jsch
         JSch jsch = new JSch();

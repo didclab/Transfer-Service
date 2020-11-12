@@ -2,6 +2,7 @@ package org.onedatashare.transferservice.odstransferservice.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.Entity;
@@ -13,6 +14,7 @@ import javax.persistence.Table;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Getter
 public class RsaCredential {
     @Id
     //Job ID
@@ -20,3 +22,5 @@ public class RsaCredential {
     //Source EndPoint
     private String key;
 }
+
+
