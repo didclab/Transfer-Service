@@ -49,7 +49,6 @@ public class VfsWriter implements ItemWriter<DataChunk> {
         if (this.stepDrain.containsKey(fileName)) {
             return this.stepDrain.get(fileName);
         } else {
-            logger.info("creating channel to " + this.filePath.toString());
             prepareFile();
             prepareDirectory();
             FileChannel channel = null;
@@ -86,7 +85,6 @@ public class VfsWriter implements ItemWriter<DataChunk> {
     public void write(List<? extends DataChunk> items) throws Exception {
         for(int i = 0; i < items.size(); i++){
             DataChunk chunk = items.get(i);
-            logger.info("The current chunk is " + i + " and the current start position is "+ chunk.getStartPosition());
             int bytesWritten = getChannel(chunk.getFileName()).write(ByteBuffer.wrap(chunk.getData()), chunk.getStartPosition());
             if (chunk.getSize() != bytesWritten)
                 logger.info("Wrote " + bytesWritten + " but we should have written " + chunk.getSize());
