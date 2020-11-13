@@ -13,6 +13,7 @@ import java.net.URLConnection;
 public class DataChunk {
     //    private int pageNumber;
     OutputStream outputStream;
+    int startPosition;
     byte[] data;
     String fileName;
     String basePath;
