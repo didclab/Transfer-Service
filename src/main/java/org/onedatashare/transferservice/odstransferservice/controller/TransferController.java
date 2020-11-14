@@ -1,12 +1,9 @@
 package org.onedatashare.transferservice.odstransferservice.controller;
 
-import com.sun.xml.bind.v2.TODO;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfoMap;
-import org.onedatashare.transferservice.odstransferservice.model.RsaCredential;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.CrudService;
-import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.RsaCredInterfaceImpl;
 import org.onedatashare.transferservice.odstransferservice.service.JobControl;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
@@ -47,9 +44,6 @@ public class TransferController {
     @Autowired
     CrudService crudService;
 
-//    @Autowired
-//    RsaCredInterfaceImpl rsaCredInterface;
-
     @RequestMapping(value = "/start", method = RequestMethod.POST)
     @Async
     public ResponseEntity<String> start(@RequestBody TransferJobRequest request) throws Exception {
@@ -58,10 +52,6 @@ public class TransferController {
         //TODO: Must remove these and find way to pass to reader and writer
         EntityInfoMap.sPass = request.getSource().getCredential().getPassword();
         EntityInfoMap.dPass = request.getDestination().getCredential().getPassword();
-//        RsaCredential rsaCredential = RsaCredential.builder().id("source").key(request.getSource().getCredential().getPassword() + "This is test password").build();
-//        rsaCredInterface.saveOrUpdate(rsaCredential);
-//        rsaCredential = RsaCredential.builder().id("destination").key(request.getSource().getCredential().getPassword() + "This is test password").build();
-//        rsaCredInterface.saveOrUpdate(rsaCredential);
 
         crudService.insertBeforeTransfer(request);
         for (EntityInfo ei : request.getSource().getInfoList()) {

@@ -1,8 +1,5 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.ftp;
 
-import lombok.SneakyThrows;
-import org.apache.commons.net.ftp.FTP;
-import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemOptions;
 import org.apache.commons.vfs2.VFS;
@@ -10,23 +7,19 @@ import org.apache.commons.vfs2.auth.StaticUserAuthenticator;
 import org.apache.commons.vfs2.impl.DefaultFileSystemConfigBuilder;
 import org.apache.commons.vfs2.provider.ftp.FtpFileSystemConfigBuilder;
 import org.apache.commons.vfs2.provider.ftp.FtpFileType;
-import org.onedatashare.transferservice.odstransferservice.controller.TransferController;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfoMap;
-import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.RsaCredInterfaceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 

@@ -1,9 +1,9 @@
 package org.onedatashare.transferservice.odstransferservice.service;
-
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.SneakyThrows;
+import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.config.ApplicationThreadPoolConfig;
 import org.onedatashare.transferservice.odstransferservice.config.DataSourceConfig;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
@@ -31,6 +31,8 @@ import org.springframework.batch.core.launch.support.SimpleJobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
 import org.springframework.batch.core.step.builder.SimpleStepBuilder;
+import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -114,38 +116,34 @@ public class JobControl extends DefaultBatchConfigurer {
         logger.info("CreateConcurrentFlow function");
         List<Flow> flows = new ArrayList<>();
         for (EntityInfo file : infoList) {
-
-            FTPReader ftpReader = new FTPReader();
-            FTPWriter ftpWriter = new FTPWriter();
-
-            SFTPReader sftpReader = new SFTPReader();
-            SFTPWriter sftpWriter = new SFTPWriter();
-
             SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(file.getPath()).<DataChunk, DataChunk>chunk(1024);
-            switch (request.getSource().getType()) {
-                case ftp:
-                    child.reader(ftpReader);
-                    break;
-                case sftp:
-                    child.reader(sftpReader);
-            }
-            switch (request.getDestination().getType()) {
-                case ftp:
-                    child.writer(ftpWriter);
-                    break;
-                case sftp:
-                    child.writer(sftpWriter);
-            }
-            child.faultTolerant()
+            child.reader(getRightReader(request.getSource().getType())).writer(getRightWriter(request.getDestination().getType()))
+                    .faultTolerant()
                     .retry(Exception.class)
                     .retryLimit(2)
                     .build();
             flows.add(new FlowBuilder<Flow>(id + basePath).start(child.build()).build());
-
         }
         return flows;
     }
-
+    protected AbstractItemCountingItemStreamItemReader getRightReader(EndpointType type){
+        switch (type){
+            case sftp:
+                return new SFTPReader();
+            case ftp:
+                return new FTPReader();
+        }
+        return null;
+    }
+    protected ItemWriter getRightWriter(EndpointType type){
+        switch (type){
+            case sftp:
+                return new SFTPWriter();
+            case ftp:
+                return new FTPWriter();
+        }
+        return null;
+    }
 
 //    @SneakyThrows
 //    private List<Step> createSteps(List<EntityInfo> infoList, String basePath, String id, String pass) {
