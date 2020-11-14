@@ -1,7 +1,7 @@
 package org.onedatashare.transferservice.odstransferservice.controller;
 
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
-import org.onedatashare.transferservice.odstransferservice.model.EntityInfoMap;
+import org.onedatashare.transferservice.odstransferservice.model.StaticVar;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.CrudService;
 import org.onedatashare.transferservice.odstransferservice.service.JobControl;
@@ -50,14 +50,14 @@ public class TransferController {
         JobParameters parameters = translate(new JobParametersBuilder(), request);
         Map<String, Long> hm = new HashMap<>();
         //TODO: Must remove these and find way to pass to reader and writer
-        EntityInfoMap.sPass = request.getSource().getCredential().getPassword();
-        EntityInfoMap.dPass = request.getDestination().getCredential().getPassword();
+        StaticVar.sPass = request.getSource().getCredential().getPassword();
+        StaticVar.dPass = request.getDestination().getCredential().getPassword();
 
         crudService.insertBeforeTransfer(request);
         for (EntityInfo ei : request.getSource().getInfoList()) {
             hm.put(ei.getPath(), ei.getSize());
         }
-        EntityInfoMap.setHm(hm);
+        StaticVar.setHm(hm);
         jc.setRequest(request);
         jc.setChunkSize(SIXTYFOUR_KB); //64kb.
         asyncJobLauncher.run(jc.concurrentJobDefination(), parameters);

@@ -1,8 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.ftp;
 
 import lombok.SneakyThrows;
-import org.apache.commons.net.ftp.FTP;
-import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemOptions;
 import org.apache.commons.vfs2.VFS;
@@ -10,9 +8,8 @@ import org.apache.commons.vfs2.auth.StaticUserAuthenticator;
 import org.apache.commons.vfs2.impl.DefaultFileSystemConfigBuilder;
 import org.apache.commons.vfs2.provider.ftp.FtpFileSystemConfigBuilder;
 import org.apache.commons.vfs2.provider.ftp.FtpFileType;
-import org.onedatashare.transferservice.odstransferservice.controller.TransferController;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
-import org.onedatashare.transferservice.odstransferservice.model.EntityInfoMap;
+import org.onedatashare.transferservice.odstransferservice.model.StaticVar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
@@ -24,7 +21,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.util.ClassUtils;
 
 import java.io.InputStream;
-import java.nio.charset.Charset;
 import java.util.Arrays;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
@@ -57,8 +53,8 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         sServerName = sCredential[0];
         sPort = Integer.parseInt(sCredential[1]);
 //        sPass = sAccountIdPass[1];
-        this.sPass = EntityInfoMap.sPass;
-        fsize = EntityInfoMap.getHm().getOrDefault(fName, 0l);
+        this.sPass = StaticVar.sPass;
+        fsize = StaticVar.getHm().getOrDefault(fName, 0l);
     }
 
     public FTPReader() {

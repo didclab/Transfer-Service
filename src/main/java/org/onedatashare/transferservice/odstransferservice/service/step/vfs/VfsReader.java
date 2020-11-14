@@ -1,7 +1,7 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.vfs;
 
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
-import org.onedatashare.transferservice.odstransferservice.model.EntityInfoMap;
+import org.onedatashare.transferservice.odstransferservice.model.StaticVar;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
 import org.slf4j.Logger;
@@ -39,7 +39,7 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
     public void beforeStep(StepExecution stepExecution){
         sBasePath = stepExecution.getJobParameters().getString(SOURCE_BASE_PATH);
         fileName = stepExecution.getStepName();
-        fsize = EntityInfoMap.getHm().getOrDefault(this.fileName, 0l);
+        fsize = StaticVar.getHm().getOrDefault(this.fileName, 0l);
         filePartitioner.createParts(fsize, fileName);
     }
 

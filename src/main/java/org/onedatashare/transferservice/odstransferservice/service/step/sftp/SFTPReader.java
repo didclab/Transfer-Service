@@ -2,9 +2,8 @@ package org.onedatashare.transferservice.odstransferservice.service.step.sftp;
 
 import com.jcraft.jsch.*;
 import lombok.SneakyThrows;
-import org.onedatashare.transferservice.odstransferservice.controller.TransferController;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
-import org.onedatashare.transferservice.odstransferservice.model.EntityInfoMap;
+import org.onedatashare.transferservice.odstransferservice.model.StaticVar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
@@ -47,8 +46,8 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
         sServerName = sCredential[0];
         sPort = Integer.parseInt(sCredential[1]);
 //        sPass = sAccountIdPass[1];
-        this.sPass = EntityInfoMap.sPass;
-        fsize = EntityInfoMap.getHm().getOrDefault(fName, 0l);
+        this.sPass = StaticVar.sPass;
+        fsize = StaticVar.getHm().getOrDefault(fName, 0l);
     }
 
     public SFTPReader() {

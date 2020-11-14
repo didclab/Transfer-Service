@@ -8,7 +8,7 @@ import org.apache.commons.vfs2.impl.DefaultFileSystemConfigBuilder;
 import org.apache.commons.vfs2.provider.ftp.FtpFileSystemConfigBuilder;
 import org.apache.commons.vfs2.provider.ftp.FtpFileType;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
-import org.onedatashare.transferservice.odstransferservice.model.EntityInfoMap;
+import org.onedatashare.transferservice.odstransferservice.model.StaticVar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
@@ -45,7 +45,7 @@ public class FTPWriter implements ItemWriter<DataChunk> {
         String[] dCredential = stepExecution.getJobParameters().getString(DEST_CREDENTIAL_ID).split(":");
         this.dAccountId = dAccountIdPass[0];
 //        this.dPass = dAccountIdPass[1];
-        this.dPass = EntityInfoMap.dPass;
+        this.dPass = StaticVar.dPass;
         this.dServerName = dCredential[0];
         this.dPort = Integer.parseInt(dCredential[1]);
     }
