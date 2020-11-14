@@ -15,6 +15,8 @@ import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPR
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPWriter;
+import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsReader;
+import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
@@ -128,6 +130,8 @@ public class JobControl extends DefaultBatchConfigurer {
     }
     protected AbstractItemCountingItemStreamItemReader getRightReader(EndpointType type){
         switch (type){
+            case vfs:
+                return new VfsReader();
             case sftp:
                 return new SFTPReader();
             case ftp:
@@ -137,6 +141,8 @@ public class JobControl extends DefaultBatchConfigurer {
     }
     protected ItemWriter getRightWriter(EndpointType type){
         switch (type){
+            case vfs:
+                return new VfsWriter();
             case sftp:
                 return new SFTPWriter();
             case ftp:
