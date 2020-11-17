@@ -1,5 +1,4 @@
 package org.onedatashare.transferservice.odstransferservice.service;
-
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

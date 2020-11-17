@@ -1,6 +1,7 @@
 package org.onedatashare.transferservice.odstransferservice.service.listner;
 
 import lombok.SneakyThrows;
+import org.onedatashare.transferservice.odstransferservice.model.StaticVar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.JobExecution;
@@ -20,5 +21,7 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
     @Override
     public void afterJob(JobExecution jobExecution) {
         logger.info("After JOB------------------present time--" + System.currentTimeMillis());
+        StaticVar.clearAllStaticVar();
+        logger.info("Cleared All SaticVar...");
     }
 }

@@ -1,31 +1,22 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.sftp;
 
 import com.jcraft.jsch.*;
-import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSystemOptions;
-import org.apache.commons.vfs2.VFS;
-import org.apache.commons.vfs2.auth.StaticUserAuthenticator;
-import org.apache.commons.vfs2.impl.DefaultFileSystemConfigBuilder;
-import org.apache.commons.vfs2.provider.sftp.SftpFileSystemConfigBuilder;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 
+import org.onedatashare.transferservice.odstransferservice.model.StaticVar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-import static org.apache.commons.vfs2.provider.sftp.SftpFileSystemConfigBuilder.PROXY_STREAM;
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
 public class SFTPWriter implements ItemWriter<DataChunk> {
@@ -33,95 +24,108 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
     Logger logger = LoggerFactory.getLogger(SFTPWriter.class);
 
     String stepName;
-    HashMap<String, OutputStream> drainMap;
+    Set<String> drainMap;
     private String dBasePath;
     private String dAccountId;
     private String dServerName;
     private String dPass;
     private int dPort;
 
-    FileObject foDest;
     Session jschSession = null;
 
-//    @Value("${rsaKeyODS}")
-//    String rsaKey;
-
-    private Environment env;
+    ChannelSftp channelSftp = null;
 
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
-        drainMap = new HashMap<>();
+        drainMap = new HashSet<>();
         this.stepName = stepExecution.getStepName();
         dBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
         String[] dAccountIdPass = stepExecution.getJobParameters().getString(DESTINATION_ACCOUNT_ID_PASS).split(":");
         String[] dCredential = stepExecution.getJobParameters().getString(DEST_CREDENTIAL_ID).split(":");
         this.dAccountId = dAccountIdPass[0];
-        this.dPass = dAccountIdPass[1];
+//        this.dPass = dAccountIdPass[1];
+        this.dPass = StaticVar.dPass;
         this.dServerName = dCredential[0];
         this.dPort = Integer.parseInt(dCredential[1]);
     }
 
     @AfterStep
-    public void afterStep() throws IOException {
-        OutputStream steam = drainMap.get(this.stepName);
-        steam.close();
+    public void afterStep() {
+        channelSftp.disconnect();
     }
 
-    public OutputStream getStream(String stepName) throws IOException {
-        if (!drainMap.containsKey(stepName)) {
+    public OutputStream getStream(String stepName) {
+        if (!drainMap.contains(stepName)) {
             ftpDest();
+            try {
+                return channelSftp.put(this.stepName, ChannelSftp.OVERWRITE);
+            } catch (SftpException e) {
+                logger.error("Unable to retrive outputStream");
+                e.printStackTrace();
+            }
         }
-        return drainMap.get(stepName);
+        logger.info("File already present");
+        try {
+            return channelSftp.put(this.stepName, ChannelSftp.APPEND);
+        } catch (SftpException e) {
+            logger.error("Unable to retrive outputStream");
+            e.printStackTrace();
+        }
+        return null;
     }
 
-    public void ftpDest() throws IOException {
+    public void ftpDest() {
         logger.info("Inside ftpDest for : " + stepName + " " + dAccountId);
-        String tempPass = "";
 
         //***GETTING STREAM USING APACHE COMMONS jsch
 
         JSch jsch = new JSch();
         try {
-            jsch.addIdentity("/home/vishal/.ssh/ods-bastion-dev.pem");
-            jsch.setKnownHosts("/home/vishal/.ssh/known_hosts");
-            System.out.println(dAccountId + " " + dServerName);
+//            jsch.addIdentity("/home/vishal/.ssh/ods-bastion-dev.pem");
+//            jsch.setKnownHosts("/home/vishal/.ssh/known_hosts");
+
+            jsch.addIdentity("randomName", dPass.getBytes(), null, null);
+
             jschSession = jsch.getSession(dAccountId, dServerName);
-//            jschSession.setPassword(dPass);
+            jschSession.setConfig("StrictHostKeyChecking", "no");
             jschSession.connect();
             jschSession.setTimeout(10000);
-            System.out.println("user info : " + jschSession.getUserInfo());
             Channel sftp = jschSession.openChannel("sftp");
-            ChannelSftp channelSftp = (ChannelSftp) sftp;
-//            sftp.connect();
+            channelSftp = (ChannelSftp) sftp;
             channelSftp.connect();
-            System.out.println("before pwd: ----" + channelSftp.pwd());
-            channelSftp.mkdir(dBasePath);
-            channelSftp.cd(dBasePath);
-            System.out.println("after pwd: ----" + channelSftp.pwd());
-            drainMap.put(this.stepName, channelSftp.put(this.stepName, ChannelSftp.APPEND));
+            try {
+                channelSftp.cd(dBasePath);
+            } catch (Exception ex) {
+                logger.warn("Folder was not present so creating...");
+                channelSftp.mkdir(dBasePath);
+                channelSftp.cd(dBasePath);
+                logger.warn(dBasePath + " folder created.");
+            }
+            drainMap.add(this.stepName);
+            logger.info("present directory: ----" + channelSftp.pwd());
         } catch (JSchException e) {
             e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-
-//        StaticUserAuthenticator auth = new StaticUserAuthenticator(null, dAccountId, tempPass);
-//        DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
-//        foDest = VFS.getManager().resolveFile((String.format("sftp://%s:%s@%s/%s/%s", dAccountId, tempPass, dServerName, dBasePath, this.stepName)));
-//        foDest = VFS.getManager().resolveFile("sftp://" + dServerName + "/" + dBasePath + this.stepName, opts);
-//        foDest = VFS.getManager().resolveFile(String.format("sftp://%s@%s%s/%s", dAccountId, dServerName, dBasePath, this.stepName), opts);
-//        foDest.createFile();
-//        drainMap.put(this.stepName, foDest.getContent().getOutputStream());
     }
 
     @Override
-    public void write(List<? extends DataChunk> items) throws Exception {
+    public void write(List<? extends DataChunk> items) {
         logger.info("Inside Writer---writing chunk of : " + items.get(0).getFileName());
         OutputStream destination = getStream(this.stepName);
-        for (DataChunk b : items) {
-            destination.write(b.getData());
-            destination.flush();
-        }
+        if (destination != null) {
+            try {
+                for (DataChunk b : items) {
+                    destination.write(b.getData());
+                    destination.flush();
+                }
+            } catch (IOException e) {
+                logger.error("Error during writing chunks...exiting");
+                e.printStackTrace();
+            }
+        } else
+            logger.error("OutputStream is null....Not able to write : " + items.get(0).getFileName());
     }
 }

@@ -47,8 +47,10 @@ public class VfsWriter implements ItemWriter<DataChunk> {
 
     public FileChannel getChannel(String fileName) throws IOException {
         if (this.stepDrain.containsKey(fileName)) {
+            logger.info("File already present...");
             return this.stepDrain.get(fileName);
         } else {
+            logger.info("creating file : " + fileName);
             prepareFile();
             prepareDirectory();
             FileChannel channel = null;
@@ -56,13 +58,14 @@ public class VfsWriter implements ItemWriter<DataChunk> {
                 channel = FileChannel.open(this.filePath, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
                 stepDrain.put(fileName, channel);
             } catch (IOException exception) {
+                logger.error("Not Able to open the channel");
                 exception.printStackTrace();
             }
             return channel;
         }
     }
 
-    public void prepareFile() throws IOException{
+    public void prepareFile() throws IOException {
         try {
             Files.createFile(this.filePath);
         } catch (FileAlreadyExistsException fileAlreadyExistsException) {
@@ -76,6 +79,7 @@ public class VfsWriter implements ItemWriter<DataChunk> {
             try {
                 Files.createDirectories(directories);
             } catch (IOException exception) {
+                logger.error("Unable to create directory : " + directories.toString());
                 exception.printStackTrace();
             }
         }
@@ -83,7 +87,7 @@ public class VfsWriter implements ItemWriter<DataChunk> {
 
     @Override
     public void write(List<? extends DataChunk> items) throws Exception {
-        for(int i = 0; i < items.size(); i++){
+        for (int i = 0; i < items.size(); i++) {
             DataChunk chunk = items.get(i);
             int bytesWritten = getChannel(chunk.getFileName()).write(ByteBuffer.wrap(chunk.getData()), chunk.getStartPosition());
             if (chunk.getSize() != bytesWritten)

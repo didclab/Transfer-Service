@@ -1,8 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.ftp;
 
 import lombok.SneakyThrows;
-import org.apache.commons.net.ftp.FTP;
-import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemOptions;
 import org.apache.commons.vfs2.VFS;
@@ -11,11 +9,10 @@ import org.apache.commons.vfs2.impl.DefaultFileSystemConfigBuilder;
 import org.apache.commons.vfs2.provider.ftp.FtpFileSystemConfigBuilder;
 import org.apache.commons.vfs2.provider.ftp.FtpFileType;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
-import org.onedatashare.transferservice.odstransferservice.model.EntityInfoMap;
+import org.onedatashare.transferservice.odstransferservice.model.StaticVar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
-import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.file.ResourceAwareItemReaderItemStream;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
@@ -23,10 +20,7 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.io.Resource;
 import org.springframework.util.ClassUtils;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.charset.Charset;
 import java.util.Arrays;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
@@ -34,9 +28,6 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
 public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataChunk> implements ResourceAwareItemReaderItemStream<DataChunk>, InitializingBean {
 
     Logger logger = LoggerFactory.getLogger(FTPReader.class);
-    public static final String DEFAULT_CHARSET = Charset.defaultCharset().name();
-    private final String encoding;
-    private Resource resource;
 
     long fsize;
     InputStream inputStream;
@@ -51,7 +42,6 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
     //***VFS2 SETTING
     FileObject foSrc;
 
-
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
         logger.info("Before step for : " + stepExecution.getStepName());
@@ -62,12 +52,12 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         sAccountId = sAccountIdPass[0];
         sServerName = sCredential[0];
         sPort = Integer.parseInt(sCredential[1]);
-        sPass = sAccountIdPass[1];
-        fsize = EntityInfoMap.getHm().getOrDefault(fName, 0l);
+//        sPass = sAccountIdPass[1];
+        this.sPass = StaticVar.sPass;
+        fsize = StaticVar.getHm().getOrDefault(fName, 0l);
     }
 
     public FTPReader() {
-        this.encoding = DEFAULT_CHARSET;
         this.setName(ClassUtils.getShortName(FTPReader.class));
     }
 
@@ -78,20 +68,13 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
 
     @Override
     public void setResource(Resource resource) {
-        this.resource = resource;
-    }
-
-    public int chunkSize() {
-        return SIXTYFOUR_KB < fsize ? SIXTYFOUR_KB : (int) fsize;
     }
 
     @SneakyThrows
     @Override
     protected DataChunk doRead() {
         byte[] data = new byte[SIXTYFOUR_KB];
-//        fsize -= chunkSize;
         int byteRead = this.inputStream.read(data);
-//        logger.info("value of flag is : "+flag+" and size of chunk is :"+chunkSize);
         if (byteRead == -1) {
             return null;
         }
@@ -99,30 +82,7 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         DataChunk dc = new DataChunk();
         dc.setData(Arrays.copyOf(data, byteRead));
         dc.setFileName(fName);
-//        dc.setSize(chunkSize);
         return dc;
-
-
-//
-//
-//        if (fsize <= 0) {
-//            return null;
-//        }
-//        int chunkSize = chunkSize();
-//        byte[] data = new byte[chunkSize];
-//        fsize -= chunkSize;
-//
-//        int flag = this.inputStream.read(data);
-//        logger.info("value of flag is : "+flag+" and size of chunk is :"+chunkSize);
-//        if (flag == -1) {
-//            return null;
-//        }
-//
-//        DataChunk dc = new DataChunk();
-//        dc.setData(data);
-//        dc.setFileName(fName);
-//        dc.setSize(chunkSize);
-//        return dc;
     }
 
 
@@ -133,16 +93,16 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
 
     @Override
     protected void doClose() {
-        try{
+        try {
             if (inputStream != null) inputStream.close();
-        }catch(Exception ex){
+        } catch (Exception ex) {
             logger.error("Not able to close the input Stream");
             ex.printStackTrace();
         }
     }
 
     @Override
-    public void afterPropertiesSet() throws Exception {
+    public void afterPropertiesSet() {
     }
 
     @SneakyThrows
@@ -158,25 +118,7 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         FtpFileSystemConfigBuilder.getInstance().setControlEncoding(opts, "UTF-8");
         StaticUserAuthenticator auth = new StaticUserAuthenticator(null, username, password);
         DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
-        foSrc = VFS.getManager().resolveFile("ftp://"+serverName+":"+port+"/"+basePath + fName, opts);
+        foSrc = VFS.getManager().resolveFile("ftp://" + serverName + ":" + port + "/" + basePath + fName, opts);
         this.inputStream = foSrc.getContent().getInputStream();
-
-
-        //***GETTING STREAM USING FTP CLIENT***
-
-//        FTPClient ftpClient = new FTPClient();
-//        ftpClient.connect(serverName, port);
-//        ftpClient.login(username, password);
-//        ftpClient.changeWorkingDirectory(basePath);
-//        ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
-//        ftpClient.setKeepAlive(true);
-//        ftpClient.enterLocalPassiveMode();
-//        ftpClient.setControlKeepAliveTimeout(300);
-////        ftpClient.setUseEPSVwithIPv4(true);
-////        ftpClient.setControlEncoding("UTF-8");
-////        ftpClient.setFileTransferMode(FTP.STREAM_TRANSFER_MODE);
-////        ftpClient.completePendingCommand();
-//        this.inputStream = ftpClient.retrieveFileStream(fName);
-
     }
 }
