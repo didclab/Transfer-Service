@@ -102,7 +102,7 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
     }
 
     @Override
-    public void afterPropertiesSet() throws Exception {
+    public void afterPropertiesSet() {
     }
 
     @SneakyThrows

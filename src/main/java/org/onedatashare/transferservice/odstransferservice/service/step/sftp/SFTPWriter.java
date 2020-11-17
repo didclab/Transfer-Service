@@ -10,6 +10,8 @@ import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemWriter;
+
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.List;
@@ -52,14 +54,24 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
         channelSftp.disconnect();
     }
 
-    public OutputStream getStream(String stepName) throws Exception {
+    public OutputStream getStream(String stepName) {
         if (!drainMap.contains(stepName)) {
             ftpDest();
-            return channelSftp.put(this.stepName, ChannelSftp.OVERWRITE);
+            try {
+                return channelSftp.put(this.stepName, ChannelSftp.OVERWRITE);
+            } catch (SftpException e) {
+                logger.error("Unable to retrive outputStream");
+                e.printStackTrace();
+            }
         }
         logger.info("File already present");
-        return channelSftp.put(this.stepName, ChannelSftp.APPEND);
-//        return drainMap.get(stepName);
+        try {
+            return channelSftp.put(this.stepName, ChannelSftp.APPEND);
+        } catch (SftpException e) {
+            logger.error("Unable to retrive outputStream");
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public void ftpDest() {
@@ -100,12 +112,20 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
     }
 
     @Override
-    public void write(List<? extends DataChunk> items) throws Exception {
+    public void write(List<? extends DataChunk> items) {
         logger.info("Inside Writer---writing chunk of : " + items.get(0).getFileName());
         OutputStream destination = getStream(this.stepName);
-        for (DataChunk b : items) {
-            destination.write(b.getData());
-            destination.flush();
-        }
+        if (destination != null) {
+            try {
+                for (DataChunk b : items) {
+                    destination.write(b.getData());
+                    destination.flush();
+                }
+            } catch (IOException e) {
+                logger.error("Error during writing chunks...exiting");
+                e.printStackTrace();
+            }
+        } else
+            logger.error("OutputStream is null....Not able to write : " + items.get(0).getFileName());
     }
 }

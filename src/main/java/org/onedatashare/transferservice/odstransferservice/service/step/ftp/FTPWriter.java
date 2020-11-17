@@ -51,42 +51,55 @@ public class FTPWriter implements ItemWriter<DataChunk> {
     }
 
     @AfterStep
-    public void afterStep() throws IOException {
-        OutputStream steam = drainMap.get(this.stepName);
-        steam.close();
+    public void afterStep() {
+        OutputStream outputStream = drainMap.get(this.stepName);
+        try {
+            if (outputStream != null) outputStream.close();
+        } catch (Exception ex) {
+            logger.error("Not able to close the input Stream");
+            ex.printStackTrace();
+        }
     }
 
-    public OutputStream getStream(String stepName) throws Exception {
+    public OutputStream getStream(String stepName) {
         if (!drainMap.containsKey(stepName)) {
             ftpDest(this.dServerName, this.dPort, this.dAccountId, this.dPass, this.dBasePath);
         }
         return drainMap.get(stepName);
     }
 
-    public void ftpDest(String serverName, int port, String username, String password, String basePath) throws Exception {
-        logger.info("Creating ftpDest---");
+    public void ftpDest(String serverName, int port, String username, String password, String basePath) {
+        logger.info("Creating ftpDest for :" + this.stepName);
 
         //***GETTING STREAM USING APACHE COMMONS VFS2
-
-        FileSystemOptions opts = new FileSystemOptions();
-        FtpFileSystemConfigBuilder.getInstance().setPassiveMode(opts, true);
-        FtpFileSystemConfigBuilder.getInstance().setFileType(opts, FtpFileType.BINARY);
-        FtpFileSystemConfigBuilder.getInstance().setAutodetectUtf8(opts, true);
-        FtpFileSystemConfigBuilder.getInstance().setControlEncoding(opts,"UTF-8");
-        StaticUserAuthenticator auth = new StaticUserAuthenticator(null, username, password);
-        DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
-        foDest = VFS.getManager().resolveFile("ftp://"+serverName+":"+port+"/"+basePath + this.stepName, opts);
-        foDest.createFile();
-        drainMap.put(this.stepName,foDest.getContent().getOutputStream());
-
+        try {
+            FileSystemOptions opts = new FileSystemOptions();
+            FtpFileSystemConfigBuilder.getInstance().setPassiveMode(opts, true);
+            FtpFileSystemConfigBuilder.getInstance().setFileType(opts, FtpFileType.BINARY);
+            FtpFileSystemConfigBuilder.getInstance().setAutodetectUtf8(opts, true);
+            FtpFileSystemConfigBuilder.getInstance().setControlEncoding(opts, "UTF-8");
+            StaticUserAuthenticator auth = new StaticUserAuthenticator(null, username, password);
+            DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
+            foDest = VFS.getManager().resolveFile("ftp://" + serverName + ":" + port + "/" + basePath + this.stepName, opts);
+            foDest.createFile();
+            drainMap.put(this.stepName, foDest.getContent().getOutputStream());
+        } catch (Exception ex) {
+            logger.error("Error in setting ftp connection...");
+            ex.printStackTrace();
+        }
     }
 
-    public void write(List<? extends DataChunk> list) throws Exception {
+    public void write(List<? extends DataChunk> list) {
         logger.info("Inside Writer---writing chunk of : " + list.get(0).getFileName());
         OutputStream destination = getStream(this.stepName);
-        for (DataChunk b : list) {
-            destination.write(b.getData());
-            destination.flush();
+        try {
+            for (DataChunk b : list) {
+                destination.write(b.getData());
+                destination.flush();
+            }
+        } catch (IOException e) {
+            logger.error("Error during writing chunks...exiting");
+            e.printStackTrace();
         }
     }
 }
