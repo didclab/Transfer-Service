@@ -2,8 +2,10 @@ package org.onedatashare.transferservice.odstransferservice.controller;
 
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfoMap;
+import org.onedatashare.transferservice.odstransferservice.model.RsaCredential;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.CrudService;
+import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.RsaCredInterfaceImpl;
 import org.onedatashare.transferservice.odstransferservice.service.JobControl;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
@@ -44,12 +46,18 @@ public class TransferController {
     @Autowired
     CrudService crudService;
 
+    @Autowired
+    RsaCredInterfaceImpl rsaCredInterface;
+
     @RequestMapping(value = "/start", method = RequestMethod.POST)
     @Async
     public ResponseEntity<String> start(@RequestBody TransferJobRequest request) throws Exception {
         JobParameters parameters = translate(new JobParametersBuilder(), request);
         Map<String,Long> hm = new HashMap<>();
+        RsaCredential rsaCredential = RsaCredential.builder().id(request.getOwnerId()+"source").key(request.getSource().getCredential().getPassword()).build();
         crudService.insertBeforeTransfer(request);
+        rsaCredInterface.saveOrUpdate(rsaCredential);
+        String rsa = rsaCredInterface.findKey(request.getOwnerId()+"source");
         for(EntityInfo ei:request.getSource().getInfoList()){
             hm.put(ei.getPath(),ei.getSize());
         }
@@ -69,8 +77,8 @@ public class TransferController {
         builder.addString(SOURCE_BASE_PATH, request.getSource().getInfo().getPath());
         builder.addString(DEST_BASE_PATH, request.getDestination().getInfo().getPath());
         builder.addString(INFO_LIST, request.getSource().getInfoList().toString());
-        builder.addString(SOURCE_ACCOUNT_ID_PASS, request.getSource().getCredential().getAccountId() + ":" + request.getSource().getCredential().getPassword());
-        builder.addString(DESTINATION_ACCOUNT_ID_PASS, request.getDestination().getCredential().getAccountId() + ":" + request.getDestination().getCredential().getPassword());
+      //  builder.addString(SOURCE_ACCOUNT_ID_PASS, request.getSource().getCredential().getAccountId() + ":" + request.getSource().getCredential().getPassword());
+      //  builder.addString(DESTINATION_ACCOUNT_ID_PASS, request.getDestination().getCredential().getAccountId() + ":" + request.getDestination().getCredential().getPassword());
         builder.addString(PRIORITY,String.valueOf(request.getPriority()));
         builder.addString(OWNER_ID,request.getOwnerId());
         return builder.toJobParameters();
