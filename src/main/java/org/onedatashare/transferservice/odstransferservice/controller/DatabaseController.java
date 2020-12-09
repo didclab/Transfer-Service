@@ -21,10 +21,11 @@ public class DatabaseController {
     @RequestMapping(value = "/job_status", method = RequestMethod.POST)
     public ResponseEntity<String> getStatus(@RequestBody JobRequestDTO jobRequestDTO) {
         String jobName = jobRequestDTO.getJobName();
-        boolean isDirectory = jobRequestDTO.isDirectory();
+        String isDirectory = jobRequestDTO.getIsDirectory();
+        boolean directory = Boolean.parseBoolean(isDirectory);
         BatchStatus status;
         JobInstance jobInstance = jobQueryImplementation.getLastJobInstance(jobName);
-        if(isDirectory) {
+        if(directory) {
             JobExecution jobExecution = jobQueryImplementation.getJobExecution(jobInstance);
             status = jobExecution.getStatus();
         }
@@ -39,10 +40,11 @@ public class DatabaseController {
     @RequestMapping(value = "/job_start_time", method = RequestMethod.POST)
     public ResponseEntity<String> getStartTime(@RequestBody JobRequestDTO jobRequestDTO) {
         String jobName = jobRequestDTO.getJobName();
-        boolean isDirectory = jobRequestDTO.isDirectory();
+        String isDirectory = jobRequestDTO.getIsDirectory();
+        boolean directory = Boolean.parseBoolean(isDirectory);
         Date startTime;
         JobInstance jobInstance = jobQueryImplementation.getLastJobInstance(jobName);
-        if(isDirectory){
+        if(directory){
             JobExecution jobExecution = jobQueryImplementation.getJobExecution(jobInstance);
             startTime = jobExecution.getStartTime();
         }
@@ -57,10 +59,11 @@ public class DatabaseController {
     @RequestMapping(value = "/job_finish_time", method = RequestMethod.POST)
     public ResponseEntity<String> getFinishTime(@RequestBody JobRequestDTO jobRequestDTO) {
         String jobName = jobRequestDTO.getJobName();
-        boolean isDirectory = jobRequestDTO.isDirectory();
+        String isDirectory = jobRequestDTO.getIsDirectory();
+        boolean directory = Boolean.parseBoolean(isDirectory);
         Date finishTime;
         JobInstance jobInstance = jobQueryImplementation.getLastJobInstance(jobName);
-        if(isDirectory){
+        if(directory){
             JobExecution jobExecution = jobQueryImplementation.getJobExecution(jobInstance);
             finishTime = jobExecution.getEndTime();
         }
@@ -75,10 +78,11 @@ public class DatabaseController {
     @RequestMapping(value = "/job_exit_message", method = RequestMethod.POST)
     public ResponseEntity<String> getExitMessage(@RequestBody JobRequestDTO jobRequestDTO) {
         String jobName = jobRequestDTO.getJobName();
-        boolean isDirectory = jobRequestDTO.isDirectory();
+        String isDirectory = jobRequestDTO.getIsDirectory();
+        boolean directory = Boolean.parseBoolean(isDirectory);
         ExitStatus executionExitStatus;
         JobInstance jobInstance = jobQueryImplementation.getLastJobInstance(jobName);
-        if(isDirectory){
+        if(directory){
             JobExecution jobExecution = jobQueryImplementation.getJobExecution(jobInstance);
             executionExitStatus = jobExecution.getExitStatus();
         }

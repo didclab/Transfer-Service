@@ -2,11 +2,10 @@ package org.onedatashare.transferservice.odstransferservice.controller;
 
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfoMap;
-import org.onedatashare.transferservice.odstransferservice.model.RsaCredential;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.CrudService;
-import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.RsaCredInterfaceImpl;
 import org.onedatashare.transferservice.odstransferservice.service.JobControl;
+import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.S3Reader;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
@@ -47,25 +46,23 @@ public class TransferController {
     CrudService crudService;
 
     @Autowired
-    RsaCredInterfaceImpl rsaCredInterface;
+    S3Reader s3Reader;
 
     @RequestMapping(value = "/start", method = RequestMethod.POST)
     @Async
     public ResponseEntity<String> start(@RequestBody TransferJobRequest request) throws Exception {
         JobParameters parameters = translate(new JobParametersBuilder(), request);
         Map<String,Long> hm = new HashMap<>();
-        RsaCredential rsaCredential = RsaCredential.builder().id(request.getOwnerId()+"source").key(request.getSource().getCredential().getPassword()).build();
         crudService.insertBeforeTransfer(request);
-        rsaCredInterface.saveOrUpdate(rsaCredential);
-        String rsa = rsaCredInterface.findKey(request.getOwnerId()+"source");
-        for(EntityInfo ei:request.getSource().getInfoList()){
-            hm.put(ei.getPath(),ei.getSize());
-        }
-        EntityInfoMap.setHm(hm);
-        //System.out.println(job+"---->>>"+parameters);
-        jc.setRequest(request);
-        jc.setChunkSize(SIXTYFOUR_KB); //64kb.
-        asyncJobLauncher.run(jc.concurrentJobDefination(), parameters);
+        s3Reader.startDownloadingContent();
+        s3Reader.startUploadingContentToS3();
+//        for(EntityInfo ei:request.getSource().getInfoList()){
+//            hm.put(ei.getPath(),ei.getSize());
+//        }
+//        EntityInfoMap.setHm(hm);
+//        jc.setRequest(request);
+//        jc.setChunkSize(SIXTYFOUR_KB); //64kb.
+//        asyncJobLauncher.run(jc.concurrentJobDefination(), parameters);
         return ResponseEntity.status(HttpStatus.OK).body("Your batch job has been submitted with \n ID: " + request.getId());
     }
 
