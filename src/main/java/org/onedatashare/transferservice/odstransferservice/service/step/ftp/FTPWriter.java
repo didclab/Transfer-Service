@@ -26,33 +26,24 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
 
 
 public class FTPWriter implements ItemWriter<DataChunk> {
+
     Logger logger = LoggerFactory.getLogger(FTPWriter.class);
+
     String stepName;
     HashMap<String, OutputStream> drainMap;
     private String dBasePath;
-    private String dAccountId;
-    private String dServerName;
-    private String dPass;
-    private int dPort;
     AccountEndpointCredential destCred;
-    EntityInfo fileInfo;
     FileObject foDest;
 
-    public FTPWriter(AccountEndpointCredential destCred, EntityInfo fileInfo){
+    public FTPWriter(AccountEndpointCredential destCred) {
         this.destCred = destCred;
-        this.fileInfo = fileInfo;
     }
 
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
         drainMap = new HashMap<>();
-        this.stepName = stepExecution.getStepName();
         dBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
-        this.dAccountId = dAccountIdPass[0];
-        this.dPass = StaticVar.dPass;
-        this.destCred = (AccountEndpointCredential) StaticVar.getDestCred();
-        this.dServerName = dCredential[0];
-        this.dPort = Integer.parseInt(dCredential[1]);
+        stepName = stepExecution.getStepName();
     }
 
     @AfterStep
@@ -68,12 +59,12 @@ public class FTPWriter implements ItemWriter<DataChunk> {
 
     public OutputStream getStream(String stepName) {
         if (!drainMap.containsKey(stepName)) {
-            ftpDest(this.dServerName, this.dPort, this.destCred.getUsername(), this.destCred.getSecret(), this.dBasePath);
+            ftpDest();
         }
         return drainMap.get(stepName);
     }
 
-    public void ftpDest(String serverName, int port, String username, String password, String basePath) {
+    public void ftpDest() {
         logger.info("Creating ftpDest for :" + this.stepName);
 
         //***GETTING STREAM USING APACHE COMMONS VFS2
@@ -85,7 +76,7 @@ public class FTPWriter implements ItemWriter<DataChunk> {
             FtpFileSystemConfigBuilder.getInstance().setControlEncoding(opts, "UTF-8");
             StaticUserAuthenticator auth = new StaticUserAuthenticator(null, this.destCred.getUsername(), this.destCred.getSecret());
             DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
-            foDest = VFS.getManager().resolveFile("ftp://" + this.destCred.getUri() + "/" + basePath + this.stepName, opts);
+            foDest = VFS.getManager().resolveFile("ftp://" + this.destCred.getUri() + "/" + dBasePath + this.stepName, opts);
             foDest.createFile();
             drainMap.put(this.stepName, foDest.getContent().getOutputStream());
         } catch (Exception ex) {

@@ -1,4 +1,5 @@
 package org.onedatashare.transferservice.odstransferservice.service;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -9,15 +10,13 @@ import org.onedatashare.transferservice.odstransferservice.config.DataSourceConf
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
-import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
-import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPWriter;
-import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPReader;
-import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPWriter;
-import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsReader;
-import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsWriter;
+//import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPReader;
+//import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPWriter;
+//import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsReader;
+//import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
@@ -124,25 +123,27 @@ public class JobControl extends DefaultBatchConfigurer {
         }
         return flows;
     }
-    protected AbstractItemCountingItemStreamItemReader getRightReader(EndpointType type, EntityInfo fileInfo){
-        switch (type){
-            case vfs:
-                return new VfsReader();
-            case sftp:
-                return new SFTPReader();
+
+    protected AbstractItemCountingItemStreamItemReader getRightReader(EndpointType type, EntityInfo fileInfo) {
+        switch (type) {
+//            case vfs:
+//                return new VfsReader();
+//            case sftp:
+//                return new SFTPReader();
             case ftp:
                 return new FTPReader(request.getSource().getVfsSourceCredentail(), request.getChunkSize());
         }
         return null;
     }
-    protected ItemWriter getRightWriter(EndpointType type){
-        switch (type){
-            case vfs:
-                return new VfsWriter();
-            case sftp:
-                return new SFTPWriter();
+
+    protected ItemWriter getRightWriter(EndpointType type) {
+        switch (type) {
+//            case vfs:
+//                return new VfsWriter();
+//            case sftp:
+//                return new SFTPWriter();
             case ftp:
-                return new FTPWriter();
+                return new FTPWriter(request.getDestination().getVfsDestCredential());
         }
         return null;
     }
@@ -151,14 +152,7 @@ public class JobControl extends DefaultBatchConfigurer {
     @Bean
     public Job concurrentJobDefinition() throws MalformedURLException {
         logger.info("createJobDefination function");
-        List<Flow> flows = new ArrayList<>();
-        if(StaticVar.sourceFlag == 1){
-            AccountEndpointCredential sourceCred = (AccountEndpointCredential) StaticVar.getSourceCred();
-            flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getParentInfo().getPath(), sourceCred.getUsername());
-        }else if(StaticVar.sourceFlag == 2){
-            OAuthEndpointCredential sourceCred = (OAuthEndpointCredential) StaticVar.getSourceCred();
-            flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getParentInfo().getPath(), sourceCred.getToken());
-        }
+        List<Flow> flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getParentInfo().getPath(), request.getJobId());
         logger.info("The total flows size is: " + String.valueOf(flows.size()));
         Flow[] fl = new Flow[flows.size()];
         Flow f = new FlowBuilder<SimpleFlow>("splitFlow").split(threadPoolConfig.stepTaskExecutor()).add(flows.toArray(fl))

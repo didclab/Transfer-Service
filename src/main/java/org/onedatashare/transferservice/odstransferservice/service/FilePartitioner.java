@@ -2,7 +2,7 @@ package org.onedatashare.transferservice.odstransferservice.service;
 
 import lombok.Getter;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
-import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsReader;
+//import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

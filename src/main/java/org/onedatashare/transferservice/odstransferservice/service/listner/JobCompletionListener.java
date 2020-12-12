@@ -20,7 +20,5 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
     @Override
     public void afterJob(JobExecution jobExecution) {
         logger.info("After JOB------------------present time--" + System.currentTimeMillis());
-        StaticVar.clearAllStaticVar();
-        logger.info("Cleared All SaticVar...");
     }
 }

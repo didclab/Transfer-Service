@@ -51,13 +51,7 @@ public class TransferController {
     @Async
     public ResponseEntity<String> start(@RequestBody TransferJobRequest request) throws Exception {
         JobParameters parameters = translate(new JobParametersBuilder(), request);
-        Map<String, Long> hm = new HashMap<>();
-        //TODO: Must remove these and find way to pass to reader and writer
         crudService.insertBeforeTransfer(request);
-        for (EntityInfo ei : request.getSource().getInfoList()) {
-            System.out.println(ei.toString());
-            hm.put(ei.getPath(), ei.getSize());
-        }
         jc.setRequest(request);
         jc.setChunkSize(request.getChunkSize());
         logger.info(String.valueOf(request.getChunkSize()));
@@ -74,22 +68,20 @@ public class TransferController {
         builder.addString(OWNER_ID, request.getOwnerId());
         builder.addString(PRIORITY, String.valueOf(request.getPriority()));
         builder.addString(CHUNK_SIZE, String.valueOf(request.getChunkSize()));
-        if(CredentialGroup.ACCOUNT_CRED_TYPE.contains(request.getSource().getType())){
+        if (CredentialGroup.ACCOUNT_CRED_TYPE.contains(request.getSource().getType())) {
             AccountEndpointCredential credential = request.getSource().getVfsSourceCredentail();
             builder.addString(SOURCE_CREDENTIAL_ID, credential.getUsername());
-            //builder.addString(SOURCE_ACCOUNT_ID_PASS, credential.getSecret() + ":" + "xxx");// request.getSource().getCredential().getPassword());
             builder.addString(SOURCE_URI, credential.getUri());
             builder.addString(SOURCE_BASE_PATH, request.getSource().getParentInfo().getPath());
-        }else if(CredentialGroup.OAUTH_CRED_TYPE.contains(request.getSource().getType())){
+        } else if (CredentialGroup.OAUTH_CRED_TYPE.contains(request.getSource().getType())) {
             OAuthEndpointCredential oauthCred = request.getSource().getOauthSourceCredential();
         }
-        if(CredentialGroup.ACCOUNT_CRED_TYPE.contains(request.getDestination().getType())){
+        if (CredentialGroup.ACCOUNT_CRED_TYPE.contains(request.getDestination().getType())) {
             AccountEndpointCredential credential = request.getDestination().getVfsDestCredential();
             builder.addString(DEST_CREDENTIAL_ID, credential.getUsername());
             builder.addString(DEST_URI, credential.getUri());
-            //builder.addString(DESTINATION_ACCOUNT_ID_PASS, credential.getSecret() + ":" + "xxx");// request.getDestination().getCredential().getPassword());
             builder.addString(DEST_BASE_PATH, request.getDestination().getParentInfo().getPath());
-        }else if(CredentialGroup.OAUTH_CRED_TYPE.contains(request.getDestination().getType())){
+        } else if (CredentialGroup.OAUTH_CRED_TYPE.contains(request.getDestination().getType())) {
             OAuthEndpointCredential oauthCred = request.getDestination().getOauthDestCredential();
         }
         return builder.toJobParameters();
