@@ -113,7 +113,6 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         logger.info("Inside clientCreateSourceStream for : " + fName + " " + username);
 
         //***GETTING STREAM USING APACHE COMMONS VFS2
-
         FileSystemOptions opts = new FileSystemOptions();
         FtpFileSystemConfigBuilder.getInstance().setPassiveMode(opts, true);
         FtpFileSystemConfigBuilder.getInstance().setFileType(opts, FtpFileType.BINARY);

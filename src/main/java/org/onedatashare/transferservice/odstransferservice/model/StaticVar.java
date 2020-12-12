@@ -39,6 +39,25 @@ public class StaticVar {
     public static String sPass = "";
     public static String dPass = "";
 
+    public static void setVfsSource(AccountEndpointCredential cred){
+        vfsSource = cred;
+        sourceFlag = 1;
+    }
+
+    public static void setOauthSource(OAuthEndpointCredential oauth){
+        oauthSource = oauth;
+        sourceFlag = 2;
+    }
+
+    public static void setVfsDest(AccountEndpointCredential cred){
+        vfsDest = cred;
+        destFlag = 1;
+    }
+    public static void setOauthDest(OAuthEndpointCredential oauth){
+        oauthDest = oauth;
+        destFlag = 2;
+    }
+
     public static EndpointCredential getSourceCred(){
         if(vfsSource != null){
             sourceFlag = 1;

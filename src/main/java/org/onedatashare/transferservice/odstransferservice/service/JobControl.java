@@ -10,7 +10,6 @@ import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.StaticVar;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
-//import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
@@ -62,6 +61,7 @@ public class JobControl extends DefaultBatchConfigurer {
 
     @Autowired
     private ApplicationThreadPoolConfig threadPoolConfig;
+
     @Autowired
     DataSourceConfig datasource;
     int chunkSize; //by default this is the file size
@@ -179,13 +179,13 @@ public class JobControl extends DefaultBatchConfigurer {
         logger.info("createJobDefination function");
         List<Flow> flows = new ArrayList<>();
         if(StaticVar.sourceFlag == 1){
-            AccountEndpointCredential sourceCred= (AccountEndpointCredential) StaticVar.getSourceCred();
+            AccountEndpointCredential sourceCred = (AccountEndpointCredential) StaticVar.getSourceCred();
             flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getInfo().getPath(), sourceCred.getUsername());
-
         }else if(StaticVar.sourceFlag == 2){
             OAuthEndpointCredential sourceCred = (OAuthEndpointCredential) StaticVar.getSourceCred();
             flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getInfo().getPath(), sourceCred.getToken());
         }
+        logger.info("The total flows size is: " + String.valueOf(flows.size()));
         Flow[] fl = new Flow[flows.size()];
         Flow f = new FlowBuilder<SimpleFlow>("splitFlow").split(threadPoolConfig.stepTaskExecutor()).add(flows.toArray(fl))
                 .build();
