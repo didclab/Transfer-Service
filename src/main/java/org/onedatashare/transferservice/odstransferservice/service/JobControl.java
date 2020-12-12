@@ -13,10 +13,8 @@ import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequ
 import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPWriter;
-//import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPReader;
-//import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPWriter;
-//import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsReader;
-//import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsWriter;
+import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPReader;
+import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
@@ -128,8 +126,8 @@ public class JobControl extends DefaultBatchConfigurer {
         switch (type) {
 //            case vfs:
 //                return new VfsReader();
-//            case sftp:
-//                return new SFTPReader();
+            case sftp:
+                return new SFTPReader(request.getSource().getVfsSourceCredentail(), request.getChunkSize());
             case ftp:
                 return new FTPReader(request.getSource().getVfsSourceCredentail(), request.getChunkSize());
         }
@@ -140,8 +138,8 @@ public class JobControl extends DefaultBatchConfigurer {
         switch (type) {
 //            case vfs:
 //                return new VfsWriter();
-//            case sftp:
-//                return new SFTPWriter();
+            case sftp:
+                return new SFTPWriter(request.getDestination().getVfsDestCredential());
             case ftp:
                 return new FTPWriter(request.getDestination().getVfsDestCredential());
         }

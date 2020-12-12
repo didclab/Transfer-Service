@@ -1,6 +1,5 @@
 package org.onedatashare.transferservice.odstransferservice.controller;
 
-import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.model.credential.CredentialGroup;
@@ -21,8 +20,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.*;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
@@ -63,7 +60,7 @@ public class TransferController {
     CrudService crudService;
 
     public JobParameters translate(JobParametersBuilder builder, TransferJobRequest request) {
-        System.out.println(request.toString());
+        logger.info("Request received : "+request.toString());
         builder.addLong(TIME, System.currentTimeMillis());
         builder.addString(OWNER_ID, request.getOwnerId());
         builder.addString(PRIORITY, String.valueOf(request.getPriority()));

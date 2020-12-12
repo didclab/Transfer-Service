@@ -31,13 +31,11 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
 
     Logger logger = LoggerFactory.getLogger(FTPReader.class);
 
-//    long fsize;
     InputStream inputStream;
     String sBasePath;
     String fName;
     int chunckSize;
     AccountEndpointCredential sourceCred;
-    //***VFS2 SETTING
     FileObject foSrc;
 
     @BeforeStep
@@ -47,8 +45,7 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         fName = stepExecution.getStepName();
     }
 
-    public FTPReader(AccountEndpointCredential credential, int chunckSize)
-    {
+    public FTPReader(AccountEndpointCredential credential, int chunckSize) {
         this.chunckSize = chunckSize;
         this.sourceCred = credential;
         this.setName(ClassUtils.getShortName(FTPReader.class));
