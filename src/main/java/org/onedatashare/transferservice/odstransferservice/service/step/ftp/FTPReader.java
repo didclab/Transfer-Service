@@ -10,6 +10,7 @@ import org.apache.commons.vfs2.provider.ftp.FtpFileSystemConfigBuilder;
 import org.apache.commons.vfs2.provider.ftp.FtpFileType;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.StaticVar;
+import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
@@ -37,7 +38,7 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
     String sPass;
     String sServerName;
     int sPort;
-
+    AccountEndpointCredential sourceCred;
 
     //***VFS2 SETTING
     FileObject foSrc;
@@ -54,6 +55,7 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         sPort = Integer.parseInt(sCredential[1]);
 //        sPass = sAccountIdPass[1];
         this.sPass = StaticVar.sPass;
+        this.sourceCred = (AccountEndpointCredential) StaticVar.getSourceCred();
         fsize = StaticVar.getHm().getOrDefault(fName, 0l);
     }
 
@@ -81,6 +83,7 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
 
         DataChunk dc = new DataChunk();
         dc.setData(Arrays.copyOf(data, byteRead));
+        dc.setSize(byteRead);
         dc.setFileName(fName);
         return dc;
     }
@@ -116,9 +119,9 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         FtpFileSystemConfigBuilder.getInstance().setFileType(opts, FtpFileType.BINARY);
         FtpFileSystemConfigBuilder.getInstance().setAutodetectUtf8(opts, true);
         FtpFileSystemConfigBuilder.getInstance().setControlEncoding(opts, "UTF-8");
-        StaticUserAuthenticator auth = new StaticUserAuthenticator(null, username, password);
+        StaticUserAuthenticator auth = new StaticUserAuthenticator(null, this.sourceCred.getUsername(), this.sourceCred.getSecret());
         DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
-        foSrc = VFS.getManager().resolveFile("ftp://" + serverName + ":" + port + "/" + basePath + fName, opts);
+        foSrc = VFS.getManager().resolveFile("ftp://" + this.sourceCred.getUri() + "/" + basePath + fName, opts);
         this.inputStream = foSrc.getContent().getInputStream();
     }
 }

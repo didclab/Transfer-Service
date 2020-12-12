@@ -11,8 +11,6 @@ import java.net.URLConnection;
 
 @Data
 public class DataChunk {
-    //    private int pageNumber;
-    OutputStream outputStream;
     int startPosition;
     byte[] data;
     String fileName;

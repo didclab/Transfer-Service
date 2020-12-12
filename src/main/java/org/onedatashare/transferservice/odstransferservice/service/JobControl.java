@@ -8,8 +8,11 @@ import org.onedatashare.transferservice.odstransferservice.config.ApplicationThr
 import org.onedatashare.transferservice.odstransferservice.config.DataSourceConfig;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
+import org.onedatashare.transferservice.odstransferservice.model.StaticVar;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 //import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
+import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPWriter;
@@ -56,24 +59,35 @@ public class JobControl extends DefaultBatchConfigurer {
 
     private DataSource dataSource;
     private PlatformTransactionManager transactionManager;
-    @Autowired
-    private ApplicationThreadPoolConfig threadPoolConfig;
 
     @Autowired
+    private ApplicationThreadPoolConfig threadPoolConfig;
+    @Autowired
     DataSourceConfig datasource;
+    int chunkSize; //by default this is the file size
+    public TransferJobRequest request;
+    Step parent;
+    Logger logger = LoggerFactory.getLogger(JobControl.class);
+
+    @Autowired
+    private ApplicationContext context;
+
+    @Autowired
+    JobBuilderFactory jobBuilderFactory;
+
+    @Autowired
+    StepBuilderFactory stepBuilderFactory;
 
     @Autowired(required = false)
     public void setDatasource(DataSource datasource) {
         this.dataSource = datasource;
         this.transactionManager = new DataSourceTransactionManager(dataSource);
-
     }
 
     @Override
     public PlatformTransactionManager getTransactionManager() {
         return transactionManager;
     }
-
 
     @Lazy
     @Bean
@@ -97,28 +111,11 @@ public class JobControl extends DefaultBatchConfigurer {
         return factory.getObject();
     }
 
-
-    int chunkSize; //by default this is the file size
-    public TransferJobRequest request;
-    Step parent;
-    Logger logger = LoggerFactory.getLogger(JobControl.class);
-
-
-    @Autowired
-    private ApplicationContext context;
-
-    @Autowired
-    JobBuilderFactory jobBuilderFactory;
-
-    @Autowired
-    StepBuilderFactory stepBuilderFactory;
-
-
-    private List<Flow> createConcurrentFlow(List<EntityInfo> infoList, String basePath, String id, String pass) throws MalformedURLException {
+    private List<Flow> createConcurrentFlow(List<EntityInfo> infoList, String basePath, String id) throws MalformedURLException {
         logger.info("CreateConcurrentFlow function");
         List<Flow> flows = new ArrayList<>();
         for (EntityInfo file : infoList) {
-            SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(file.getPath()).<DataChunk, DataChunk>chunk(1024);
+            SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(file.getPath()).<DataChunk, DataChunk>chunk(this.request.getChunkSize());
             child.reader(getRightReader(request.getSource().getType())).writer(getRightWriter(request.getDestination().getType()))
                     .faultTolerant()
                     .retry(Exception.class)
@@ -178,11 +175,17 @@ public class JobControl extends DefaultBatchConfigurer {
 
     @Lazy
     @Bean
-    public Job concurrentJobDefination() throws MalformedURLException {
+    public Job concurrentJobDefinition() throws MalformedURLException {
         logger.info("createJobDefination function");
-        List<Flow> flows = createConcurrentFlow(request.getSource().getInfoList(),
-                request.getSource().getInfo().getPath(), request.getSource().getCredential().getAccountId(),
-                request.getSource().getCredential().getPassword());
+        List<Flow> flows = new ArrayList<>();
+        if(StaticVar.sourceFlag == 1){
+            AccountEndpointCredential sourceCred= (AccountEndpointCredential) StaticVar.getSourceCred();
+            flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getInfo().getPath(), sourceCred.getUsername());
+
+        }else if(StaticVar.sourceFlag == 2){
+            OAuthEndpointCredential sourceCred = (OAuthEndpointCredential) StaticVar.getSourceCred();
+            flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getInfo().getPath(), sourceCred.getToken());
+        }
         Flow[] fl = new Flow[flows.size()];
         Flow f = new FlowBuilder<SimpleFlow>("splitFlow").split(threadPoolConfig.stepTaskExecutor()).add(flows.toArray(fl))
                 .build();

@@ -9,6 +9,7 @@ import org.apache.commons.vfs2.provider.ftp.FtpFileSystemConfigBuilder;
 import org.apache.commons.vfs2.provider.ftp.FtpFileType;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.StaticVar;
+import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
@@ -33,6 +34,7 @@ public class FTPWriter implements ItemWriter<DataChunk> {
     private String dServerName;
     private String dPass;
     private int dPort;
+    AccountEndpointCredential destCred;
 
     FileObject foDest;
 
@@ -44,8 +46,8 @@ public class FTPWriter implements ItemWriter<DataChunk> {
         String[] dAccountIdPass = stepExecution.getJobParameters().getString(DESTINATION_ACCOUNT_ID_PASS).split(":");
         String[] dCredential = stepExecution.getJobParameters().getString(DEST_CREDENTIAL_ID).split(":");
         this.dAccountId = dAccountIdPass[0];
-//        this.dPass = dAccountIdPass[1];
         this.dPass = StaticVar.dPass;
+        this.destCred = (AccountEndpointCredential) StaticVar.getDestCred();
         this.dServerName = dCredential[0];
         this.dPort = Integer.parseInt(dCredential[1]);
     }
@@ -63,7 +65,7 @@ public class FTPWriter implements ItemWriter<DataChunk> {
 
     public OutputStream getStream(String stepName) {
         if (!drainMap.containsKey(stepName)) {
-            ftpDest(this.dServerName, this.dPort, this.dAccountId, this.dPass, this.dBasePath);
+            ftpDest(this.dServerName, this.dPort, this.destCred.getUsername(), this.destCred.getSecret(), this.dBasePath);
         }
         return drainMap.get(stepName);
     }
@@ -78,9 +80,9 @@ public class FTPWriter implements ItemWriter<DataChunk> {
             FtpFileSystemConfigBuilder.getInstance().setFileType(opts, FtpFileType.BINARY);
             FtpFileSystemConfigBuilder.getInstance().setAutodetectUtf8(opts, true);
             FtpFileSystemConfigBuilder.getInstance().setControlEncoding(opts, "UTF-8");
-            StaticUserAuthenticator auth = new StaticUserAuthenticator(null, username, password);
+            StaticUserAuthenticator auth = new StaticUserAuthenticator(null, this.destCred.getUsername(), this.destCred.getSecret());
             DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
-            foDest = VFS.getManager().resolveFile("ftp://" + serverName + ":" + port + "/" + basePath + this.stepName, opts);
+            foDest = VFS.getManager().resolveFile("ftp://" + this.destCred.getUri() + "/" + basePath + this.stepName, opts);
             foDest.createFile();
             drainMap.put(this.stepName, foDest.getContent().getOutputStream());
         } catch (Exception ex) {

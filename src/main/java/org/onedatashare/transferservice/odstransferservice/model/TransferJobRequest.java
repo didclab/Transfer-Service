@@ -11,13 +11,14 @@ import java.util.ArrayList;
 @NoArgsConstructor
 @Getter
 public class TransferJobRequest {
+
     @NonNull private String ownerId;
     private int priority;
+    @NonNull private int chunkSize;
     @NonNull private String id;
     @NonNull private Source source;
     @NonNull private Destination destination;
     private TransferOptions options;
-
 
     @Data
     @AllArgsConstructor

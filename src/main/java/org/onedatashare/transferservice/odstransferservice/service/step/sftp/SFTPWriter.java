@@ -4,6 +4,7 @@ import com.jcraft.jsch.*;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 
 import org.onedatashare.transferservice.odstransferservice.model.StaticVar;
+import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
@@ -30,6 +31,7 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
     private String dServerName;
     private String dPass;
     private int dPort;
+    AccountEndpointCredential destCred;
 
     Session jschSession = null;
 
@@ -46,6 +48,7 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
 //        this.dPass = dAccountIdPass[1];
         this.dPass = StaticVar.dPass;
         this.dServerName = dCredential[0];
+        this.destCred = (AccountEndpointCredential) StaticVar.getDestCred();
         this.dPort = Integer.parseInt(dCredential[1]);
     }
 

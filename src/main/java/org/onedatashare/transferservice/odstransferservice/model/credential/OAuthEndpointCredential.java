@@ -1,7 +1,7 @@
 package org.onedatashare.transferservice.odstransferservice.model.credential;
 
 import lombok.Data;
-import org.springframework.data.mongodb.core.mapping.Document;
+import lombok.experimental.Accessors;
 
 import java.util.Date;
 
@@ -9,7 +9,7 @@ import java.util.Date;
  * POJO for storing OAuth Credentials
  */
 @Data
-@Document
+@Accessors(chain = true)
 public class OAuthEndpointCredential extends EndpointCredential {
     private String token;
     private boolean tokenExpires = false;
@@ -17,8 +17,8 @@ public class OAuthEndpointCredential extends EndpointCredential {
     private String refreshToken;
     private boolean refreshTokenExpires = false;
 
-    @Override
-    public boolean equals(Object obj) {
-        return super.equals(obj);
+    public OAuthEndpointCredential(String id){
+        super(id);
     }
+
 }

@@ -12,4 +12,7 @@ public class TransferOptions {
     private boolean overwrite;
     private Integer retry;
     private Boolean verify;
+    private int concurrencyThreadCount;
+    private int parallelThreadCount;
+    private int pipeSize;
 }
