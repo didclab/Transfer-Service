@@ -3,7 +3,6 @@ package org.onedatashare.transferservice.odstransferservice.service.step.sftp;
 import com.jcraft.jsch.*;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 
-import org.onedatashare.transferservice.odstransferservice.model.StaticVar;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

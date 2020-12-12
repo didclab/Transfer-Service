@@ -1,10 +1,8 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.vfs;
 
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
-import org.onedatashare.transferservice.odstransferservice.model.StaticVar;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
-import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;

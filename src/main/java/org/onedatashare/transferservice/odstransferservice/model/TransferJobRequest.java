@@ -13,10 +13,10 @@ import java.util.ArrayList;
 @Getter
 public class TransferJobRequest {
 
+    @NonNull private String jobId;
     @NonNull private String ownerId;
     private int priority;
     @NonNull private int chunkSize;
-    @NonNull private String id;
     @NonNull private Source source;
     @NonNull private Destination destination;
     private TransferOptions options;
@@ -26,10 +26,9 @@ public class TransferJobRequest {
     @NoArgsConstructor
     public static class Destination {
         @NonNull private EndpointType type;
-        private AccountEndpointCredential vfsDest;
-        private OAuthEndpointCredential oauthDest;
-        @NonNull private String credId;
-        private EntityInfo info;
+        private AccountEndpointCredential vfsDestCredential;
+        private OAuthEndpointCredential oauthDestCredential;
+        private EntityInfo parentInfo;
     }
 
     @Data
@@ -37,10 +36,9 @@ public class TransferJobRequest {
     @NoArgsConstructor
     public static class Source {
         @NonNull private EndpointType type;
-        private AccountEndpointCredential vfsSource;
-        private OAuthEndpointCredential oauthSource;
-        @NonNull private String credId;
-        @NonNull private EntityInfo info;
+        private AccountEndpointCredential vfsSourceCredentail;
+        private OAuthEndpointCredential oauthSourceCredential;
+        @NonNull private EntityInfo parentInfo;
         @NonNull private ArrayList<EntityInfo> infoList;
     }
 }

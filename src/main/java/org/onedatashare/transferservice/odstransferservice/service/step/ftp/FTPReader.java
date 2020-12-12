@@ -9,7 +9,7 @@ import org.apache.commons.vfs2.impl.DefaultFileSystemConfigBuilder;
 import org.apache.commons.vfs2.provider.ftp.FtpFileSystemConfigBuilder;
 import org.apache.commons.vfs2.provider.ftp.FtpFileType;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
-import org.onedatashare.transferservice.odstransferservice.model.StaticVar;
+import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +23,7 @@ import org.springframework.util.ClassUtils;
 
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.HashMap;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
@@ -30,16 +31,12 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
 
     Logger logger = LoggerFactory.getLogger(FTPReader.class);
 
-    long fsize;
+//    long fsize;
     InputStream inputStream;
     String sBasePath;
     String fName;
-    String sAccountId;
-    String sPass;
-    String sServerName;
-    int sPort;
+    int chunckSize;
     AccountEndpointCredential sourceCred;
-
     //***VFS2 SETTING
     FileObject foSrc;
 
@@ -48,18 +45,12 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         logger.info("Before step for : " + stepExecution.getStepName());
         sBasePath = stepExecution.getJobParameters().getString(SOURCE_BASE_PATH);
         fName = stepExecution.getStepName();
-        String[] sAccountIdPass = stepExecution.getJobParameters().getString(SOURCE_ACCOUNT_ID_PASS).split(":");
-        String[] sCredential = stepExecution.getJobParameters().getString(SOURCE_CREDENTIAL_ID).split(":");
-        sAccountId = sAccountIdPass[0];
-        sServerName = sCredential[0];
-        sPort = Integer.parseInt(sCredential[1]);
-//        sPass = sAccountIdPass[1];
-        this.sPass = StaticVar.sPass;
-        this.sourceCred = (AccountEndpointCredential) StaticVar.getSourceCred();
-        fsize = StaticVar.getHm().getOrDefault(fName, 0l);
     }
 
-    public FTPReader() {
+    public FTPReader(AccountEndpointCredential credential, int chunckSize)
+    {
+        this.chunckSize = chunckSize;
+        this.sourceCred = credential;
         this.setName(ClassUtils.getShortName(FTPReader.class));
     }
 
@@ -75,7 +66,7 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
     @SneakyThrows
     @Override
     protected DataChunk doRead() {
-        byte[] data = new byte[SIXTYFOUR_KB];
+        byte[] data = new byte[this.chunckSize];
         int byteRead = this.inputStream.read(data);
         if (byteRead == -1) {
             return null;
@@ -91,7 +82,7 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
 
     @Override
     protected void doOpen() {
-        clientCreateSourceStream(sServerName, sPort, sAccountId, sPass, sBasePath, fName);
+        clientCreateSourceStream(sBasePath, fName);
     }
 
     @Override
@@ -109,8 +100,8 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
     }
 
     @SneakyThrows
-    public void clientCreateSourceStream(String serverName, int port, String username, String password, String basePath, String fName) {
-        logger.info("Inside clientCreateSourceStream for : " + fName + " " + username);
+    public void clientCreateSourceStream(String basePath, String fName) {
+        logger.info("Inside clientCreateSourceStream for : " + fName + " ");
 
         //***GETTING STREAM USING APACHE COMMONS VFS2
         FileSystemOptions opts = new FileSystemOptions();
@@ -120,7 +111,7 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         FtpFileSystemConfigBuilder.getInstance().setControlEncoding(opts, "UTF-8");
         StaticUserAuthenticator auth = new StaticUserAuthenticator(null, this.sourceCred.getUsername(), this.sourceCred.getSecret());
         DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
-        foSrc = VFS.getManager().resolveFile("ftp://" + this.sourceCred.getUri() + "/" + basePath + fName, opts);
+        this.foSrc = VFS.getManager().resolveFile("ftp://" + this.sourceCred.getUri() + "/" + basePath + fName, opts);
         this.inputStream = foSrc.getContent().getInputStream();
     }
 }

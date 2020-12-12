@@ -8,7 +8,6 @@ import org.onedatashare.transferservice.odstransferservice.config.ApplicationThr
 import org.onedatashare.transferservice.odstransferservice.config.DataSourceConfig;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
-import org.onedatashare.transferservice.odstransferservice.model.StaticVar;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
@@ -116,7 +115,7 @@ public class JobControl extends DefaultBatchConfigurer {
         List<Flow> flows = new ArrayList<>();
         for (EntityInfo file : infoList) {
             SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(file.getPath()).<DataChunk, DataChunk>chunk(this.request.getChunkSize());
-            child.reader(getRightReader(request.getSource().getType())).writer(getRightWriter(request.getDestination().getType()))
+            child.reader(getRightReader(request.getSource().getType(), file)).writer(getRightWriter(request.getDestination().getType()))
                     .faultTolerant()
                     .retry(Exception.class)
                     .retryLimit(2)
@@ -125,14 +124,14 @@ public class JobControl extends DefaultBatchConfigurer {
         }
         return flows;
     }
-    protected AbstractItemCountingItemStreamItemReader getRightReader(EndpointType type){
+    protected AbstractItemCountingItemStreamItemReader getRightReader(EndpointType type, EntityInfo fileInfo){
         switch (type){
             case vfs:
                 return new VfsReader();
             case sftp:
                 return new SFTPReader();
             case ftp:
-                return new FTPReader();
+                return new FTPReader(request.getSource().getVfsSourceCredentail(), request.getChunkSize());
         }
         return null;
     }
@@ -148,31 +147,6 @@ public class JobControl extends DefaultBatchConfigurer {
         return null;
     }
 
-//    @SneakyThrows
-//    private List<Step> createSteps(List<EntityInfo> infoList, String basePath, String id, String pass) {
-//        List<Step> steps = new ArrayList<>();
-//
-//        for (EntityInfo file : infoList) {
-////            FlowBuilder fb = new FlowBuilder("flow");
-//            CustomReader customReader = new CustomReader();
-//            FTPWriter ftpWriter = new FTPWriter();
-//            String url = basePath.substring(0, 6) + id + ":" + pass + "@" + basePath.substring(6);
-////            System.out.println("this is url: "+url);
-//            UrlResource urlResource = new UrlResource(url + file.getPath());
-//            customReader.setResource(urlResource);
-//            SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(file.getPath()).<DataChunk, DataChunk>chunk(20);
-//            switch (request.getSource().getType()) {
-//                case ftp:
-//                    child.reader(customReader).writer(ftpWriter).build();
-//                    break;
-//            }
-//            steps.add(child.build());
-//            logger.warn(urlResource.getFilename());
-//        }
-//        return steps;
-//    }
-
-
     @Lazy
     @Bean
     public Job concurrentJobDefinition() throws MalformedURLException {
@@ -180,10 +154,10 @@ public class JobControl extends DefaultBatchConfigurer {
         List<Flow> flows = new ArrayList<>();
         if(StaticVar.sourceFlag == 1){
             AccountEndpointCredential sourceCred = (AccountEndpointCredential) StaticVar.getSourceCred();
-            flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getInfo().getPath(), sourceCred.getUsername());
+            flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getParentInfo().getPath(), sourceCred.getUsername());
         }else if(StaticVar.sourceFlag == 2){
             OAuthEndpointCredential sourceCred = (OAuthEndpointCredential) StaticVar.getSourceCred();
-            flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getInfo().getPath(), sourceCred.getToken());
+            flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getParentInfo().getPath(), sourceCred.getToken());
         }
         logger.info("The total flows size is: " + String.valueOf(flows.size()));
         Flow[] fl = new Flow[flows.size()];

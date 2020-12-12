@@ -10,7 +10,7 @@ public class CrudService {
     @Autowired
     MetaDataInterfaceImplementation metaDataServiceImplementation;
     public void insertBeforeTransfer(TransferJobRequest transferJobRequest){
-        MetaDataDTO metaDataDTO = MetaDataDTO.builder().id(transferJobRequest.getId())
+        MetaDataDTO metaDataDTO = MetaDataDTO.builder().id(transferJobRequest.getJobId())
                                     .source(transferJobRequest.getSource().getType().toString())
                                     .destination(transferJobRequest.getDestination().getType().toString())
                                     .chunks(10).build();

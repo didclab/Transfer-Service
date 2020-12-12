@@ -8,7 +8,7 @@ import org.apache.commons.vfs2.impl.DefaultFileSystemConfigBuilder;
 import org.apache.commons.vfs2.provider.ftp.FtpFileSystemConfigBuilder;
 import org.apache.commons.vfs2.provider.ftp.FtpFileType;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
-import org.onedatashare.transferservice.odstransferservice.model.StaticVar;
+import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,16 +35,19 @@ public class FTPWriter implements ItemWriter<DataChunk> {
     private String dPass;
     private int dPort;
     AccountEndpointCredential destCred;
-
+    EntityInfo fileInfo;
     FileObject foDest;
+
+    public FTPWriter(AccountEndpointCredential destCred, EntityInfo fileInfo){
+        this.destCred = destCred;
+        this.fileInfo = fileInfo;
+    }
 
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
         drainMap = new HashMap<>();
         this.stepName = stepExecution.getStepName();
         dBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
-        String[] dAccountIdPass = stepExecution.getJobParameters().getString(DESTINATION_ACCOUNT_ID_PASS).split(":");
-        String[] dCredential = stepExecution.getJobParameters().getString(DEST_CREDENTIAL_ID).split(":");
         this.dAccountId = dAccountIdPass[0];
         this.dPass = StaticVar.dPass;
         this.destCred = (AccountEndpointCredential) StaticVar.getDestCred();
