@@ -8,7 +8,6 @@ import org.apache.commons.vfs2.impl.DefaultFileSystemConfigBuilder;
 import org.apache.commons.vfs2.provider.ftp.FtpFileSystemConfigBuilder;
 import org.apache.commons.vfs2.provider.ftp.FtpFileType;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
-import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +18,6 @@ import org.springframework.batch.item.ItemWriter;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.HashMap;
 import java.util.List;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
@@ -30,7 +28,7 @@ public class FTPWriter implements ItemWriter<DataChunk> {
     Logger logger = LoggerFactory.getLogger(FTPWriter.class);
 
     String stepName;
-    HashMap<String, OutputStream> drainMap;
+    OutputStream outputStream;
     private String dBasePath;
     AccountEndpointCredential destCred;
     FileObject foDest;
@@ -41,14 +39,13 @@ public class FTPWriter implements ItemWriter<DataChunk> {
 
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
-        drainMap = new HashMap<>();
+        outputStream = null;
         dBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
         stepName = stepExecution.getStepName();
     }
 
     @AfterStep
     public void afterStep() {
-        OutputStream outputStream = drainMap.get(this.stepName);
         try {
             if (outputStream != null) outputStream.close();
         } catch (Exception ex) {
@@ -58,10 +55,11 @@ public class FTPWriter implements ItemWriter<DataChunk> {
     }
 
     public OutputStream getStream(String stepName) {
-        if (!drainMap.containsKey(stepName)) {
+        if(outputStream == null){
+            logger.info("Stream not present...creating OutputStream for "+ stepName);
             ftpDest();
         }
-        return drainMap.get(stepName);
+        return outputStream;
     }
 
     public void ftpDest() {
@@ -78,7 +76,7 @@ public class FTPWriter implements ItemWriter<DataChunk> {
             DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
             foDest = VFS.getManager().resolveFile("ftp://" + this.destCred.getUri() + "/" + dBasePath + this.stepName, opts);
             foDest.createFile();
-            drainMap.put(this.stepName, foDest.getContent().getOutputStream());
+            outputStream =  foDest.getContent().getOutputStream();
         } catch (Exception ex) {
             logger.error("Error in setting ftp connection...");
             ex.printStackTrace();
