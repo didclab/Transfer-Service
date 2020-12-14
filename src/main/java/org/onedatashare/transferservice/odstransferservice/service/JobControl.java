@@ -15,6 +15,8 @@ import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPR
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPWriter;
+import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsReader;
+import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
@@ -124,20 +126,20 @@ public class JobControl extends DefaultBatchConfigurer {
 
     protected AbstractItemCountingItemStreamItemReader getRightReader(EndpointType type, EntityInfo fileInfo) {
         switch (type) {
-//            case vfs:
-//                return new VfsReader();
+            case vfs:
+                return new VfsReader(request.getSource().getVfsSourceCredential(), fileInfo, request.getChunkSize());
             case sftp:
-                return new SFTPReader(request.getSource().getVfsSourceCredentail(), request.getChunkSize());
+                return new SFTPReader(request.getSource().getVfsSourceCredential(), request.getChunkSize());
             case ftp:
-                return new FTPReader(request.getSource().getVfsSourceCredentail(), request.getChunkSize());
+                return new FTPReader(request.getSource().getVfsSourceCredential(), request.getChunkSize());
         }
         return null;
     }
 
     protected ItemWriter getRightWriter(EndpointType type) {
         switch (type) {
-//            case vfs:
-//                return new VfsWriter();
+            case vfs:
+                return new VfsWriter(request.getDestination().getVfsDestCredential());
             case sftp:
                 return new SFTPWriter(request.getDestination().getVfsDestCredential());
             case ftp:

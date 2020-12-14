@@ -36,7 +36,7 @@ public class TransferJobRequest {
     @NoArgsConstructor
     public static class Source {
         @NonNull private EndpointType type;
-        private AccountEndpointCredential vfsSourceCredentail;
+        private AccountEndpointCredential vfsSourceCredential;
         private OAuthEndpointCredential oauthSourceCredential;
         @NonNull private EntityInfo parentInfo;
         @NonNull private ArrayList<EntityInfo> infoList;

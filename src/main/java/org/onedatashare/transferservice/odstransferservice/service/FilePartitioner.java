@@ -13,9 +13,15 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
 public class FilePartitioner {
     Logger logger = LoggerFactory.getLogger(FilePartitioner.class);
     ConcurrentLinkedQueue<FilePart> queue;
+    public int chunkSize;
 
     public FilePartitioner(){
         this.queue = new ConcurrentLinkedQueue<>();
+        this.chunkSize = SIXTYFOUR_KB;
+    }
+
+    public FilePartitioner(int chunkSize){
+        this.chunkSize = chunkSize;
     }
 
     public FilePart nextPart(){
@@ -30,7 +36,7 @@ public class FilePartitioner {
      */
     public int createParts(long totalSize, String fileName){
         if(totalSize < 1) return -1;
-        if(totalSize <= SIXTYFOUR_KB){
+        if(totalSize <= this.chunkSize){
             FilePart part = new FilePart();
             part.setFileName(fileName);
             part.setStart(0);
@@ -39,13 +45,13 @@ public class FilePartitioner {
             queue.add(part);
         }else{
             long startPosition = 0;
-            long chunksOfSixtyFourKB = Math.floorDiv(totalSize, SIXTYFOUR_KB);
-            for(int i = 0; i < chunksOfSixtyFourKB; i++){
+            long chunksOfChunksKB = Math.floorDiv(totalSize, this.chunkSize);
+            for(int i = 0; i < chunksOfChunksKB; i++){
                 FilePart part = new FilePart();
                 part.setFileName(fileName);
-                part.setSize(SIXTYFOUR_KB);
+                part.setSize(this.chunkSize);
                 part.setStart(startPosition);
-                startPosition+=SIXTYFOUR_KB;
+                startPosition+=this.chunkSize;
                 part.setEnd(startPosition);
                 this.queue.add(part);
             }
