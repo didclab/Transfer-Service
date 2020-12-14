@@ -28,12 +28,6 @@ public class TransferController {
 
     Logger logger = LoggerFactory.getLogger(TransferController.class);
 
-//    @Autowired
-//    JobLauncher jobLauncher;
-
-//    @Autowired
-//    JobBuilderFactory jobBuilderFactory;
-
     @Autowired
     JobControl jc;
 
