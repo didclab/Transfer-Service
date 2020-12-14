@@ -53,7 +53,7 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
 
     @Override
     protected DataChunk doRead() {
-        byte[] data = new byte[SIXTYFOUR_KB];
+        byte[] data = new byte[this.chunckSize];
         int byteRead = -1;
         try {
             byteRead = this.inputStream.read(data);
@@ -66,6 +66,7 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
         }
 
         DataChunk dc = new DataChunk();
+        dc.setSize(byteRead);
         dc.setData(Arrays.copyOf(data, byteRead));
         dc.setFileName(fName);
         return dc;

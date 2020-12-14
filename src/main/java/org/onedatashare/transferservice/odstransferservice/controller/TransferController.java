@@ -49,6 +49,7 @@ public class TransferController {
     public ResponseEntity<String> start(@RequestBody TransferJobRequest request) throws Exception {
         JobParameters parameters = translate(new JobParametersBuilder(), request);
         crudService.insertBeforeTransfer(request);
+        logger.info(request.getSource().getParentInfo().getPath());
         jc.setRequest(request);
         jc.setChunkSize(request.getChunkSize());
         logger.info(String.valueOf(request.getChunkSize()));
@@ -66,12 +67,14 @@ public class TransferController {
         builder.addString(PRIORITY, String.valueOf(request.getPriority()));
         builder.addString(CHUNK_SIZE, String.valueOf(request.getChunkSize()));
         if (CredentialGroup.ACCOUNT_CRED_TYPE.contains(request.getSource().getType())) {
-            AccountEndpointCredential credential = request.getSource().getVfsSourceCredentail();
+            AccountEndpointCredential credential = request.getSource().getVfsSourceCredential();
             builder.addString(SOURCE_CREDENTIAL_ID, credential.getUsername());
             builder.addString(SOURCE_URI, credential.getUri());
             builder.addString(SOURCE_BASE_PATH, request.getSource().getParentInfo().getPath());
         } else if (CredentialGroup.OAUTH_CRED_TYPE.contains(request.getSource().getType())) {
             OAuthEndpointCredential oauthCred = request.getSource().getOauthSourceCredential();
+        }else{
+            return null;
         }
         if (CredentialGroup.ACCOUNT_CRED_TYPE.contains(request.getDestination().getType())) {
             AccountEndpointCredential credential = request.getDestination().getVfsDestCredential();
@@ -80,6 +83,8 @@ public class TransferController {
             builder.addString(DEST_BASE_PATH, request.getDestination().getParentInfo().getPath());
         } else if (CredentialGroup.OAUTH_CRED_TYPE.contains(request.getDestination().getType())) {
             OAuthEndpointCredential oauthCred = request.getDestination().getOauthDestCredential();
+        }else{
+            return null;
         }
         return builder.toJobParameters();
     }
