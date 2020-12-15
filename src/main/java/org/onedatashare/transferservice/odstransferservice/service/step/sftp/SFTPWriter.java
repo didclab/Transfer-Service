@@ -49,7 +49,8 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
     }
 
     public OutputStream getStream(String stepName) {
-        if (!channelSftp.isConnected()) {
+
+        if (channelSftp == null || !channelSftp.isConnected()) {
             ftpDest();
             try {
                 return channelSftp.put(this.stepName, ChannelSftp.OVERWRITE);
