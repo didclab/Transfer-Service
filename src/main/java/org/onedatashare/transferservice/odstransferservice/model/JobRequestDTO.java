@@ -11,7 +11,7 @@ public class JobRequestDTO {
     private long instanceId;
     private String stepName;
     @NonNull
-    private boolean isDirectory;
+    private String isDirectory;
 
     public String getJobName() {
         return jobName;
@@ -29,11 +29,11 @@ public class JobRequestDTO {
         this.instanceId = instanceId;
     }
 
-    public boolean isDirectory() {
+    public String getIsDirectory() {
         return isDirectory;
     }
 
-    public void setDirectory(boolean directory) {
+    public void setDirectory(String directory) {
         isDirectory = directory;
     }
 
