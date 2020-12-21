@@ -87,7 +87,7 @@ public class TransferController {
             builder.addString(DEST_URI, credential.getUri());
             builder.addString(DEST_BASE_PATH, request.getDestination().getParentInfo().getPath());
         } else if (CredentialGroup.OAUTH_CRED_TYPE.contains(request.getDestination().getType())) {
-//            OAuthEndpointCredential oauthCred = request.getDestination().getOauthDestCredential();
+            OAuthEndpointCredential oauthCred = request.getDestination().getOauthDestCredential();
         }else{
             return null;
         }

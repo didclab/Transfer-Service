@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SIXTYFOUR_KB;
-
 public class FilePartitioner {
     Logger logger = LoggerFactory.getLogger(FilePartitioner.class);
     ConcurrentLinkedQueue<FilePart> queue;
@@ -21,6 +20,7 @@ public class FilePartitioner {
     }
 
     public FilePartitioner(int chunkSize){
+        this.queue = new ConcurrentLinkedQueue<>();
         this.chunkSize = chunkSize;
     }
 

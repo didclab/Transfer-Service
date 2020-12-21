@@ -11,6 +11,7 @@ import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
+import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3Reader;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPReader;
@@ -132,6 +133,8 @@ public class JobControl extends DefaultBatchConfigurer {
                 return new SFTPReader(request.getSource().getVfsSourceCredential(), request.getChunkSize());
             case ftp:
                 return new FTPReader(request.getSource().getVfsSourceCredential(), request.getChunkSize());
+            case s3:
+                return new AmazonS3Reader(request.getSource().getVfsSourceCredential(), request.getChunkSize(), fileInfo);
         }
         return null;
     }
@@ -151,9 +154,7 @@ public class JobControl extends DefaultBatchConfigurer {
     @Lazy
     @Bean
     public Job concurrentJobDefinition() throws MalformedURLException {
-        logger.info("createJobDefination function");
         List<Flow> flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getParentInfo().getPath(), request.getJobId());
-        logger.info("The total flows size is: " + String.valueOf(flows.size()));
         Flow[] fl = new Flow[flows.size()];
         Flow f = new FlowBuilder<SimpleFlow>("splitFlow").split(threadPoolConfig.stepTaskExecutor()).add(flows.toArray(fl))
                 .build();

@@ -8,11 +8,17 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.AmazonS3URI;
 import com.amazonaws.services.s3.model.*;
-import org.onedatashare.transferservice.odstransferservice.model.S3DataChunk;
+import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
+import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
+import org.onedatashare.transferservice.odstransferservice.model.FilePart;
+import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
+import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.file.ResourceAwareItemReaderItemStream;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
@@ -22,38 +28,47 @@ import org.springframework.core.io.Resource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
-public class AmazonS3Reader<T> extends AbstractItemCountingItemStreamItemReader<S3DataChunk> implements ResourceAwareItemReaderItemStream<S3DataChunk>, InitializingBean {
+public class AmazonS3Reader<T> extends AbstractItemCountingItemStreamItemReader<DataChunk> implements ResourceAwareItemReaderItemStream<DataChunk>, InitializingBean {
 
     Logger logger = LoggerFactory.getLogger(AmazonS3Reader.class);
-    private String s3BucketName;
-    private String s3ObjectName;
-    private Resource resource;
-    private static final long STANDARD_SIZE = 5*1024*1024;
+    private static final int STANDARD_SIZE = 5*1024*1024;
     private AmazonS3 s3Client;
-    private List<S3ObjectSummary> objectSummaries;
-    private List<InputStream> streamList = new ArrayList<>();
-    private InputStream inputStream;
-    private String fileType;
-    private long largeFileSize;
-    private long fileSize;
+    private AmazonS3URI amazonS3URI;
+    private S3Object currentFile;
+    private S3ObjectInputStream inputStream;
+    private FilePartitioner partitioner;
+    String fileName;
+    AccountEndpointCredential sourceCredential;
+    private int chunkSize;
+    private EntityInfo fileInfo;
+
+    public AmazonS3Reader(AccountEndpointCredential sourceCredential, int chunkSize, EntityInfo fileInfo){
+        this.sourceCredential = sourceCredential;
+        this.chunkSize = chunkSize;
+        if(this.chunkSize < STANDARD_SIZE) this.chunkSize = STANDARD_SIZE;
+        this.partitioner = new FilePartitioner(this.chunkSize);
+        this.fileInfo = fileInfo;
+        this.amazonS3URI = new AmazonS3URI(sourceCredential.getUri());
+    }
 
 
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
-        //s3BucketName = stepExecution.getJobParameters().getString(SOURCE_BASE_PATH);
-        //s3ObjectName = stepExecution.getStepName();
-        s3BucketName = "test-transfer-service-bucket";
-        s3ObjectName = "test-key.pdf";
-        String s3AccessId = "AKIASFB52FW72R74YEDX";
-        String s3AccessKey = "57Wbk5T8KwjWtuoufef6oX8yjor3H1LgyFnwRO1P";
-        AWSCredentials credentials = new BasicAWSCredentials(s3AccessId, s3AccessKey);
-        Regions clientRegion = Regions.US_EAST_2;
-        this.s3Client = AmazonS3ClientBuilder.standard()
-                .withCredentials(new AWSStaticCredentialsProvider(credentials))
-                .withRegion(clientRegion)
-                .build();
+        this.fileName = stepExecution.getStepName();
+        partitioner.createParts(this.fileInfo.getSize(), this.fileName);
+    }
+
+    @AfterStep
+    public void afterStep(){
+        try {
+            this.inputStream.close();
+        } catch (IOException e) {
+            logger.error("Failed closing the S3 InputStream");
+            e.printStackTrace();
+        }
     }
 
     public void setName(String name) {
@@ -61,22 +76,42 @@ public class AmazonS3Reader<T> extends AbstractItemCountingItemStreamItemReader<
     }
 
     @Override
-    public void setResource(Resource resource) {
-        this.resource = resource;
-    }
+    public void setResource(Resource resource) {}
 
     @Override
-    protected S3DataChunk doRead() throws Exception {
-        S3DataChunk s3DataChunk = new S3DataChunk();
-        s3DataChunk.setFileType(fileType);
-        s3DataChunk.setSize(fileSize);
-        s3DataChunk.setStreamList(streamList);
-        return s3DataChunk;
+    protected DataChunk doRead() throws Exception {
+        FilePart part = partitioner.nextPart();
+        DataChunk dataChunk = new DataChunk();
+        dataChunk.setSize(part.getSize());
+        dataChunk.setFileName(this.fileName);
+        dataChunk.setStartPosition((int) part.getStart());
+        byte[] dataSet = new byte[(int) part.getSize()];
+        long totalBytes = 0;
+        while(totalBytes < part.getSize()){
+            int bytesRead = 0;
+            bytesRead += this.inputStream.read(dataSet, (int) part.getStart(), (int) part.getSize());
+            if(bytesRead == -1) return null;
+            totalBytes += bytesRead;
+        }
+        dataChunk.setData(dataSet);
+        return dataChunk;
     }
 
     @Override
     protected void doOpen() throws Exception {
-        startDownloadingContent(s3BucketName,s3ObjectName);
+        AWSCredentials credentials = new BasicAWSCredentials(this.sourceCredential.getUsername(), this.sourceCredential.getSecret());
+        Regions clientRegion = Regions.fromName(new String(this.sourceCredential.getEncryptedSecret()));
+        this.s3Client = AmazonS3ClientBuilder.standard()
+                .withCredentials(new AWSStaticCredentialsProvider(credentials))
+                .withRegion(clientRegion)
+                .build();
+        this.currentFile = this.connectToCurrentStepsFile();
+        this.inputStream = this.currentFile.getObjectContent();
+    }
+
+    public S3Object connectToCurrentStepsFile(){
+        this.s3Client.getObjectMetadata(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey());
+        return s3Client.getObject(new GetObjectRequest(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey()));
     }
 
     @Override
@@ -91,7 +126,6 @@ public class AmazonS3Reader<T> extends AbstractItemCountingItemStreamItemReader<
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        //Do Nothing
     }
 
     /**
@@ -123,29 +157,27 @@ public class AmazonS3Reader<T> extends AbstractItemCountingItemStreamItemReader<
 
     /**
      * List All the Objects (Files in case of S3) from a given S3 Bucket
-     * @param bucketName
      * @return
      */
-    public List<S3ObjectSummary> listObjectFromS3Bucket(String bucketName) {
-        System.out.format("Objects in S3 bucket %s:\n", bucketName);
-        ListObjectsV2Result result = s3Client.listObjectsV2(bucketName);
-        objectSummaries = result.getObjectSummaries();
-        return objectSummaries;
-    }
+//    public List<S3ObjectSummary> listObjectFromS3Bucket() {
+//        System.out.format("Objects in S3 bucket %s:\n", this.amazonS3URI.getBucket());
+//        ListObjectsV2Result result = s3Client.listObjectsV2(this.amazonS3URI.getBucket());
+//        objectSummaries = result.getObjectSummaries();
+//        return objectSummaries;
+//    }
     /**
      * Downloading File Content For a Small File
      * @param keyName
      * @param bucketName
      */
-    public void downloadS3FileContentForSmallFiles(String keyName,String bucketName){
-        S3Object fullObject = s3Client.getObject(new GetObjectRequest(bucketName, keyName));
-        inputStream = fullObject.getObjectContent();
-        fileType = fullObject.getObjectMetadata().getContentType();
-        fileSize = fullObject.getObjectMetadata().getContentLength();
-        streamList.add(inputStream);
-        System.out.println("Total Downloaded Content Size from Normal Download: "+
-                fullObject.getObjectMetadata().getContentLength());
-    }
+//    public void downloadS3FileContentForSmallFiles(String keyName,String bucketName){
+//        S3Object fullObject = s3Client.getObject(new GetObjectRequest(bucketName, keyName));
+//        inputStream = fullObject.getObjectContent();
+//        fileType = fullObject.getObjectMetadata().getContentType();
+//        streamList.add(inputStream);
+//        System.out.println("Total Downloaded Content Size from Normal Download: "+
+//                fullObject.getObjectMetadata().getContentLength());
+//    }
 
     /**
      * Partial Download For S3
@@ -154,59 +186,35 @@ public class AmazonS3Reader<T> extends AbstractItemCountingItemStreamItemReader<
      * @param keyName
      * @param bucketName
      */
-    public void downloadS3FileContentForLargeFiles (String keyName, String bucketName) {
-        long bytesDownload = 0;
-        GetObjectRequest rangeObjectRequest;
-        try {
-            System.out.println("Downloading an object");
-            while(bytesDownload<largeFileSize){
-                InputStream localInputStream;
-                System.out.println("Downloaded: "+bytesDownload);
-                if((largeFileSize-bytesDownload)>STANDARD_SIZE) {
-                    rangeObjectRequest = new GetObjectRequest(bucketName, keyName)
-                            .withRange(bytesDownload, STANDARD_SIZE);
-                    bytesDownload += STANDARD_SIZE;
-                }
-                else {
-                    System.out.println("Bytes: "+bytesDownload);
-                    rangeObjectRequest = new GetObjectRequest(bucketName, keyName)
-                            .withRange(bytesDownload, largeFileSize);
-                    bytesDownload += largeFileSize-bytesDownload;
-                }
-                bytesDownload++;
-                S3Object objectPortion = s3Client.getObject(rangeObjectRequest);
-                localInputStream = objectPortion.getObjectContent();
-                streamList.add(localInputStream);
-            }
-        } catch (AmazonServiceException e) {
-            System.err.println(e.getErrorMessage());
-            System.exit(1);
-        } catch (SdkClientException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Trigger Downloading Content From a S3 Object
-     * @throws IOException
-     */
-    public void startDownloadingContent(String s3BucketName,String s3ObjectName) throws IOException {
-        listObjectFromS3Bucket(s3BucketName);
-        String objectSummary = null;
-        String fileName = null;
-        for (S3ObjectSummary s3ObjectSummary : objectSummaries){
-            objectSummary = s3ObjectSummary.getKey();
-            if(objectSummary.equals(s3ObjectName)){
-                fileName = objectSummary;
-            }
-        }
-        largeFileSize = keySize(fileName,s3BucketName);
-        if(isLongFile(largeFileSize)){
-            downloadS3FileContentForLargeFiles(fileName,s3BucketName);
-        }
-        else {
-            downloadS3FileContentForSmallFiles(fileName, s3BucketName);
-        }
-    }
-
+//    public void downloadS3FileContentForLargeFiles (String keyName, String bucketName) {
+//        long bytesDownload = 0;
+//        GetObjectRequest rangeObjectRequest;
+//        try {
+//            System.out.println("Downloading an object");
+//            while(bytesDownload<largeFileSize){
+//                InputStream localInputStream;
+//                System.out.println("Downloaded: "+bytesDownload);
+//                if((largeFileSize-bytesDownload)>STANDARD_SIZE) {
+//                    rangeObjectRequest = new GetObjectRequest(bucketName, keyName)
+//                            .withRange(bytesDownload, STANDARD_SIZE);
+//                    bytesDownload += STANDARD_SIZE;
+//                }
+//                else {
+//                    System.out.println("Bytes: "+bytesDownload);
+//                    rangeObjectRequest = new GetObjectRequest(bucketName, keyName)
+//                            .withRange(bytesDownload, largeFileSize);
+//                    bytesDownload += largeFileSize-bytesDownload;
+//                }
+//                bytesDownload++;
+//                S3Object objectPortion = s3Client.getObject(rangeObjectRequest);
+//                localInputStream = objectPortion.getObjectContent();
+//                streamList.add(localInputStream);
+//            }
+//        } catch (AmazonServiceException e) {
+//            System.err.println(e.getErrorMessage());
+//            System.exit(1);
+//        } catch (SdkClientException e) {
+//            e.printStackTrace();
+//        }
+//    }
 }
