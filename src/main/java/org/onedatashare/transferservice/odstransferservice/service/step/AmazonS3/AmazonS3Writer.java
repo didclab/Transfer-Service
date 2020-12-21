@@ -5,12 +5,10 @@ import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.AmazonS3URI;
 import com.amazonaws.services.s3.model.*;
 import com.google.common.io.ByteSource;
-import org.aspectj.lang.annotation.After;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.springframework.batch.core.StepExecution;
@@ -33,12 +31,14 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
     AmazonS3 s3Client;
     HashMap<String, AmazonS3> clientHashMap;
     List<UploadPartResult> uploadResult;
+    List<PartETag> eTagList;
 
     public AmazonS3Writer(AccountEndpointCredential destCredential){
         this.destCredential = destCredential;
         this.s3URI = new AmazonS3URI(destCredential.getUri());
         clientHashMap = new HashMap<>();
         this.uploadResult = new ArrayList<>();
+        this.eTagList = new ArrayList<>();
     }
 
     @BeforeStep
@@ -49,6 +49,7 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
 
     @AfterStep
     public void afterStep(){
+        this.eTagList.clear();
         this.uploadResult.clear();
     }
 
@@ -75,18 +76,16 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
                         .withKey(this.s3URI.getKey())
                         .withUploadId(initiateMultipartUploadResult.getUploadId())
                         .withPartNumber((int) chunk.getChunkIdx());
-                this.uploadResult.add(this.s3Client.uploadPart(requestChunk));
+                UploadPartResult uploadPartResult = this.s3Client.uploadPart(requestChunk);
+                this.eTagList.add(uploadPartResult.getPartETag());
+                this.uploadResult.add(uploadPartResult);
             }
-        }
-        List<PartETag> eTags = new ArrayList<>();
-        for(UploadPartResult uploadPartResult: this.uploadResult){
-            eTags.add(uploadPartResult.getPartETag());
         }
         CompleteMultipartUploadRequest completeMultipartUploadRequest = new CompleteMultipartUploadRequest();
         completeMultipartUploadRequest.setUploadId(initiateMultipartUploadResult.getUploadId());
         completeMultipartUploadRequest.withBucketName(this.s3URI.getBucket());
         completeMultipartUploadRequest.setKey(this.s3URI.getKey());
-        completeMultipartUploadRequest.setPartETags(eTags);
+        completeMultipartUploadRequest.setPartETags(this.eTagList);
         CompleteMultipartUploadResult completeMultipartUploadResult = this.s3Client.completeMultipartUpload(completeMultipartUploadRequest);
     }
 }
