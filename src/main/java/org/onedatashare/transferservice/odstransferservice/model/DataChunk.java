@@ -6,6 +6,7 @@ import java.io.OutputStream;
 
 @Data
 public class DataChunk {
+    long chunkIdx;
     int startPosition;
     byte[] data;
     String fileName;

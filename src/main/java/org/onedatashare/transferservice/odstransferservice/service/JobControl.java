@@ -12,6 +12,7 @@ import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
 import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3Reader;
+import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3Writer;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPReader;
@@ -147,6 +148,8 @@ public class JobControl extends DefaultBatchConfigurer {
                 return new SFTPWriter(request.getDestination().getVfsDestCredential());
             case ftp:
                 return new FTPWriter(request.getDestination().getVfsDestCredential());
+            case s3:
+                return new AmazonS3Writer(request.getDestination().getVfsDestCredential());
         }
         return null;
     }

@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class FilePart {
+    long partIdx;
     long start;
     long end;
     long size;

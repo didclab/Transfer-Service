@@ -49,6 +49,7 @@ public class FilePartitioner {
             for(int i = 0; i < chunksOfChunksKB; i++){
                 FilePart part = new FilePart();
                 part.setFileName(fileName);
+                part.setPartIdx(i);
                 part.setSize(this.chunkSize);
                 part.setStart(startPosition);
                 startPosition+=this.chunkSize;

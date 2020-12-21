@@ -83,6 +83,7 @@ public class AmazonS3Reader<T> extends AbstractItemCountingItemStreamItemReader<
         FilePart part = partitioner.nextPart();
         DataChunk dataChunk = new DataChunk();
         dataChunk.setSize(part.getSize());
+        dataChunk.setChunkIdx(part.getPartIdx());
         dataChunk.setFileName(this.fileName);
         dataChunk.setStartPosition((int) part.getStart());
         byte[] dataSet = new byte[(int) part.getSize()];
