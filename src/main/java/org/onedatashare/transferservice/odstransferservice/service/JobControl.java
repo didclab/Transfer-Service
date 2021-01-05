@@ -126,7 +126,7 @@ public class JobControl extends DefaultBatchConfigurer {
         return flows;
     }
 
-    protected AbstractItemCountingItemStreamItemReader getRightReader(EndpointType type, EntityInfo fileInfo) {
+    protected AbstractItemCountingItemStreamItemReader<DataChunk> getRightReader(EndpointType type, EntityInfo fileInfo) {
         switch (type) {
             case vfs:
                 return new VfsReader(request.getSource().getVfsSourceCredential(), fileInfo, request.getChunkSize());
@@ -140,7 +140,7 @@ public class JobControl extends DefaultBatchConfigurer {
         return null;
     }
 
-    protected ItemWriter getRightWriter(EndpointType type) {
+    protected ItemWriter<DataChunk> getRightWriter(EndpointType type) {
         switch (type) {
             case vfs:
                 return new VfsWriter(request.getDestination().getVfsDestCredential());

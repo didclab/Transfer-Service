@@ -29,7 +29,7 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
     AmazonS3URI s3URI;
     String destBasepath;
     AmazonS3 s3Client;
-    HashMap<String, AmazonS3> clientHashMap;
+    HashMap<String, AmazonS3> clientHashMap;//Must use multiple S3 clients b/c changing the region is not thread safe and will create race conditions as per aws java docs in AmazonS3.java
     List<UploadPartResult> uploadResult;
     List<PartETag> eTagList;
 
@@ -40,6 +40,7 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
         this.uploadResult = new ArrayList<>();
         this.eTagList = new ArrayList<>();
     }
+
 
     @BeforeStep
     public void beforeStep(StepExecution stepExecution){
@@ -60,6 +61,16 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
                 .withCredentials(new AWSStaticCredentialsProvider(credentials))
                 .withRegion(clientRegion)
                 .build();
+    }
+
+    public String selectRegion(){
+        if(this.destCredential.getEncryptedSecret().length != 0){
+            return new String(this.destCredential.getEncryptedSecret());
+        }else if(this.s3URI.getRegion().length() != 0){
+            return this.s3URI.getRegion();
+        }else{
+            return Regions.US_EAST_1.toString();
+        }
     }
 
     @Override

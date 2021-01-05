@@ -41,7 +41,9 @@ public class VfsWriter implements ItemWriter<DataChunk> {
     @AfterStep
     public void afterStep() {
         try {
-            this.stepDrain.get(this.fileName).close();
+            if(this.stepDrain.containsKey(this.fileName)){
+                this.stepDrain.get(this.fileName).close();
+            }
         } catch (IOException exception) {
             exception.printStackTrace();
         }

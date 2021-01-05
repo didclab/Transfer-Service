@@ -1,7 +1,5 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3;
 
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.SdkClientException;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -26,10 +24,8 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.Locale;
+
 
 public class AmazonS3Reader<T> extends AbstractItemCountingItemStreamItemReader<DataChunk> implements ResourceAwareItemReaderItemStream<DataChunk>, InitializingBean {
 
@@ -37,13 +33,14 @@ public class AmazonS3Reader<T> extends AbstractItemCountingItemStreamItemReader<
     private static final int STANDARD_SIZE = 5*1024*1024;
     private AmazonS3 s3Client;
     private AmazonS3URI amazonS3URI;
-    private S3Object currentFile;
     private S3ObjectInputStream inputStream;
     private FilePartitioner partitioner;
+    private String region;
     String fileName;
     AccountEndpointCredential sourceCredential;
     private int chunkSize;
     private EntityInfo fileInfo;
+    ObjectMetadata currentFileMetaData;
 
     public AmazonS3Reader(AccountEndpointCredential sourceCredential, int chunkSize, EntityInfo fileInfo){
         this.sourceCredential = sourceCredential;
@@ -51,7 +48,6 @@ public class AmazonS3Reader<T> extends AbstractItemCountingItemStreamItemReader<
         if(this.chunkSize < STANDARD_SIZE) this.chunkSize = STANDARD_SIZE;
         this.partitioner = new FilePartitioner(this.chunkSize);
         this.fileInfo = fileInfo;
-        this.amazonS3URI = new AmazonS3URI(sourceCredential.getUri());
     }
 
 
@@ -59,16 +55,12 @@ public class AmazonS3Reader<T> extends AbstractItemCountingItemStreamItemReader<
     public void beforeStep(StepExecution stepExecution) {
         this.fileName = stepExecution.getStepName();
         partitioner.createParts(this.fileInfo.getSize(), this.fileName);
+        logger.info("Completed the before step of S3");
     }
 
     @AfterStep
     public void afterStep(){
-        try {
-            this.inputStream.close();
-        } catch (IOException e) {
-            logger.error("Failed closing the S3 InputStream");
-            e.printStackTrace();
-        }
+        logger.info("Completed the Amazon S3 step for %s and the step uri is %s", this.fileName, this.amazonS3URI.getBucket());
     }
 
     public void setName(String name) {
@@ -93,6 +85,7 @@ public class AmazonS3Reader<T> extends AbstractItemCountingItemStreamItemReader<
             bytesRead += this.inputStream.read(dataSet, (int) part.getStart(), (int) part.getSize());
             if(bytesRead == -1) return null;
             totalBytes += bytesRead;
+            logger.info("The number of bytes read {} for chunk {} and the totalBytes read is {}", bytesRead, dataChunk.getChunkIdx(), totalBytes);
         }
         dataChunk.setData(dataSet);
         return dataChunk;
@@ -100,28 +93,35 @@ public class AmazonS3Reader<T> extends AbstractItemCountingItemStreamItemReader<
 
     @Override
     protected void doOpen() throws Exception {
+        this.amazonS3URI = new AmazonS3URI(sourceCredential.getUri());
+        logger.info(this.amazonS3URI.toString());
         AWSCredentials credentials = new BasicAWSCredentials(this.sourceCredential.getUsername(), this.sourceCredential.getSecret());
-        Regions clientRegion = Regions.fromName(new String(this.sourceCredential.getEncryptedSecret()));
         this.s3Client = AmazonS3ClientBuilder.standard()
                 .withCredentials(new AWSStaticCredentialsProvider(credentials))
-                .withRegion(clientRegion)
+                .withRegion(selectRegion())
                 .build();
-        this.currentFile = this.connectToCurrentStepsFile();
-        this.inputStream = this.currentFile.getObjectContent();
+        this.currentFileMetaData =  this.s3Client.getObjectMetadata(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey());
+        S3Object s3ObjectCurrentFile = s3Client.getObject(new GetObjectRequest(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey()));
+        this.inputStream = s3ObjectCurrentFile.getObjectContent();
     }
 
-    public S3Object connectToCurrentStepsFile(){
-        this.s3Client.getObjectMetadata(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey());
-        return s3Client.getObject(new GetObjectRequest(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey()));
+    public String selectRegion(){
+        if(this.sourceCredential.getEncryptedSecret().length != 0){
+            logger.info("Using encrypted secret to get the region");
+            return new String(this.sourceCredential.getEncryptedSecret());
+        }else if(this.amazonS3URI.getRegion().length() != 0){
+            logger.info("The region is from the s3 URI");
+            return this.amazonS3URI.getRegion();
+        }else{
+            logger.info("Used the default region");
+            return Regions.US_EAST_1.toString();
+        }
     }
 
     @Override
     protected void doClose() throws Exception {
-        try{
-            if (inputStream != null) inputStream.close();
-        }catch(Exception ex){
-            logger.error("Not able to close the input Stream");
-            ex.printStackTrace();
+        if(this.inputStream != null){
+            inputStream.close();
         }
     }
 
