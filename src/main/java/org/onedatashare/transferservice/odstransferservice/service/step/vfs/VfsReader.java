@@ -5,6 +5,7 @@ import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
+import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.JobParameters;
@@ -58,15 +59,6 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
     @Override
     public void setResource(Resource resource){}
 
-    public DataChunk makeChunk(int size, byte[] data, int startPosition) {
-        DataChunk dataChunk = new DataChunk();
-        dataChunk.setStartPosition(startPosition);
-        dataChunk.setFileName(this.fileInfo.getPath());
-        dataChunk.setData(data);
-        dataChunk.setSize(size);
-        return dataChunk;
-    }
-
     @Override
     protected DataChunk doRead() {
         FilePart chunkParameters = this.filePartitioner.nextPart();
@@ -89,7 +81,7 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
         buffer.flip();
         byte[] data = new byte[chunkSize];
         buffer.get(data, 0, chunkSize);
-        return makeChunk(chunkSize, data, startPosition);
+        return ODSUtility.makeChunk(chunkSize, data, startPosition, this.fileName);
     }
 
     @Override

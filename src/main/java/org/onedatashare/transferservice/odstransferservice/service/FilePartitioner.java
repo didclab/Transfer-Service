@@ -45,8 +45,8 @@ public class FilePartitioner {
             queue.add(part);
         }else{
             long startPosition = 0;
-            long chunksOfChunksKB = Math.floorDiv(totalSize, this.chunkSize);
-            for(int i = 0; i < chunksOfChunksKB; i++){
+            long chunksOfChunksKB = totalSize / this.chunkSize;
+            for(long i = 0; i < chunksOfChunksKB; i++){
                 FilePart part = new FilePart();
                 part.setFileName(fileName);
                 part.setPartIdx(i);
@@ -58,7 +58,9 @@ public class FilePartitioner {
             }
             FilePart lastChunk = new FilePart();
             lastChunk.setStart(startPosition);
+            lastChunk.setFileName(fileName);
             lastChunk.setSize(totalSize-startPosition);
+            lastChunk.setPartIdx(chunksOfChunksKB);
             lastChunk.setEnd(totalSize);
             queue.add(lastChunk);
         }

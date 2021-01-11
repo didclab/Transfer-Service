@@ -13,6 +13,7 @@ import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
+import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
@@ -22,45 +23,59 @@ import org.springframework.batch.item.file.ResourceAwareItemReaderItemStream;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.io.Resource;
+import org.springframework.util.ClassUtils;
 
-import java.io.IOException;
-import java.util.Locale;
 
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SIXTYFOUR_KB;
 
 public class AmazonS3Reader<T> extends AbstractItemCountingItemStreamItemReader<DataChunk> implements ResourceAwareItemReaderItemStream<DataChunk>, InitializingBean {
 
     Logger logger = LoggerFactory.getLogger(AmazonS3Reader.class);
     private static final int STANDARD_SIZE = 5*1024*1024;
-    private AmazonS3 s3Client;
+    private final AmazonS3 s3Client;
     private AmazonS3URI amazonS3URI;
-    private S3ObjectInputStream inputStream;
     private FilePartitioner partitioner;
-    private String region;
     String fileName;
     AccountEndpointCredential sourceCredential;
-    private int chunkSize;
-    private EntityInfo fileInfo;
+    private final int chunkSize;
+    private final EntityInfo fileInfo;
     ObjectMetadata currentFileMetaData;
+    GetObjectRequest getSkeleton;
+    int bytesReadIn;
 
     public AmazonS3Reader(AccountEndpointCredential sourceCredential, int chunkSize, EntityInfo fileInfo){
         this.sourceCredential = sourceCredential;
-        this.chunkSize = chunkSize;
-        if(this.chunkSize < STANDARD_SIZE) this.chunkSize = STANDARD_SIZE;
+        this.chunkSize = Math.max(SIXTYFOUR_KB, chunkSize);
         this.partitioner = new FilePartitioner(this.chunkSize);
         this.fileInfo = fileInfo;
+        this.amazonS3URI = new AmazonS3URI(constructURI());//For reading from an S3 bucket the path provided in the infoList will be the Object URL
+        this.getSkeleton = new GetObjectRequest(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey());
+        this.s3Client = constructClient();
+        this.setName(ClassUtils.getShortName(AmazonS3Reader.class));
+        this.bytesReadIn = 0;
     }
 
+    public String constructURI(){
+        StringBuilder builder = new StringBuilder();
+        String[] temp = this.sourceCredential.getUri().split(":::");
+        String bucketName = temp[1];
+        String region = temp[0];
+        builder.append("https://").append(bucketName).append(".").append("s3.").append(region).append(".").append("amazonaws.com").append("/").append(this.fileInfo.getPath());
+        return builder.toString();
+        //https://jacobstestbucket.s3.us-east-2.amazonaws.com/apache-maven-3.6.3-bin.tar
+    }
 
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
-        this.fileName = stepExecution.getStepName();
-        partitioner.createParts(this.fileInfo.getSize(), this.fileName);
-        logger.info("Completed the before step of S3");
+        this.fileName = stepExecution.getStepName();//For an S3 Reader job this should be the object key
+        logger.info("Starting the job for this file: " + this.fileName);
+        this.bytesReadIn = 0;
     }
 
     @AfterStep
     public void afterStep(){
-        logger.info("Completed the Amazon S3 step for %s and the step uri is %s", this.fileName, this.amazonS3URI.getBucket());
+        logger.info("Completed the S3 step with step name " + this.fileName);
+        logger.info("The bytes read for this step are " + this.bytesReadIn);
     }
 
     public void setName(String name) {
@@ -70,39 +85,46 @@ public class AmazonS3Reader<T> extends AbstractItemCountingItemStreamItemReader<
     @Override
     public void setResource(Resource resource) {}
 
+
     @Override
     protected DataChunk doRead() throws Exception {
         FilePart part = partitioner.nextPart();
-        DataChunk dataChunk = new DataChunk();
-        dataChunk.setSize(part.getSize());
-        dataChunk.setChunkIdx(part.getPartIdx());
-        dataChunk.setFileName(this.fileName);
-        dataChunk.setStartPosition((int) part.getStart());
-        byte[] dataSet = new byte[(int) part.getSize()];
+        if(part == null) return null;
+        logger.info(part.toString());
+        S3Object partOfFile = this.s3Client.getObject(this.getSkeleton.withRange(part.getStart(), part.getEnd()-1));//this is inclusive or on both start and end so take one off so there is no colision
+        logger.info(partOfFile.toString());
+        byte[] dataSet = new byte[(int)part.getSize()];
         long totalBytes = 0;
+        S3ObjectInputStream stream = partOfFile.getObjectContent();
         while(totalBytes < part.getSize()){
             int bytesRead = 0;
-            bytesRead += this.inputStream.read(dataSet, (int) part.getStart(), (int) part.getSize());
+            bytesRead += stream.read(dataSet, (int) totalBytes, (int) part.getSize());
             if(bytesRead == -1) return null;
             totalBytes += bytesRead;
-            logger.info("The number of bytes read {} for chunk {} and the totalBytes read is {}", bytesRead, dataChunk.getChunkIdx(), totalBytes);
+            bytesReadIn += bytesRead;
+            this.logger.info("The number of bytes read {} and the totalBytes read is {} and full bytes read in for the file are {}", bytesRead, totalBytes, this.bytesReadIn);
         }
-        dataChunk.setData(dataSet);
-        return dataChunk;
+        stream.close();
+        return ODSUtility.makeChunk(chunkSize, dataSet, (int) part.getStart(), this.fileName);
     }
 
+    /**
+     * The point of this doOpen is to prepare the reader to read from the InputStream
+     * Establish the s3 client for the next file we encounter; which entails preparing credentials and
+     * @throws Exception
+     */
     @Override
     protected void doOpen() throws Exception {
-        this.amazonS3URI = new AmazonS3URI(sourceCredential.getUri());
-        logger.info(this.amazonS3URI.toString());
+        this.currentFileMetaData = this.s3Client.getObjectMetadata(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey());
+        partitioner.createParts(this.currentFileMetaData.getContentLength(), this.fileName);
+    }
+
+    public AmazonS3 constructClient(){
         AWSCredentials credentials = new BasicAWSCredentials(this.sourceCredential.getUsername(), this.sourceCredential.getSecret());
-        this.s3Client = AmazonS3ClientBuilder.standard()
+        return AmazonS3ClientBuilder.standard()
                 .withCredentials(new AWSStaticCredentialsProvider(credentials))
-                .withRegion(selectRegion())
+                .withRegion(this.amazonS3URI.getRegion())
                 .build();
-        this.currentFileMetaData =  this.s3Client.getObjectMetadata(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey());
-        S3Object s3ObjectCurrentFile = s3Client.getObject(new GetObjectRequest(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey()));
-        this.inputStream = s3ObjectCurrentFile.getObjectContent();
     }
 
     public String selectRegion(){
@@ -120,9 +142,6 @@ public class AmazonS3Reader<T> extends AbstractItemCountingItemStreamItemReader<
 
     @Override
     protected void doClose() throws Exception {
-        if(this.inputStream != null){
-            inputStream.close();
-        }
     }
 
     @Override

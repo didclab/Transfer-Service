@@ -115,7 +115,7 @@ public class JobControl extends DefaultBatchConfigurer {
         logger.info("CreateConcurrentFlow function");
         List<Flow> flows = new ArrayList<>();
         for (EntityInfo file : infoList) {
-            SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(file.getPath()).<DataChunk, DataChunk>chunk(this.request.getChunkSize());
+            SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(file.getPath()).<DataChunk, DataChunk>chunk(this.request.getOptions().getPipeSize());
             child.reader(getRightReader(request.getSource().getType(), file)).writer(getRightWriter(request.getDestination().getType()))
                     .faultTolerant()
                     .retry(Exception.class)
