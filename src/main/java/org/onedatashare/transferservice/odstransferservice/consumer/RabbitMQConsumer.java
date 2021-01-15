@@ -39,11 +39,10 @@ public class RabbitMQConsumer {
     @RabbitListener(queues = "${ods.rabbitmq.queue}")
     public void consumeDefaultMessage(final Message message) throws Exception {
         String jsonStr = new String(message.getBody());
-        System.out.println("Consuming Message - " + jsonStr);
+        System.out.println("Message received");// + jsonStr);
 
         Gson g = new Gson();
         TransferJobRequest request = g.fromJson(jsonStr, TransferJobRequest.class);
-        System.out.println("request obj--> " + request.toString());
         try {
             JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);
             crudService.insertBeforeTransfer(request);

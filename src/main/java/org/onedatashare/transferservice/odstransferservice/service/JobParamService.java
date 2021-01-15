@@ -20,7 +20,7 @@ public class JobParamService {
 
     public JobParameters translate(JobParametersBuilder builder, TransferJobRequest request) {
         logger.info("Setting job Parameters");
-        logger.info("Request received : " + request.toString());
+        //logger.info("Request received : " + request.toString());
         builder.addLong(TIME, System.currentTimeMillis());
         builder.addString(OWNER_ID, request.getOwnerId());
         builder.addString(PRIORITY, String.valueOf(request.getPriority()));
