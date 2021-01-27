@@ -41,7 +41,7 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
     public VfsReader(AccountEndpointCredential credential, EntityInfo fInfo, int chunkSize) {
         this.setExecutionContextName(ClassUtils.getShortName(VfsReader.class));
         this.credential = credential;
-        this.filePartitioner = new FilePartitioner();
+        this.filePartitioner = new FilePartitioner(chunkSize);
         this.fileInfo = fInfo;
         this.chunkSize = chunkSize;
     }
@@ -63,8 +63,9 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
     protected DataChunk doRead() {
         FilePart chunkParameters = this.filePartitioner.nextPart();
         if (chunkParameters == null) return null;// done as there are no more FileParts in the queue
-        int chunkSize = (int) chunkParameters.getSize();
-        int startPosition = (int) chunkParameters.getStart();
+        logger.info("currently reading {}", chunkParameters.getPartIdx());
+        int chunkSize = Long.valueOf(chunkParameters.getSize()).intValue();
+        int startPosition = Long.valueOf(chunkParameters.getStart()).intValue();
         ByteBuffer buffer = ByteBuffer.allocate(chunkSize);
         long totalBytes = 0;
         while (totalBytes < chunkSize) {
@@ -81,18 +82,21 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
         buffer.flip();
         byte[] data = new byte[chunkSize];
         buffer.get(data, 0, chunkSize);
-        return ODSUtility.makeChunk(chunkSize, data, startPosition, this.fileName);
+        return ODSUtility.makeChunk(chunkSize, data, startPosition, Long.valueOf(chunkParameters.getPartIdx()).intValue(),this.fileName);
     }
 
     @Override
     protected void doOpen() {
+        logger.info("Starting Open in VFS");
         try {
             this.inputStream = new FileInputStream(this.sBasePath + this.fileInfo.getPath());
         } catch (FileNotFoundException e) {
             logger.error("Path not found : " + this.sBasePath + this.fileName);
             e.printStackTrace();
         }
+        logger.info("Starting to the sink channel");
         this.sink = this.inputStream.getChannel();
+        logger.info("Opened the Sink channel");
     }
 
     @Override

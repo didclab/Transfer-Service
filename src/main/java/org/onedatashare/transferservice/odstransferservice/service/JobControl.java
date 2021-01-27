@@ -116,7 +116,7 @@ public class JobControl extends DefaultBatchConfigurer {
         List<Flow> flows = new ArrayList<>();
         for (EntityInfo file : infoList) {
             SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(file.getPath()).<DataChunk, DataChunk>chunk(this.request.getOptions().getPipeSize());
-            child.reader(getRightReader(request.getSource().getType(), file)).writer(getRightWriter(request.getDestination().getType()))
+            child.reader(getRightReader(request.getSource().getType(), file)).writer(getRightWriter(request.getDestination().getType(), file))
                     .faultTolerant()
                     .retry(Exception.class)
                     .retryLimit(2)
@@ -135,12 +135,12 @@ public class JobControl extends DefaultBatchConfigurer {
             case ftp:
                 return new FTPReader(request.getSource().getVfsSourceCredential(), request.getChunkSize());
             case s3:
-                return new AmazonS3Reader(request.getSource().getVfsSourceCredential(), request.getChunkSize(), fileInfo);
+                return new AmazonS3Reader(request.getSource().getVfsSourceCredential(), request.getChunkSize());
         }
         return null;
     }
 
-    protected ItemWriter<DataChunk> getRightWriter(EndpointType type) {
+    protected ItemWriter<DataChunk> getRightWriter(EndpointType type, EntityInfo fileInfo) {
         switch (type) {
             case vfs:
                 return new VfsWriter(request.getDestination().getVfsDestCredential());
@@ -149,7 +149,7 @@ public class JobControl extends DefaultBatchConfigurer {
             case ftp:
                 return new FTPWriter(request.getDestination().getVfsDestCredential());
             case s3:
-                return new AmazonS3Writer(request.getDestination().getVfsDestCredential());
+                return new AmazonS3Writer(request.getDestination().getVfsDestCredential(), fileInfo);
         }
         return null;
     }
