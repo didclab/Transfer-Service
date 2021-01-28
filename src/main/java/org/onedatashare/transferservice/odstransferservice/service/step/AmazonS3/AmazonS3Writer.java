@@ -99,7 +99,9 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
     @AfterStep
     public void afterStep(){
         this.clientHashMap.remove(this.fileName);
-        this.metaData.reset();
+        if(this.multipartUpload){
+            this.metaData.reset();
+        }
     }
 
     public void createClientWithCreds(){
