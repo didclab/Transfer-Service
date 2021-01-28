@@ -24,7 +24,7 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
     Logger logger = LoggerFactory.getLogger(SFTPWriter.class);
 
     String stepName;
-    Set<String> drainMap;
+    //OutputStream outpuStream;
     private String dBasePath;
     AccountEndpointCredential destCred;
 
@@ -39,7 +39,7 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
         this.stepName = stepExecution.getStepName();
-        drainMap = new HashSet<>();
+        //outpuStream = null;
         dBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
     }
 
@@ -49,7 +49,8 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
     }
 
     public OutputStream getStream(String stepName) {
-        if (!drainMap.contains(stepName)) {
+
+        if (channelSftp == null || !channelSftp.isConnected()) {
             ftpDest();
             try {
                 return channelSftp.put(this.stepName, ChannelSftp.OVERWRITE);
@@ -95,7 +96,7 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
                 channelSftp.cd(dBasePath);
                 logger.warn(dBasePath + " folder created.");
             }
-            drainMap.add(this.stepName);
+            //outpuStream.add(this.stepName);
             logger.info("present directory: ----" + channelSftp.pwd());
         } catch (JSchException e) {
             e.printStackTrace();

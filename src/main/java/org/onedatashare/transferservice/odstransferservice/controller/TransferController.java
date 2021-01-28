@@ -1,11 +1,9 @@
 package org.onedatashare.transferservice.odstransferservice.controller;
 
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
-import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
-import org.onedatashare.transferservice.odstransferservice.model.credential.CredentialGroup;
-import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.CrudService;
 import org.onedatashare.transferservice.odstransferservice.service.JobControl;
+import org.onedatashare.transferservice.odstransferservice.service.JobParamService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.S3Reader;
@@ -22,8 +20,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
-
 /**
  * Transfer controller with to initiate transfer request
  */
@@ -31,19 +27,19 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
 @RequestMapping("/api/v1/transfer")
 public class TransferController {
 
-    @Autowired
-    JobLauncher jobLauncher;
+    Logger logger = LoggerFactory.getLogger(TransferController.class);
 
     @Autowired
     JobControl jc;
 
     @Autowired
-    JobBuilderFactory jobBuilderFactory;
-
-    @Autowired
     JobLauncher asyncJobLauncher;
 
-    Logger logger = LoggerFactory.getLogger(TransferController.class);
+    @Autowired
+    JobParamService jobParamService;
+
+    @Autowired
+    CrudService crudService;
 
     @Autowired
     S3Reader s3Reader;
@@ -55,7 +51,8 @@ public class TransferController {
     @RequestMapping(value = "/start", method = RequestMethod.POST)
     @Async
     public ResponseEntity<String> start(@RequestBody TransferJobRequest request) throws Exception {
-        JobParameters parameters = translate(new JobParametersBuilder(), request);
+        logger.info("Controller Entry point");
+        JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);
         crudService.insertBeforeTransfer(request);
         logger.info(String.valueOf(request.getSource().getVfsSourceCredential().getEncryptedSecret()));
         logger.info(request.getSource().getParentInfo().getPath());
@@ -66,7 +63,7 @@ public class TransferController {
         return ResponseEntity.status(HttpStatus.OK).body("Your batch job has been submitted with \n ID: " + request.getJobId());
     }
 
-    public JobParameters translate(JobParametersBuilder builder, TransferJobRequest request) {
+  public JobParameters translate(JobParametersBuilder builder, TransferJobRequest request) {
         logger.info("Request received : "+request.toString());
         builder.addLong(TIME, System.currentTimeMillis());
         builder.addString(OWNER_ID, request.getOwnerId());
