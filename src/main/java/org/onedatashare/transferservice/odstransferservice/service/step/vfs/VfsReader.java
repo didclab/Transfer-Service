@@ -5,6 +5,7 @@ import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
+import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.JobParameters;
@@ -40,7 +41,7 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
     public VfsReader(AccountEndpointCredential credential, EntityInfo fInfo, int chunkSize) {
         this.setExecutionContextName(ClassUtils.getShortName(VfsReader.class));
         this.credential = credential;
-        this.filePartitioner = new FilePartitioner();
+        this.filePartitioner = new FilePartitioner(chunkSize);
         this.fileInfo = fInfo;
         this.chunkSize = chunkSize;
     }
@@ -58,21 +59,13 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
     @Override
     public void setResource(Resource resource){}
 
-    public DataChunk makeChunk(int size, byte[] data, int startPosition) {
-        DataChunk dataChunk = new DataChunk();
-        dataChunk.setStartPosition(startPosition);
-        dataChunk.setFileName(this.fileInfo.getPath());
-        dataChunk.setData(data);
-        dataChunk.setSize(size);
-        return dataChunk;
-    }
-
     @Override
     protected DataChunk doRead() {
         FilePart chunkParameters = this.filePartitioner.nextPart();
         if (chunkParameters == null) return null;// done as there are no more FileParts in the queue
-        int chunkSize = (int) chunkParameters.getSize();
-        int startPosition = (int) chunkParameters.getStart();
+        logger.info("currently reading {}", chunkParameters.getPartIdx());
+        int chunkSize = Long.valueOf(chunkParameters.getSize()).intValue();
+        int startPosition = Long.valueOf(chunkParameters.getStart()).intValue();
         ByteBuffer buffer = ByteBuffer.allocate(chunkSize);
         long totalBytes = 0;
         while (totalBytes < chunkSize) {
@@ -89,18 +82,21 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
         buffer.flip();
         byte[] data = new byte[chunkSize];
         buffer.get(data, 0, chunkSize);
-        return makeChunk(chunkSize, data, startPosition);
+        return ODSUtility.makeChunk(chunkSize, data, startPosition, Long.valueOf(chunkParameters.getPartIdx()).intValue(),this.fileName);
     }
 
     @Override
     protected void doOpen() {
+        logger.info("Starting Open in VFS");
         try {
             this.inputStream = new FileInputStream(this.sBasePath + this.fileInfo.getPath());
         } catch (FileNotFoundException e) {
             logger.error("Path not found : " + this.sBasePath + this.fileName);
             e.printStackTrace();
         }
+        logger.info("Starting to the sink channel");
         this.sink = this.inputStream.getChannel();
+        logger.info("Opened the Sink channel");
     }
 
     @Override

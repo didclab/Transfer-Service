@@ -36,12 +36,15 @@ public class VfsWriter implements ItemWriter<DataChunk> {
         this.fileName = stepExecution.getStepName();
         this.destinationPath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
         this.filePath = Paths.get(this.destinationPath + this.fileName);
+        prepareFile();
     }
 
     @AfterStep
     public void afterStep() {
         try {
-            this.stepDrain.get(this.fileName).close();
+            if(this.stepDrain.containsKey(this.fileName)){
+                this.stepDrain.get(this.fileName).close();
+            }
         } catch (IOException exception) {
             exception.printStackTrace();
         }
@@ -52,7 +55,6 @@ public class VfsWriter implements ItemWriter<DataChunk> {
             return this.stepDrain.get(fileName);
         } else {
             logger.info("creating file : " + fileName);
-            prepareFile();
             FileChannel channel = null;
             try {
                 channel = FileChannel.open(this.filePath, StandardOpenOption.WRITE);
@@ -69,6 +71,8 @@ public class VfsWriter implements ItemWriter<DataChunk> {
         try {
             Files.createDirectories(this.filePath.getParent());
             Files.createFile(this.filePath);
+        }catch (FileAlreadyExistsException fileAlreadyExistsException){
+            logger.error("Already have the file with this path \t" + this.filePath.toString());
         } catch (IOException e) {
             e.printStackTrace();
         }

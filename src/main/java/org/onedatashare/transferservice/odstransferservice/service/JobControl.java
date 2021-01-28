@@ -11,6 +11,8 @@ import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
+import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3Reader;
+import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3Writer;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPReader;
@@ -114,7 +116,7 @@ public class JobControl extends DefaultBatchConfigurer {
         List<Flow> flows = new ArrayList<>();
         for (EntityInfo file : infoList) {
             SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(file.getPath()).<DataChunk, DataChunk>chunk(this.request.getOptions().getPipeSize());
-            child.reader(getRightReader(request.getSource().getType(), file)).writer(getRightWriter(request.getDestination().getType()))
+            child.reader(getRightReader(request.getSource().getType(), file)).writer(getRightWriter(request.getDestination().getType(), file))
                     .faultTolerant()
                     .retry(Exception.class)
                     .retryLimit(2)
@@ -124,7 +126,7 @@ public class JobControl extends DefaultBatchConfigurer {
         return flows;
     }
 
-    protected AbstractItemCountingItemStreamItemReader getRightReader(EndpointType type, EntityInfo fileInfo) {
+    protected AbstractItemCountingItemStreamItemReader<DataChunk> getRightReader(EndpointType type, EntityInfo fileInfo) {
         switch (type) {
             case vfs:
                 return new VfsReader(request.getSource().getVfsSourceCredential(), fileInfo, request.getChunkSize());
@@ -132,11 +134,13 @@ public class JobControl extends DefaultBatchConfigurer {
                 return new SFTPReader(request.getSource().getVfsSourceCredential(), request.getChunkSize());
             case ftp:
                 return new FTPReader(request.getSource().getVfsSourceCredential(), request.getChunkSize());
+            case s3:
+                return new AmazonS3Reader(request.getSource().getVfsSourceCredential(), request.getChunkSize());
         }
         return null;
     }
 
-    protected ItemWriter getRightWriter(EndpointType type) {
+    protected ItemWriter<DataChunk> getRightWriter(EndpointType type, EntityInfo fileInfo) {
         switch (type) {
             case vfs:
                 return new VfsWriter(request.getDestination().getVfsDestCredential());
@@ -144,6 +148,8 @@ public class JobControl extends DefaultBatchConfigurer {
                 return new SFTPWriter(request.getDestination().getVfsDestCredential());
             case ftp:
                 return new FTPWriter(request.getDestination().getVfsDestCredential());
+            case s3:
+                return new AmazonS3Writer(request.getDestination().getVfsDestCredential(), fileInfo);
         }
         return null;
     }
@@ -151,9 +157,7 @@ public class JobControl extends DefaultBatchConfigurer {
     @Lazy
     @Bean
     public Job concurrentJobDefinition() throws MalformedURLException {
-        logger.info("createJobDefination function");
         List<Flow> flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getParentInfo().getPath(), request.getJobId());
-        logger.info("The total flows size is: " + String.valueOf(flows.size()));
         Flow[] fl = new Flow[flows.size()];
         Flow f = new FlowBuilder<SimpleFlow>("splitFlow").split(threadPoolConfig.stepTaskExecutor()).add(flows.toArray(fl))
                 .build();
