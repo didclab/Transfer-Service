@@ -1,8 +1,10 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3;
 
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.AmazonS3URI;
@@ -13,6 +15,7 @@ import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
+import org.onedatashare.transferservice.odstransferservice.utility.S3Utility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
@@ -35,6 +38,7 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
     private final FilePartitioner partitioner;
     private String sourcePath;
     String fileName;
+    String[] regionAndBucket;
     private final AccountEndpointCredential sourceCredential;
     private final int chunkSize;
     ObjectMetadata currentFileMetaData;
@@ -42,26 +46,24 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
 
     public AmazonS3Reader(AccountEndpointCredential sourceCredential, int chunkSize){
         this.sourceCredential = sourceCredential;
+        this.regionAndBucket = this.sourceCredential.getUri().split(":::");
         this.chunkSize = Math.max(SIXTYFOUR_KB, chunkSize);
         this.partitioner = new FilePartitioner(this.chunkSize);
         this.setName(ClassUtils.getShortName(AmazonS3Reader.class));
+        this.s3Client = S3Utility.constructClient(this.sourceCredential, regionAndBucket[0]);
     }
 
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
         this.fileName = stepExecution.getStepName();//For an S3 Reader job this should be the object key
         this.sourcePath = stepExecution.getJobExecution().getJobParameters().getString(ODSConstants.SOURCE_BASE_PATH);
-        this.amazonS3URI = new AmazonS3URI(ODSUtility.constructS3URI(this.sourceCredential, this.fileName, this.sourcePath));
+        this.amazonS3URI = new AmazonS3URI(S3Utility.constructS3URI(this.sourceCredential, this.fileName, this.sourcePath));
         this.getSkeleton = new GetObjectRequest(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey());
-        partitioner.createParts(this.currentFileMetaData.getContentLength(), this.fileName);
-        stepExecution.getExecutionContext().put(this.fileName, this.currentFileMetaData.getContentLength());
         logger.info("Starting the job for this file: " + this.fileName);
     }
 
     @AfterStep
-    public void afterStep(StepExecution stepExecution){
-
-    }
+    public void afterStep(StepExecution stepExecution){}
 
     public void setName(String name) {
         this.setExecutionContextName(name);
@@ -91,17 +93,11 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
 
     @Override
     protected void doOpen() throws Exception {
-        this.s3Client = constructClient();
         this.currentFileMetaData = this.s3Client.getObjectMetadata(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey());
+        partitioner.createParts(this.currentFileMetaData.getContentLength(), this.fileName);
     }
 
-    public AmazonS3 constructClient(){
-        AWSCredentials credentials = new BasicAWSCredentials(this.sourceCredential.getUsername(), this.sourceCredential.getSecret());
-        return AmazonS3ClientBuilder.standard()
-                .withCredentials(new AWSStaticCredentialsProvider(credentials))
-                .withRegion(this.amazonS3URI.getRegion())
-                .build();
-    }
+
 
     @Override
     protected void doClose() throws Exception {
