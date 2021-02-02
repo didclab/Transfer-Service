@@ -94,9 +94,7 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
             logger.error("Path not found : " + this.sBasePath + this.fileName);
             e.printStackTrace();
         }
-        logger.info("Starting to the sink channel");
         this.sink = this.inputStream.getChannel();
-        logger.info("Opened the Sink channel");
     }
 
     @Override

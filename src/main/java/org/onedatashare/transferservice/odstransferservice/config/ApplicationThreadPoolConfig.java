@@ -58,6 +58,7 @@ public class ApplicationThreadPoolConfig{
         executor.setMaxPoolSize(JOB_MAX_POOL_SIZE);
         return executor;
     }
+
     @Bean
     @Lazy
     public TaskExecutor sequentialThreadPool(){

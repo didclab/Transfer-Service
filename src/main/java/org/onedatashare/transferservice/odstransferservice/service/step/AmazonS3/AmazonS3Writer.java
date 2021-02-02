@@ -16,6 +16,7 @@ import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
+import org.onedatashare.transferservice.odstransferservice.utility.S3Utility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
@@ -56,7 +57,7 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
         this.currentFileSize = this.fileInfo.getSize();
         String destBasepath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
         this.fileName = stepExecution.getStepName();
-        this.s3URI = new AmazonS3URI(ODSUtility.constructS3URI(this.destCredential, this.fileName, destBasepath));//for aws the step name will be the file key.
+        this.s3URI = new AmazonS3URI(S3Utility.constructS3URI(this.destCredential, this.fileName, destBasepath));//for aws the step name will be the file key.
         createClientWithCreds();
         if(this.currentFileSize < FIVE_MB){
             this.multipartUpload = false;

@@ -19,15 +19,6 @@ public class ODSUtility {
         return dataChunk;
     }
 
-    public static String constructS3URI(AccountEndpointCredential s3Credential, String fileKey, String basePath){
-        StringBuilder builder = new StringBuilder();
-        String[] temp = s3Credential.getUri().split(":::");
-        String bucketName = temp[1];
-        String region = temp[0];
-        builder.append("https://").append(bucketName).append(".").append("s3.").append(region).append(".").append("amazonaws.com").append(basePath).append(fileKey);
-        return builder.toString();
-    }
-
     public static UploadPartRequest makePartRequest(DataChunk dataChunk, String bucketName, String uploadId, String key, boolean lastPart){
         UploadPartRequest uploadPartRequest = new UploadPartRequest();
         uploadPartRequest.setInputStream(new ByteArrayInputStream(dataChunk.getData()));
