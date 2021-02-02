@@ -39,6 +39,7 @@ public class FTPWriter implements ItemWriter<DataChunk> {
 
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
+        logger.info("Inside FTP beforeStep");
         outputStream = null;
         dBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
         stepName = stepExecution.getStepName();
@@ -46,6 +47,7 @@ public class FTPWriter implements ItemWriter<DataChunk> {
 
     @AfterStep
     public void afterStep() {
+        logger.info("Inside FTP afterStep");
         try {
             if (outputStream != null) outputStream.close();
         } catch (Exception ex) {

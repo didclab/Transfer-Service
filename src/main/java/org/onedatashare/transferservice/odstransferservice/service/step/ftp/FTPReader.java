@@ -46,6 +46,7 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
     }
 
     public FTPReader(AccountEndpointCredential credential, int chunckSize) {
+        logger.info("Inside FTPReader constructor");
         this.chunckSize = chunckSize;
         this.sourceCred = credential;
         this.setName(ClassUtils.getShortName(FTPReader.class));
@@ -53,6 +54,7 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
 
 
     public void setName(String name) {
+        logger.info("Setting context name");
         this.setExecutionContextName(name);
     }
 
@@ -79,11 +81,13 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
 
     @Override
     protected void doOpen() {
+        logger.info("Insided doOpen");
         clientCreateSourceStream(sBasePath, fName);
     }
 
     @Override
     protected void doClose() {
+        logger.info("Inside doClose");
         try {
             if (inputStream != null) inputStream.close();
         } catch (Exception ex) {
