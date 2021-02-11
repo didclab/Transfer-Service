@@ -80,6 +80,7 @@ public class VfsWriter implements ItemWriter<DataChunk> {
 
     @Override
     public void write(List<? extends DataChunk> items) throws Exception {
+        logger.info(Thread.currentThread().getName());
         for (int i = 0; i < items.size(); i++) {
             DataChunk chunk = items.get(i);
             FileChannel channel = getChannel(chunk.getFileName());

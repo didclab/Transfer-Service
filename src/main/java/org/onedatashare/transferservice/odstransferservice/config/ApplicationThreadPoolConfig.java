@@ -38,6 +38,7 @@ public class ApplicationThreadPoolConfig{
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(TRANSFER_POOL_SIZE);
         executor.setMaxPoolSize(TRANSFER_MAX_POOL_SIZE);
+        executor.setThreadNamePrefix("Transfer pool");
         return executor;
     }
 
@@ -47,6 +48,7 @@ public class ApplicationThreadPoolConfig{
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(STEP_POOL_SIZE);
         executor.setMaxPoolSize(STEP_MAX_POOL_SIZE);
+        executor.setThreadNamePrefix("Step");
         return executor;
     }
 
@@ -56,6 +58,7 @@ public class ApplicationThreadPoolConfig{
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(JOB_POOL_SIZE);
         executor.setMaxPoolSize(JOB_MAX_POOL_SIZE);
+        executor.setThreadNamePrefix("Job");
         return executor;
     }
 
@@ -64,6 +67,16 @@ public class ApplicationThreadPoolConfig{
     public TaskExecutor sequentialThreadPool(){
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(1);
+        executor.setThreadNamePrefix("Sequentiall");
+        return executor;
+    }
+
+    @Bean
+    @Lazy
+    public TaskExecutor parallelThreadPool(){
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(100);
+        executor.setThreadNamePrefix("Parallel");
         return executor;
     }
 }

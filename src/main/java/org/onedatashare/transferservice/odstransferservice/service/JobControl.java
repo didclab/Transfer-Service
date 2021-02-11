@@ -117,9 +117,7 @@ public class JobControl extends DefaultBatchConfigurer {
         for (EntityInfo file : infoList) {
             SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(file.getPath()).<DataChunk, DataChunk>chunk(this.request.getOptions().getPipeSize());
             child.reader(getRightReader(request.getSource().getType(), file)).writer(getRightWriter(request.getDestination().getType(), file))
-                    .faultTolerant()
-                    .retry(Exception.class)
-                    .retryLimit(2)
+                    .taskExecutor(threadPoolConfig.parallelThreadPool())
                     .build();
             flows.add(new FlowBuilder<Flow>(id + basePath).start(child.build()).build());
         }
