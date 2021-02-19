@@ -68,7 +68,8 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
         try {
             long totalBytes = 0;
             while(totalBytes < filePart.getSize()){
-                this.inputStream.read(data, Long.valueOf(filePart.getStart()).intValue(), Long.valueOf(filePart.getSize()).intValue());
+                int bytesRead = this.inputStream.read(data, Long.valueOf(filePart.getStart()).intValue(), Long.valueOf(filePart.getSize()-totalBytes).intValue());
+                totalBytes +=bytesRead;
             }
             byteRead = this.inputStream.read(data);
         } catch (IOException ex) {
