@@ -1,9 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.SneakyThrows;
+import lombok.*;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.config.ApplicationThreadPoolConfig;
 import org.onedatashare.transferservice.odstransferservice.config.DataSourceConfig;
@@ -19,6 +16,7 @@ import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFT
 import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsWriter;
+import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
@@ -34,6 +32,7 @@ import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
+import org.springframework.batch.core.step.builder.AbstractTaskletStepBuilder;
 import org.springframework.batch.core.step.builder.SimpleStepBuilder;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
@@ -116,13 +115,15 @@ public class JobControl extends DefaultBatchConfigurer {
         List<Flow> flows = new ArrayList<>();
         for (EntityInfo file : infoList) {
             SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(file.getPath()).<DataChunk, DataChunk>chunk(this.request.getOptions().getPipeSize());
-            child.reader(getRightReader(request.getSource().getType(), file)).writer(getRightWriter(request.getDestination().getType(), file))
-                    .taskExecutor(threadPoolConfig.parallelThreadPool())
-                    .build();
+            child.reader(getRightReader(request.getSource().getType(), file)).writer(getRightWriter(request.getDestination().getType(), file));
+            if(ODSUtility.fullyOptimizableProtocols.contains(this.request.getSource().getType()) && ODSUtility.fullyOptimizableProtocols.contains(this.request.getDestination().getType())){
+                child.taskExecutor(threadPoolConfig.parallelThreadPool());
+            }
             flows.add(new FlowBuilder<Flow>(id + basePath).start(child.build()).build());
         }
         return flows;
     }
+
 
     protected AbstractItemCountingItemStreamItemReader<DataChunk> getRightReader(EndpointType type, EntityInfo fileInfo) {
         switch (type) {
