@@ -3,7 +3,10 @@ package org.onedatashare.transferservice.odstransferservice.service.step.sftp;
 import com.jcraft.jsch.*;
 import lombok.SneakyThrows;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
+import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
+import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +15,7 @@ import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.file.ResourceAwareItemReaderItemStream;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.util.ClassUtils;
 
@@ -30,6 +34,8 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
     String fName;
     int chunckSize;
     AccountEndpointCredential sourceCred;
+    FilePartitioner filePartitioner;
+    EntityInfo file;
 
     Session jschSession = null;
 
@@ -38,13 +44,16 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
         logger.info("Before step for : " + stepExecution.getStepName());
         sBasePath = stepExecution.getJobParameters().getString(SOURCE_BASE_PATH);
         fName = stepExecution.getStepName();
+        filePartitioner.createParts(file.getSize(), stepExecution.getStepName());
     }
 
-    public SFTPReader(AccountEndpointCredential credential, int chunckSize) {
+    public SFTPReader(AccountEndpointCredential credential, int chunckSize, EntityInfo file) {
+        this.file = file;
         this.setExecutionContextName(ClassUtils.getShortName(SFTPReader.class));
         this.chunckSize = chunckSize;
         this.sourceCred = credential;
         this.setName(ClassUtils.getShortName(FTPReader.class));
+        this.filePartitioner = new FilePartitioner();
     }
 
     @Override
@@ -53,9 +62,14 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
 
     @Override
     protected DataChunk doRead() {
-        byte[] data = new byte[this.chunckSize];
+        FilePart filePart = filePartitioner.nextPart();
+        byte[] data = new byte[Long.valueOf(filePart.getSize()).intValue()];
         int byteRead = -1;
         try {
+            long totalBytes = 0;
+            while(totalBytes < filePart.getSize()){
+                this.inputStream.read(data, Long.valueOf(filePart.getStart()).intValue(), Long.valueOf(filePart.getSize()).intValue());
+            }
             byteRead = this.inputStream.read(data);
         } catch (IOException ex) {
             logger.error("Unable to read from source");
@@ -64,8 +78,9 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
         if (byteRead == -1) {
             return null;
         }
-
         DataChunk dc = new DataChunk();
+        dc.setStartPosition(Long.valueOf(filePart.getStart()).intValue());
+        dc.setChunkIdx(filePart.getPartIdx());
         dc.setSize(byteRead);
         dc.setData(Arrays.copyOf(data, byteRead));
         dc.setFileName(fName);
