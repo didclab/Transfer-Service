@@ -52,7 +52,6 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
 
     @BeforeStep
     public void beforeStep(StepExecution stepExecution){
-//        this.currentFileSize = Long.parseLong(stepExecution.getExecutionContext().getString(this.fileName));
         logger.info("Before Step of AmazonS3Writer and the step name is {}", stepExecution.getStepName());
         this.currentFileSize = this.fileInfo.getSize();
         String destBasepath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);

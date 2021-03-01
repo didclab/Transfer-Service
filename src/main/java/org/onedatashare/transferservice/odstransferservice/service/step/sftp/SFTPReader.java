@@ -32,10 +32,12 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
     InputStream inputStream;
     String sBasePath;
     String fName;
-    int chunckSize;
     AccountEndpointCredential sourceCred;
     FilePartitioner filePartitioner;
     EntityInfo file;
+    int chunckSize;
+    int chunksCreated;
+    long fileIdx;
 
     Session jschSession = null;
 
@@ -45,6 +47,8 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
         sBasePath = stepExecution.getJobParameters().getString(SOURCE_BASE_PATH);
         fName = stepExecution.getStepName();
         filePartitioner.createParts(file.getSize(), stepExecution.getStepName());
+        chunksCreated = 0;
+        fileIdx = 0L;
     }
 
     public SFTPReader(AccountEndpointCredential credential, int chunckSize, EntityInfo file) {
@@ -63,30 +67,26 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
     @Override
     protected DataChunk doRead() {
         FilePart filePart = filePartitioner.nextPart();
-        byte[] data = new byte[Long.valueOf(filePart.getSize()).intValue()];
+        chunksCreated++;
+        byte[] data = new byte[this.chunckSize];
         int byteRead = -1;
         try {
-            long totalBytes = 0;
-            while(totalBytes < filePart.getSize()){
-                int bytesRead = this.inputStream.read(data, Long.valueOf(filePart.getStart()).intValue(), Long.valueOf(filePart.getSize()-totalBytes).intValue());
-                if(bytesRead == -1){
-                    return null;
-                }
-                totalBytes +=bytesRead;
+            int bytesRead = this.inputStream.read(data);
+            if(bytesRead == -1){
+                return null;
             }
+            fileIdx += bytesRead;
+            byteRead = bytesRead;
         } catch (IOException ex) {
             logger.error("Unable to read from source");
             ex.printStackTrace();
         }
-        if (byteRead == -1) {
-            return null;
-        }
         DataChunk dc = new DataChunk();
-        dc.setStartPosition(Long.valueOf(filePart.getStart()).intValue());
-        dc.setChunkIdx(filePart.getPartIdx());
+        dc.setStartPosition(this.fileIdx);
+        dc.setChunkIdx(this.chunksCreated);
         dc.setSize(byteRead);
-        dc.setData(Arrays.copyOf(data, byteRead));
-        dc.setFileName(fName);
+        dc.setData(data);
+        dc.setFileName(this.fName);
         return dc;
     }
 

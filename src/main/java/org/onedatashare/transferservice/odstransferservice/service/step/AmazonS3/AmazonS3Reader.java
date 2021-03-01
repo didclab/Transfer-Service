@@ -72,17 +72,17 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
         FilePart part = partitioner.nextPart();
         if(part == null) return null;
         S3Object partOfFile = this.s3Client.getObject(this.getSkeleton.withRange(part.getStart(), part.getEnd()-1));//this is inclusive or on both start and end so take one off so there is no colision
-        byte[] dataSet = new byte[Long.valueOf(part.getSize()).intValue()];
+        byte[] dataSet = new byte[this.chunkSize];
         long totalBytes = 0;
         S3ObjectInputStream stream = partOfFile.getObjectContent();
         while(totalBytes < part.getSize()){
             int bytesRead = 0;
-            bytesRead += stream.read(dataSet, Long.valueOf(totalBytes).intValue(), Long.valueOf(part.getSize()).intValue());
+            bytesRead += stream.read(dataSet, 0, this.chunkSize);
             if(bytesRead == -1) return null;
             totalBytes += bytesRead;
         }
         stream.close();
-        return ODSUtility.makeChunk(chunkSize, dataSet, Long.valueOf(part.getStart()).intValue(), Long.valueOf(part.getPartIdx()).intValue(),this.fileName);
+        return ODSUtility.makeChunk(chunkSize, dataSet, part.getStart(), Long.valueOf(part.getPartIdx()).intValue(), this.fileName);
     }
 
     @Override
@@ -90,8 +90,6 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
         this.currentFileMetaData = this.s3Client.getObjectMetadata(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey());
         partitioner.createParts(this.currentFileMetaData.getContentLength(), this.fileName);
     }
-
-
 
     @Override
     protected void doClose() throws Exception {

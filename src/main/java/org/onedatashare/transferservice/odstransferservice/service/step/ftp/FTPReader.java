@@ -9,7 +9,6 @@ import org.apache.commons.vfs2.impl.DefaultFileSystemConfigBuilder;
 import org.apache.commons.vfs2.provider.ftp.FtpFileSystemConfigBuilder;
 import org.apache.commons.vfs2.provider.ftp.FtpFileType;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
-import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,14 +22,12 @@ import org.springframework.util.ClassUtils;
 
 import java.io.InputStream;
 import java.util.Arrays;
-import java.util.HashMap;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
 public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataChunk> implements ResourceAwareItemReaderItemStream<DataChunk>, InitializingBean {
 
     Logger logger = LoggerFactory.getLogger(FTPReader.class);
-
     InputStream inputStream;
     String sBasePath;
     String fName;
