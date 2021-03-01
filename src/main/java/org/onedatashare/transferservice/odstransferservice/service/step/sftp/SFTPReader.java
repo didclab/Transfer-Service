@@ -33,7 +33,6 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
     String sBasePath;
     String fName;
     AccountEndpointCredential sourceCred;
-    FilePartitioner filePartitioner;
     EntityInfo file;
     int chunckSize;
     int chunksCreated;
@@ -46,7 +45,6 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
         logger.info("Before step for : " + stepExecution.getStepName());
         sBasePath = stepExecution.getJobParameters().getString(SOURCE_BASE_PATH);
         fName = stepExecution.getStepName();
-        filePartitioner.createParts(file.getSize(), stepExecution.getStepName());
         chunksCreated = 0;
         fileIdx = 0L;
     }
@@ -57,7 +55,6 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
         this.chunckSize = chunckSize;
         this.sourceCred = credential;
         this.setName(ClassUtils.getShortName(FTPReader.class));
-        this.filePartitioner = new FilePartitioner();
     }
 
     @Override
@@ -66,7 +63,6 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
 
     @Override
     protected DataChunk doRead() {
-        FilePart filePart = filePartitioner.nextPart();
         chunksCreated++;
         byte[] data = new byte[this.chunckSize];
         int byteRead = -1;
@@ -85,7 +81,7 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
         dc.setStartPosition(this.fileIdx);
         dc.setChunkIdx(this.chunksCreated);
         dc.setSize(byteRead);
-        dc.setData(data);
+        dc.setData(Arrays.copyOf(data, byteRead));
         dc.setFileName(this.fName);
         return dc;
     }
