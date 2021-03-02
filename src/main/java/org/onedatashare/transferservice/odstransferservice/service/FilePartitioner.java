@@ -41,7 +41,7 @@ public class FilePartitioner {
             part.setFileName(fileName);
             part.setStart(0);
             part.setEnd(totalSize);
-            part.setSize(totalSize);
+            part.setSize(Long.valueOf(totalSize).intValue());
             queue.add(part);
         }else{
             long startPosition = 0;
@@ -59,7 +59,7 @@ public class FilePartitioner {
             FilePart lastChunk = new FilePart();
             lastChunk.setStart(startPosition);
             lastChunk.setFileName(fileName);
-            lastChunk.setSize(totalSize-startPosition);
+            lastChunk.setSize(Long.valueOf(totalSize-startPosition).intValue());
             lastChunk.setPartIdx(chunksOfChunksKB);
             lastChunk.setEnd(totalSize);
             queue.add(lastChunk);

@@ -77,7 +77,7 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
         S3ObjectInputStream stream = partOfFile.getObjectContent();
         while(totalBytes < part.getSize()){
             int bytesRead = 0;
-            bytesRead += stream.read(dataSet, 0, this.chunkSize);
+            bytesRead += stream.read(dataSet, 0, this.chunkSize);//read the entire requested stream
             if(bytesRead == -1) return null;
             totalBytes += bytesRead;
         }

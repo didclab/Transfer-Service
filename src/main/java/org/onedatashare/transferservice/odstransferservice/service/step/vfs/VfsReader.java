@@ -65,7 +65,7 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
         FilePart chunkParameters = this.filePartitioner.nextPart();
         if (chunkParameters == null) return null;// done as there are no more FileParts in the queue
         logger.info("currently reading {}", chunkParameters.getPartIdx());
-        ByteBuffer buffer = ByteBuffer.allocate(chunkParameters.getSize());
+        ByteBuffer buffer = ByteBuffer.allocate(this.chunkSize);
         int totalBytes = 0;
         while (totalBytes < chunkSize) {
             int bytesRead = 0;

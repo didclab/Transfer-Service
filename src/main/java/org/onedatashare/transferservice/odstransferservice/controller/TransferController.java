@@ -50,6 +50,7 @@ public class TransferController {
         logger.info(String.valueOf(request.getSource().getVfsSourceCredential().getEncryptedSecret()));
         logger.info(request.getSource().getParentInfo().getPath());
         logger.info(String.valueOf(request.getChunkSize()));
+        logger.info(request.toString());
         jc.setRequest(request);
         jc.setChunkSize(request.getChunkSize());
         asyncJobLauncher.run(jc.concurrentJobDefinition(), parameters);
