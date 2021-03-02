@@ -11,4 +11,6 @@ public class FilePart {
     long end;
     int size;
     String fileName;
+    boolean isLastChunk;
+
 }

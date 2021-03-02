@@ -38,7 +38,7 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
     ObjectMetadata currentFileMetaData;
     GetObjectRequest getSkeleton;
 
-    public AmazonS3Reader(AccountEndpointCredential sourceCredential, int chunkSize){
+    public AmazonS3Reader(AccountEndpointCredential sourceCredential, int chunkSize) {
         this.sourceCredential = sourceCredential;
         this.regionAndBucket = this.sourceCredential.getUri().split(":::");
         this.chunkSize = Math.max(SIXTYFOUR_KB, chunkSize);
@@ -57,28 +57,36 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
     }
 
     @AfterStep
-    public void afterStep(StepExecution stepExecution){}
+    public void afterStep(StepExecution stepExecution) {
+    }
 
     public void setName(String name) {
         this.setExecutionContextName(name);
     }
 
     @Override
-    public void setResource(Resource resource) {}
+    public void setResource(Resource resource) {
+    }
 
 
     @Override
     protected DataChunk doRead() throws Exception {
         FilePart part = partitioner.nextPart();
-        if(part == null) return null;
-        S3Object partOfFile = this.s3Client.getObject(this.getSkeleton.withRange(part.getStart(), part.getEnd()-1));//this is inclusive or on both start and end so take one off so there is no colision
-        byte[] dataSet = new byte[this.chunkSize];
+        if (part == null) return null;
+        logger.info("Current Part:-"+part.toString());
+        S3Object partOfFile = this.s3Client.getObject(this.getSkeleton.withRange(part.getStart(), part.getEnd()));//this is inclusive or on both start and end so take one off so there is no colision
+        byte[] dataSet = null;
+        if(!part.isLastChunk()){
+            dataSet = new byte[this.chunkSize];
+        }
+        else
+            dataSet = new byte[part.getSize()];
         long totalBytes = 0;
         S3ObjectInputStream stream = partOfFile.getObjectContent();
-        while(totalBytes < part.getSize()){
+        while (totalBytes < part.getSize()) {
             int bytesRead = 0;
-            bytesRead += stream.read(dataSet, 0, this.chunkSize);//read the entire requested stream
-            if(bytesRead == -1) return null;
+            bytesRead += stream.read(dataSet, Long.valueOf(totalBytes).intValue(), Long.valueOf(part.getSize()).intValue());
+            if (bytesRead == -1) return null;
             totalBytes += bytesRead;
         }
         stream.close();

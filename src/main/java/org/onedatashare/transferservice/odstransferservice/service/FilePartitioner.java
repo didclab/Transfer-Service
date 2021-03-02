@@ -36,8 +36,9 @@ public class FilePartitioner {
      */
     public int createParts(long totalSize, String fileName){
         if(totalSize < 1) return -1;
-        if(totalSize <= this.chunkSize){
+        if(totalSize < this.chunkSize){
             FilePart part = new FilePart();
+            part.setLastChunk(true);
             part.setFileName(fileName);
             part.setStart(0);
             part.setEnd(totalSize);
@@ -48,21 +49,26 @@ public class FilePartitioner {
             long chunksOfChunksKB = totalSize / this.chunkSize;
             for(long i = 0; i < chunksOfChunksKB; i++){
                 FilePart part = new FilePart();
+                part.setLastChunk(false);
                 part.setFileName(fileName);
                 part.setPartIdx(i);
                 part.setSize(this.chunkSize);
                 part.setStart(startPosition);
-                startPosition+=this.chunkSize;
+                startPosition+=this.chunkSize-1;
                 part.setEnd(startPosition);
+                startPosition++;
                 this.queue.add(part);
+                logger.info(part.toString());
             }
             FilePart lastChunk = new FilePart();
             lastChunk.setStart(startPosition);
             lastChunk.setFileName(fileName);
+            lastChunk.setLastChunk(true);
             lastChunk.setSize(Long.valueOf(totalSize-startPosition).intValue());
             lastChunk.setPartIdx(chunksOfChunksKB);
             lastChunk.setEnd(totalSize);
             queue.add(lastChunk);
+            logger.info(lastChunk.toString());
         }
         logger.info("The total size of the queue after parsing file: " + fileName +" " +queue.size());
         return queue.size();
