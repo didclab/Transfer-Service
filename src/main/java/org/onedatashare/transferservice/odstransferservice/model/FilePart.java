@@ -9,6 +9,6 @@ public class FilePart {
     long partIdx;
     long start;
     long end;
-    long size;
+    int size;
     String fileName;
 }

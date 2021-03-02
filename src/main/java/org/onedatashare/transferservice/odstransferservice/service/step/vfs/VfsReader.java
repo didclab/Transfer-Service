@@ -38,6 +38,7 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
     EntityInfo fileInfo;
     AccountEndpointCredential credential;
 
+
     public VfsReader(AccountEndpointCredential credential, EntityInfo fInfo, int chunkSize) {
         this.setExecutionContextName(ClassUtils.getShortName(VfsReader.class));
         this.credential = credential;
@@ -64,12 +65,12 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
         FilePart chunkParameters = this.filePartitioner.nextPart();
         if (chunkParameters == null) return null;// done as there are no more FileParts in the queue
         logger.info("currently reading {}", chunkParameters.getPartIdx());
-        ByteBuffer buffer = ByteBuffer.allocate(chunkSize);
-        long totalBytes = 0;
+        ByteBuffer buffer = ByteBuffer.allocate(chunkParameters.getSize());
+        int totalBytes = 0;
         while (totalBytes < chunkSize) {
             int bytesRead = 0;
             try {
-                bytesRead = this.sink.read(buffer, chunkParameters.getStart());
+                bytesRead = this.sink.read(buffer, chunkParameters.getStart()+totalBytes);
             } catch (IOException ex) {
                 logger.error("Unable to read from source");
                 ex.printStackTrace();
@@ -78,9 +79,9 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
             totalBytes += bytesRead;
         }
         buffer.flip();
-        byte[] data = new byte[chunkSize];
-        buffer.get(data, 0, chunkSize);
-        return ODSUtility.makeChunk(chunkSize, data, chunkParameters.getStart(), Long.valueOf(chunkParameters.getPartIdx()).intValue(), this.fileName);
+        byte[] data = new byte[totalBytes];
+        buffer.get(data, 0, totalBytes);
+        return ODSUtility.makeChunk(totalBytes, data, chunkParameters.getStart(), Long.valueOf(chunkParameters.getPartIdx()).intValue(), this.fileName);
     }
 
     @Override

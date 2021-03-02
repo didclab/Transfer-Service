@@ -13,6 +13,7 @@ import org.onedatashare.transferservice.odstransferservice.model.credential.Acco
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
+import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.file.ResourceAwareItemReaderItemStream;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
@@ -31,16 +32,11 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
     InputStream inputStream;
     String sBasePath;
     String fName;
-    int chunckSize;
     AccountEndpointCredential sourceCred;
     FileObject foSrc;
-
-    @BeforeStep
-    public void beforeStep(StepExecution stepExecution) {
-        logger.info("Before step for : " + stepExecution.getStepName());
-        sBasePath = stepExecution.getJobParameters().getString(SOURCE_BASE_PATH);
-        fName = stepExecution.getStepName();
-    }
+    int chunckSize;
+    int chunksCreated;
+    long fileIdx;
 
     public FTPReader(AccountEndpointCredential credential, int chunckSize) {
         logger.info("Inside FTPReader constructor");
@@ -49,6 +45,21 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         this.setName(ClassUtils.getShortName(FTPReader.class));
     }
 
+
+    @BeforeStep
+    public void beforeStep(StepExecution stepExecution) {
+        logger.info("Before step for : " + stepExecution.getStepName());
+        sBasePath = stepExecution.getJobParameters().getString(SOURCE_BASE_PATH);
+        fName = stepExecution.getStepName();
+        chunksCreated = 0;
+        fileIdx = 0L;
+    }
+
+    @AfterStep
+    public void afterStep(){
+        this.fileIdx = 0;
+        this.chunksCreated = 0;
+    }
 
     public void setName(String name) {
         logger.info("Setting context name");
@@ -67,11 +78,13 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         if (byteRead == -1) {
             return null;
         }
-
+        this.fileIdx += byteRead;
         DataChunk dc = new DataChunk();
-        dc.setData(Arrays.copyOf(data, byteRead));
+        dc.setStartPosition(this.fileIdx);
+        dc.setChunkIdx(++this.chunksCreated);
         dc.setSize(byteRead);
-        dc.setFileName(fName);
+        dc.setFileName(this.fName);
+        dc.setData(Arrays.copyOf(data, byteRead));
         return dc;
     }
 

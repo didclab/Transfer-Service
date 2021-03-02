@@ -32,6 +32,10 @@ public class ApplicationThreadPoolConfig{
     @Getter
     private int STEP_MAX_POOL_SIZE=20;
 
+    @Getter
+    @Setter
+    private int parallelThreadPoolSize = 20;
+
     @Bean(name = "transferTaskExecutor")
     @Lazy
     public TaskExecutor transferTaskExecutor(){
@@ -75,7 +79,7 @@ public class ApplicationThreadPoolConfig{
     @Lazy
     public TaskExecutor parallelThreadPool(){
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(100);
+        executor.setCorePoolSize(this.parallelThreadPoolSize);
         executor.setThreadNamePrefix("Parallel");
         return executor;
     }

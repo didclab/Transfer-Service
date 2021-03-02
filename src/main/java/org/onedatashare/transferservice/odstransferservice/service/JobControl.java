@@ -116,9 +116,10 @@ public class JobControl extends DefaultBatchConfigurer {
         for (EntityInfo file : infoList) {
             SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(file.getPath()).<DataChunk, DataChunk>chunk(this.request.getOptions().getPipeSize());
             child.reader(getRightReader(request.getSource().getType(), file)).writer(getRightWriter(request.getDestination().getType(), file));
-            if(ODSUtility.fullyOptimizableProtocols.contains(this.request.getSource().getType()) && ODSUtility.fullyOptimizableProtocols.contains(this.request.getDestination().getType())){
-                child.taskExecutor(threadPoolConfig.parallelThreadPool());
-            }
+//            if(ODSUtility.fullyOptimizableProtocols.contains(this.request.getSource().getType()) && ODSUtility.fullyOptimizableProtocols.contains(this.request.getDestination().getType())){
+//                threadPoolConfig.setParallelThreadPoolSize(request.getOptions().getParallelThreadCount());
+//                child.taskExecutor(threadPoolConfig.parallelThreadPool());
+//            }
             flows.add(new FlowBuilder<Flow>(id + basePath).start(child.build()).build());
         }
         return flows;
@@ -159,6 +160,7 @@ public class JobControl extends DefaultBatchConfigurer {
         List<Flow> flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getParentInfo().getPath(), request.getJobId());
         Flow[] fl = new Flow[flows.size()];
         threadPoolConfig.setSTEP_POOL_SIZE(this.request.getOptions().getConcurrencyThreadCount());
+        logger.info(String.valueOf(threadPoolConfig.getSTEP_POOL_SIZE()) +" is the size of the steps thread pool");
         Flow f = new FlowBuilder<SimpleFlow>("splitFlow").split(threadPoolConfig.stepTaskExecutor()).add(flows.toArray(fl))
                 .build();
         return jobBuilderFactory.get(request.getOwnerId()).listener(new JobCompletionListener())
