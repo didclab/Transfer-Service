@@ -1,6 +1,7 @@
 package org.onedatashare.transferservice.odstransferservice.model;
 
 import lombok.Data;
+import lombok.ToString;
 
 import java.io.OutputStream;
 
@@ -8,6 +9,7 @@ import java.io.OutputStream;
 public class DataChunk {
     int chunkIdx;
     long startPosition;
+    @ToString.Exclude
     byte[] data;
     String fileName;
     String basePath;

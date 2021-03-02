@@ -83,6 +83,7 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
         dc.setSize(byteRead);
         dc.setData(Arrays.copyOf(data, byteRead));
         dc.setFileName(this.fName);
+        logger.info(dc.toString());
         return dc;
     }
 

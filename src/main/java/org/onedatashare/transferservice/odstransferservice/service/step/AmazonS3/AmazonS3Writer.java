@@ -69,6 +69,7 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
 
     @Override
     public void write(List<? extends DataChunk> items) throws Exception {
+        logger.info("writing to s3");
         AmazonS3 client = this.clientHashMap.get(this.fileName);
         if(!this.multipartUpload){
             this.singlePutRequestMetaData.addAllChunks(items);
@@ -78,13 +79,13 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
                 client.putObject(putObjectRequest);
             }
         }else{
-            if(!this.metaData.isPrepared()){
+            if(!this.metaData.isPrepared()) {
                 this.metaData.prepareMetaData(client, this.s3URI.getBucket(), this.s3URI.getKey());
             }
             for(DataChunk currentChunk : items){
-                logger.info("The current chunk is {}, with size {} and the start Position is {}", currentChunk.getChunkIdx(),currentChunk.getSize(), currentChunk.getStartPosition());
+                //logger.info(currentChunk.toString());
                 if(currentChunk.getStartPosition() + currentChunk.getSize() == this.currentFileSize){
-                    logger.info("At the last chunk of the transfer {}", currentChunk.getChunkIdx());
+                    //logger.info("At the last chunk of the transfer {}", currentChunk.getChunkIdx());
                     this.metaData.addUploadPart(client.uploadPart(ODSUtility.makePartRequest(currentChunk, this.s3URI.getBucket(), this.metaData.getInitiateMultipartUploadResult().getUploadId(), this.s3URI.getKey(), true)));
                     this.metaData.completeMultipartUpload(this.clientHashMap.get(this.fileName));
                 }else{
