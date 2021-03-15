@@ -6,10 +6,8 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.AmazonS3URI;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.UploadPartRequest;
-import com.amazonaws.services.s3.model.UploadPartResult;
+import com.amazonaws.services.s3.model.*;
+import com.amazonaws.services.s3.transfer.Upload;
 import org.onedatashare.transferservice.odstransferservice.model.AWSMultiPartMetaData;
 import org.onedatashare.transferservice.odstransferservice.model.AWSSinglePutRequestMetaData;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
@@ -54,6 +52,7 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
     public void beforeStep(StepExecution stepExecution){
         logger.info("Before Step of AmazonS3Writer and the step name is {}", stepExecution.getStepName());
         this.currentFileSize = this.fileInfo.getSize();
+        logger.info("The S3 EntityInfo file is as follows: " + this.fileInfo.toString());
         String destBasepath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
         this.fileName = stepExecution.getStepName();
         this.s3URI = new AmazonS3URI(S3Utility.constructS3URI(this.destCredential, this.fileName, destBasepath));//for aws the step name will be the file key.
@@ -69,7 +68,6 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
 
     @Override
     public void write(List<? extends DataChunk> items) throws Exception {
-        logger.info("writing to s3");
         AmazonS3 client = this.clientHashMap.get(this.fileName);
         if(!this.multipartUpload){
             this.singlePutRequestMetaData.addAllChunks(items);
@@ -79,14 +77,17 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
                 client.putObject(putObjectRequest);
             }
         }else{
+            //Does multipart upload to s3 bucket
             if(!this.metaData.isPrepared()) {
                 this.metaData.prepareMetaData(client, this.s3URI.getBucket(), this.s3URI.getKey());
             }
             for(DataChunk currentChunk : items){
-                //logger.info(currentChunk.toString());
+                logger.info(currentChunk.toString());
                 if(currentChunk.getStartPosition() + currentChunk.getSize() == this.currentFileSize){
-                    //logger.info("At the last chunk of the transfer {}", currentChunk.getChunkIdx());
-                    this.metaData.addUploadPart(client.uploadPart(ODSUtility.makePartRequest(currentChunk, this.s3URI.getBucket(), this.metaData.getInitiateMultipartUploadResult().getUploadId(), this.s3URI.getKey(), true)));
+                    logger.info("At the last chunk of the transfer {}", currentChunk.getChunkIdx());
+                    UploadPartRequest lastPart = ODSUtility.makePartRequest(currentChunk, this.s3URI.getBucket(), this.metaData.getInitiateMultipartUploadResult().getUploadId(), this.s3URI.getKey(), true);
+                    UploadPartResult uploadPartResult = client.uploadPart(lastPart);
+                    this.metaData.addUploadPart(uploadPartResult);
                     this.metaData.completeMultipartUpload(this.clientHashMap.get(this.fileName));
                 }else{
                     UploadPartRequest uploadPartRequest = ODSUtility.makePartRequest(currentChunk, this.s3URI.getBucket(), this.metaData.getInitiateMultipartUploadResult().getUploadId(), this.s3URI.getKey(), false);
@@ -100,7 +101,7 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
     @AfterStep
     public void afterStep(){
         this.clientHashMap.remove(this.fileName);
-        if(this.multipartUpload){
+        if(this.multipartUpload && clientHashMap.size() > 0){
             this.metaData.reset();
         }
     }

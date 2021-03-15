@@ -46,7 +46,7 @@ public class FilePartitioner {
             queue.add(part);
         }else{
             long startPosition = 0;
-            long chunksOfChunksKB = totalSize / this.chunkSize;
+            long chunksOfChunksKB = Math.floorDiv(totalSize, this.chunkSize);
             for(long i = 0; i < chunksOfChunksKB; i++){
                 FilePart part = new FilePart();
                 part.setLastChunk(false);

@@ -37,7 +37,7 @@ public class ODSUtility {
         uploadPartRequest.withLastPart(lastPart);
         uploadPartRequest.setUploadId(uploadId);
         uploadPartRequest.setKey(key);
-        uploadPartRequest.setPartNumber(Long.valueOf(dataChunk.getChunkIdx()).intValue() + 1); //by default we start from chunks 0-N but AWS SDK must have 1-10000 so we just add 1
+        uploadPartRequest.setPartNumber(dataChunk.getChunkIdx()+1); //by default we start from chunks 0-N but AWS SDK must have 1-10000 so we just add 1
         uploadPartRequest.setPartSize(dataChunk.getSize());
         return uploadPartRequest;
     }

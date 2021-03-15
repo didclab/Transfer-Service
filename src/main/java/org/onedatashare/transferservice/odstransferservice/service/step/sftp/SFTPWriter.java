@@ -59,7 +59,6 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
                 e.printStackTrace();
             }
         }
-        logger.info("File already present");
         try {
             return channelSftp.put(this.stepName, ChannelSftp.APPEND);
         } catch (SftpException e) {

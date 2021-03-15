@@ -19,7 +19,7 @@ public class AWSSinglePutRequestMetaData {
     private List<DataChunk> chunkList;
 
     public AWSSinglePutRequestMetaData(){
-        this.dataChunkPriorityQueue = new PriorityQueue<DataChunk>(20, new DataChunkComparator());
+        this.dataChunkPriorityQueue = new PriorityQueue<DataChunk>(new DataChunkComparator());
     }
     public void addChunk(DataChunk chunk){
         this.dataChunkPriorityQueue.add(chunk);

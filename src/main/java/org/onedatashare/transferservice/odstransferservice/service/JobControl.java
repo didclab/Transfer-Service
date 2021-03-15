@@ -20,7 +20,9 @@ import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobInterruptedException;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.configuration.annotation.DefaultBatchConfigurer;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
@@ -133,7 +135,7 @@ public class JobControl extends DefaultBatchConfigurer {
             case sftp:
                 return new SFTPReader(request.getSource().getVfsSourceCredential(), request.getChunkSize(), fileInfo);
             case ftp:
-                return new FTPReader(request.getSource().getVfsSourceCredential(), request.getChunkSize());
+                return new FTPReader(request.getSource().getVfsSourceCredential(), fileInfo,request.getChunkSize());
             case s3:
                 return new AmazonS3Reader(request.getSource().getVfsSourceCredential(), request.getChunkSize());
         }

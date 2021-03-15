@@ -8,6 +8,7 @@ import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPReader;
+import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
@@ -37,7 +38,7 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
     int chunckSize;
     int chunksCreated;
     long fileIdx;
-
+    FilePartitioner filePartitioner;
     Session jschSession = null;
 
     @BeforeStep
@@ -47,10 +48,12 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
         fName = stepExecution.getStepName();
         chunksCreated = 0;
         fileIdx = 0L;
+        this.filePartitioner.createParts(this.file.getSize(), this.fName);
     }
 
     public SFTPReader(AccountEndpointCredential credential, int chunckSize, EntityInfo file) {
         this.file = file;
+        this.filePartitioner = new FilePartitioner(chunckSize);
         this.setExecutionContextName(ClassUtils.getShortName(SFTPReader.class));
         this.chunckSize = chunckSize;
         this.sourceCred = credential;
@@ -61,30 +64,24 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
     public void setResource(Resource resource) {
     }
 
+    @SneakyThrows
     @Override
     protected DataChunk doRead() {
-        chunksCreated++;
-        byte[] data = new byte[this.chunckSize];
-        int byteRead = -1;
-        try {
-            int bytesRead = this.inputStream.read(data);
-            if(bytesRead == -1){
-                return null;
-            }
-            fileIdx += bytesRead;
-            byteRead = bytesRead;
-        } catch (IOException ex) {
-            logger.error("Unable to read from source");
-            ex.printStackTrace();
+        FilePart thisChunk = this.filePartitioner.nextPart();
+        if (thisChunk == null) return null;
+        byte[] data = new byte[thisChunk.getSize()];
+        int totalRead = 0;//the total we have read in for this stream
+        while (totalRead < thisChunk.getSize()) {
+            int bytesRead = 0;
+            bytesRead = this.inputStream.read(data, totalRead, thisChunk.getSize() - totalRead);
+            if (bytesRead == -1) return null;
+            totalRead += bytesRead;
         }
-        DataChunk dc = new DataChunk();
-        dc.setStartPosition(this.fileIdx);
-        dc.setChunkIdx(this.chunksCreated);
-        dc.setSize(byteRead);
-        dc.setData(Arrays.copyOf(data, byteRead));
-        dc.setFileName(this.fName);
-        logger.info(dc.toString());
-        return dc;
+        DataChunk chunk = ODSUtility.makeChunk(thisChunk.getSize(), data, this.fileIdx, this.chunksCreated, this.fName);
+        this.fileIdx += totalRead;
+        this.chunksCreated++;
+        logger.info(chunk.toString());
+        return chunk;
     }
 
     /**

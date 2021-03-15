@@ -9,7 +9,11 @@ import org.apache.commons.vfs2.impl.DefaultFileSystemConfigBuilder;
 import org.apache.commons.vfs2.provider.ftp.FtpFileSystemConfigBuilder;
 import org.apache.commons.vfs2.provider.ftp.FtpFileType;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
+import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
+import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
+import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
@@ -22,7 +26,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.util.ClassUtils;
 
 import java.io.InputStream;
-import java.util.Arrays;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
@@ -37,11 +40,14 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
     int chunckSize;
     int chunksCreated;
     long fileIdx;
+    FilePartitioner partitioner;
+    EntityInfo fileInfo;
 
-    public FTPReader(AccountEndpointCredential credential, int chunckSize) {
-        logger.info("Inside FTPReader constructor");
+    public FTPReader(AccountEndpointCredential credential, EntityInfo file ,int chunckSize) {
         this.chunckSize = chunckSize;
         this.sourceCred = credential;
+        this.partitioner = new FilePartitioner(this.chunckSize);
+        fileInfo = file;
         this.setName(ClassUtils.getShortName(FTPReader.class));
     }
 
@@ -51,8 +57,10 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         logger.info("Before step for : " + stepExecution.getStepName());
         sBasePath = stepExecution.getJobParameters().getString(SOURCE_BASE_PATH);
         fName = stepExecution.getStepName();
+        partitioner.createParts(this.fileInfo.getSize(), fName);
         chunksCreated = 0;
         fileIdx = 0L;
+        this.partitioner.createParts(this.fileInfo.getSize(), this.fName);
     }
 
     @AfterStep
@@ -62,7 +70,6 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
     }
 
     public void setName(String name) {
-        logger.info("Setting context name");
         this.setExecutionContextName(name);
     }
 
@@ -73,19 +80,20 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
     @SneakyThrows
     @Override
     protected DataChunk doRead() {
-        byte[] data = new byte[this.chunckSize];
-        int byteRead = this.inputStream.read(data);
-        if (byteRead == -1) {
-            return null;
+        FilePart filePart = this.partitioner.nextPart();
+        if(filePart == null) return null;
+        byte[] data = new byte[filePart.getSize()];
+        int totalBytes = 0;
+        while(totalBytes < filePart.getSize()){
+            int byteRead = this.inputStream.read(data, totalBytes, filePart.getSize()-totalBytes);
+            if (byteRead == -1) return null;
+            totalBytes += byteRead;
         }
-        this.fileIdx += byteRead;
-        DataChunk dc = new DataChunk();
-        dc.setStartPosition(this.fileIdx);
-        dc.setChunkIdx(++this.chunksCreated);
-        dc.setSize(byteRead);
-        dc.setFileName(this.fName);
-        dc.setData(Arrays.copyOf(data, byteRead));
-        return dc;
+        DataChunk chunk = ODSUtility.makeChunk(totalBytes, data, this.fileIdx, this.chunksCreated, this.fName);
+        this.fileIdx += totalBytes;
+        this.chunksCreated++;
+        logger.info(chunk.toString());
+        return chunk;
     }
 
 
@@ -122,7 +130,8 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         FtpFileSystemConfigBuilder.getInstance().setControlEncoding(opts, "UTF-8");
         StaticUserAuthenticator auth = new StaticUserAuthenticator(null, this.sourceCred.getUsername(), this.sourceCred.getSecret());
         DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
-        this.foSrc = VFS.getManager().resolveFile("ftp://" + this.sourceCred.getUri() + "/" + basePath + fName, opts);
+        String wholeThing = "ftp://" + this.sourceCred.getUri() + "/" + basePath + fName;
+        this.foSrc = VFS.getManager().resolveFile(wholeThing, opts);
         this.inputStream = foSrc.getContent().getInputStream();
     }
 }

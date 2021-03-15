@@ -67,7 +67,7 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
         logger.info("currently reading {}", chunkParameters.getPartIdx());
         ByteBuffer buffer = ByteBuffer.allocate(this.chunkSize);
         int totalBytes = 0;
-        while (totalBytes < chunkSize) {
+        while (totalBytes < chunkParameters.getSize()) {
             int bytesRead = 0;
             try {
                 bytesRead = this.sink.read(buffer, chunkParameters.getStart()+totalBytes);
@@ -79,7 +79,7 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
             totalBytes += bytesRead;
         }
         buffer.flip();
-        byte[] data = new byte[totalBytes];
+        byte[] data = new byte[chunkParameters.getSize()];
         buffer.get(data, 0, totalBytes);
         return ODSUtility.makeChunk(totalBytes, data, chunkParameters.getStart(), Long.valueOf(chunkParameters.getPartIdx()).intValue(), this.fileName);
     }
