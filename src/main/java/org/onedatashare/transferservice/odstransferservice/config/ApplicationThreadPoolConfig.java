@@ -14,8 +14,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 @Configuration
 public class ApplicationThreadPoolConfig{
 
-    private final int TRANSFER_MAX_POOL_SIZE = 64;
-
     @Setter
     @Getter
     private int TRANSFER_POOL_SIZE=32;
@@ -36,51 +34,47 @@ public class ApplicationThreadPoolConfig{
     @Setter
     private int parallelThreadPoolSize = 20;
 
-    @Bean(name = "transferTaskExecutor")
-    @Lazy
     public TaskExecutor transferTaskExecutor(){
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(TRANSFER_POOL_SIZE);
-        executor.setMaxPoolSize(TRANSFER_MAX_POOL_SIZE);
         executor.setThreadNamePrefix("Transfer pool");
+        executor.initialize();
         return executor;
     }
 
-    @Bean
-    @Lazy
-    public TaskExecutor stepTaskExecutor(){
+//    @Bean
+//    @Lazy
+    public ThreadPoolTaskExecutor stepTaskExecutor(){
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(STEP_POOL_SIZE);
-        executor.setMaxPoolSize(STEP_MAX_POOL_SIZE);
         executor.setThreadNamePrefix("Step");
+        executor.initialize();
+
         return executor;
     }
 
-    @Bean
-    @Lazy
     public TaskExecutor jobRequestThreadPool(){
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(JOB_POOL_SIZE);
-        executor.setMaxPoolSize(JOB_MAX_POOL_SIZE);
         executor.setThreadNamePrefix("Job");
+        executor.initialize();
         return executor;
     }
 
-    @Bean
-    @Lazy
+
     public TaskExecutor sequentialThreadPool(){
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(1);
         executor.setThreadNamePrefix("Sequentiall");
+        executor.initialize();
         return executor;
     }
 
-    @Bean
-    @Lazy
     public TaskExecutor parallelThreadPool(){
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(this.parallelThreadPoolSize);
         executor.setThreadNamePrefix("Parallel");
+        executor.initialize();
         return executor;
     }
 }

@@ -43,6 +43,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -135,7 +136,7 @@ public class JobControl extends DefaultBatchConfigurer {
             case sftp:
                 return new SFTPReader(request.getSource().getVfsSourceCredential(), request.getChunkSize(), fileInfo);
             case ftp:
-                return new FTPReader(request.getSource().getVfsSourceCredential(), fileInfo,request.getChunkSize());
+                return new FTPReader(request.getSource().getVfsSourceCredential(), fileInfo, request.getChunkSize());
             case s3:
                 return new AmazonS3Reader(request.getSource().getVfsSourceCredential(), request.getChunkSize());
         }
@@ -161,8 +162,8 @@ public class JobControl extends DefaultBatchConfigurer {
     public Job concurrentJobDefinition() throws MalformedURLException {
         List<Flow> flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getParentInfo().getPath(), request.getJobId());
         Flow[] fl = new Flow[flows.size()];
+
         threadPoolConfig.setSTEP_POOL_SIZE(this.request.getOptions().getConcurrencyThreadCount());
-        logger.info(String.valueOf(threadPoolConfig.getSTEP_POOL_SIZE()) +" is the size of the steps thread pool");
         Flow f = new FlowBuilder<SimpleFlow>("splitFlow").split(threadPoolConfig.stepTaskExecutor()).add(flows.toArray(fl))
                 .build();
         return jobBuilderFactory.get(request.getOwnerId()).listener(new JobCompletionListener())
