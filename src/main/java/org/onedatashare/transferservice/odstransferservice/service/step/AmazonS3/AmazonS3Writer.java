@@ -7,7 +7,6 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.AmazonS3URI;
 import com.amazonaws.services.s3.model.*;
-import com.amazonaws.services.s3.transfer.Upload;
 import org.onedatashare.transferservice.odstransferservice.model.AWSMultiPartMetaData;
 import org.onedatashare.transferservice.odstransferservice.model.AWSSinglePutRequestMetaData;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
@@ -55,14 +54,15 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
         logger.info("The S3 EntityInfo file is as follows: " + this.fileInfo.toString());
         String destBasepath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
         this.fileName = stepExecution.getStepName();
-        this.s3URI = new AmazonS3URI(S3Utility.constructS3URI(this.destCredential, this.fileName, destBasepath));//for aws the step name will be the file key.
-        createClientWithCreds();
+        this.s3URI = new AmazonS3URI(S3Utility.constructS3URI(this.destCredential.getUri(), this.fileName, destBasepath));//for aws the step name will be the file key.
+        AmazonS3 client = createClientWithCreds();
         if(this.currentFileSize < FIVE_MB){
             this.multipartUpload = false;
             this.singlePutRequestMetaData = new AWSSinglePutRequestMetaData();
         }else{
             this.multipartUpload = true;
             this.metaData = new AWSMultiPartMetaData();
+            this.metaData.prepareMetaData(client, this.s3URI.getBucket(), this.s3URI.getKey());
         }
     }
 
@@ -78,9 +78,6 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
             }
         }else{
             //Does multipart upload to s3 bucket
-            if(!this.metaData.isPrepared()) {
-                this.metaData.prepareMetaData(client, this.s3URI.getBucket(), this.s3URI.getKey());
-            }
             for(DataChunk currentChunk : items){
                 logger.info(currentChunk.toString());
                 if(currentChunk.getStartPosition() + currentChunk.getSize() == this.currentFileSize){
@@ -88,7 +85,6 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
                     UploadPartRequest lastPart = ODSUtility.makePartRequest(currentChunk, this.s3URI.getBucket(), this.metaData.getInitiateMultipartUploadResult().getUploadId(), this.s3URI.getKey(), true);
                     UploadPartResult uploadPartResult = client.uploadPart(lastPart);
                     this.metaData.addUploadPart(uploadPartResult);
-                    this.metaData.completeMultipartUpload(this.clientHashMap.get(this.fileName));
                 }else{
                     UploadPartRequest uploadPartRequest = ODSUtility.makePartRequest(currentChunk, this.s3URI.getBucket(), this.metaData.getInitiateMultipartUploadResult().getUploadId(), this.s3URI.getKey(), false);
                     UploadPartResult uploadPartResult = client.uploadPart(uploadPartRequest);
@@ -100,22 +96,25 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
 
     @AfterStep
     public void afterStep(){
-        this.clientHashMap.remove(this.fileName);
+        AmazonS3 client = this.clientHashMap.remove(this.fileName);
         if(this.multipartUpload && clientHashMap.size() > 0){
             this.metaData.reset();
         }
+        this.metaData.completeMultipartUpload(client);
     }
 
-    public void createClientWithCreds(){
+    public AmazonS3 createClientWithCreds(){
         if(this.clientHashMap.containsKey(this.fileName)){
-            this.clientHashMap.get(this.fileName);
+            return this.clientHashMap.get(this.fileName);
         }else{
             logger.info("Creating credentials for {}", this.destCredential.getUsername());
             AWSCredentials credentials = new BasicAWSCredentials(this.destCredential.getUsername(), this.destCredential.getSecret());
-            this.clientHashMap.put(this.fileName, AmazonS3ClientBuilder.standard()
+            AmazonS3 client = AmazonS3ClientBuilder.standard()
                     .withCredentials(new AWSStaticCredentialsProvider(credentials))
                     .withRegion(this.s3URI.getRegion())
-                    .build());
+                    .build();
+            this.clientHashMap.put(this.fileName, client);
+            return client;
         }
     }
 
