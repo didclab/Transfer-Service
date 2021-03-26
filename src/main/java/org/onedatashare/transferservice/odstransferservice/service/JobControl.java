@@ -117,11 +117,11 @@ public class JobControl extends DefaultBatchConfigurer {
         List<Flow> flows = new ArrayList<>();
         for (EntityInfo file : infoList) {
             SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(file.getPath()).<DataChunk, DataChunk>chunk(this.request.getOptions().getPipeSize());
+            if(ODSUtility.fullyOptimizableProtocols.contains(this.request.getSource().getType()) && ODSUtility.fullyOptimizableProtocols.contains(this.request.getDestination().getType())){
+                threadPoolConfig.setParallelThreadPoolSize(request.getOptions().getParallelThreadCount());
+                child.taskExecutor(threadPoolConfig.parallelThreadPool());
+            }
             child.reader(getRightReader(request.getSource().getType(), file)).writer(getRightWriter(request.getDestination().getType(), file));
-//            if(ODSUtility.fullyOptimizableProtocols.contains(this.request.getSource().getType()) && ODSUtility.fullyOptimizableProtocols.contains(this.request.getDestination().getType())){
-//                threadPoolConfig.setParallelThreadPoolSize(request.getOptions().getParallelThreadCount());
-//                child.taskExecutor(threadPoolConfig.parallelThreadPool());
-//            }
             flows.add(new FlowBuilder<Flow>(id + basePath).start(child.build()).build());
         }
         return flows;
