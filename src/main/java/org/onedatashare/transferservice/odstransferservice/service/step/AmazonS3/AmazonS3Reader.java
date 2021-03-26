@@ -51,7 +51,7 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
     public void beforeStep(StepExecution stepExecution) {
         this.fileName = stepExecution.getStepName();//For an S3 Reader job this should be the object key
         this.sourcePath = stepExecution.getJobExecution().getJobParameters().getString(ODSConstants.SOURCE_BASE_PATH);
-        this.amazonS3URI = new AmazonS3URI(S3Utility.constructS3URI(this.sourceCredential, this.fileName, this.sourcePath));
+        this.amazonS3URI = new AmazonS3URI(S3Utility.constructS3URI(this.sourceCredential.getUri(), this.fileName, this.sourcePath));
         this.getSkeleton = new GetObjectRequest(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey());
         logger.info("Starting the job for this file: " + this.fileName);
     }
@@ -75,8 +75,7 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
         if (part == null) return null;
         logger.info("Current Part:-"+part.toString());
         S3Object partOfFile = this.s3Client.getObject(this.getSkeleton.withRange(part.getStart(), part.getEnd()));//this is inclusive or on both start and end so take one off so there is no colision
-        byte[] dataSet = null;
-        dataSet = new byte[part.getSize()];
+        byte[] dataSet = new byte[part.getSize()];
         long totalBytes = 0;
         S3ObjectInputStream stream = partOfFile.getObjectContent();
         while (totalBytes < part.getSize()) {
@@ -92,7 +91,6 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
     @Override
     protected void doOpen() throws Exception {
         logger.info(this.amazonS3URI.toString());
-        logger.info(this.amazonS3URI.getKey());
         this.currentFileMetaData = this.s3Client.getObjectMetadata(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey());
         partitioner.createParts(this.currentFileMetaData.getContentLength(), this.fileName);
     }

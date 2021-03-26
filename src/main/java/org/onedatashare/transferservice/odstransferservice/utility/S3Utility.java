@@ -17,9 +17,9 @@ public class S3Utility {
                 .build();
     }
 
-    public static String constructS3URI(AccountEndpointCredential s3Credential, String fileKey, String basePath){
+    public static String constructS3URI(String uri, String fileKey, String basePath){
         StringBuilder builder = new StringBuilder();
-        String[] temp = s3Credential.getUri().split(":::");
+        String[] temp = uri.split(":::");
         String bucketName = temp[1];
         String region = temp[0];
         builder.append("https://").append(bucketName).append(".").append("s3.").append(region).append(".").append("amazonaws.com").append(basePath).append(fileKey);
