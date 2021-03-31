@@ -119,10 +119,10 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
 //            jsch.addIdentity("/home/vishal/.ssh/ods-bastion-dev.pem");
 //            jsch.setKnownHosts("/home/vishal/.ssh/known_hosts");
             jsch.addIdentity("randomName", sourceCred.getSecret().getBytes(), null, null);
-            jschSession = jsch.getSession(sourceCred.getUsername(), sourceCred.getUri().split(":")[0]);
+            String[] sourceCredUri = sourceCred.getUri().split(":");
+            jschSession = jsch.getSession(sourceCred.getUsername(), sourceCredUri[0], Integer.parseInt(sourceCredUri[1]));
             jschSession.setConfig("StrictHostKeyChecking", "no");
             jschSession.connect();
-            jschSession.setTimeout(10000);
             Channel sftp = jschSession.openChannel("sftp");
             ChannelSftp channelSftp = (ChannelSftp) sftp;
             channelSftp.connect();
