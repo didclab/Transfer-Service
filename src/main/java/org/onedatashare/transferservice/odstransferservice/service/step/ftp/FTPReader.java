@@ -123,11 +123,7 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         logger.info("Inside clientCreateSourceStream for : " + fName + " ");
 
         //***GETTING STREAM USING APACHE COMMONS VFS2
-        FileSystemOptions opts = new FileSystemOptions();
-        FtpFileSystemConfigBuilder.getInstance().setPassiveMode(opts, true);
-        FtpFileSystemConfigBuilder.getInstance().setFileType(opts, FtpFileType.BINARY);
-        FtpFileSystemConfigBuilder.getInstance().setAutodetectUtf8(opts, true);
-        FtpFileSystemConfigBuilder.getInstance().setControlEncoding(opts, "UTF-8");
+        FileSystemOptions opts = FtpUtility.generateOpts();
         StaticUserAuthenticator auth = new StaticUserAuthenticator(null, this.sourceCred.getUsername(), this.sourceCred.getSecret());
         DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
         String wholeThing = "ftp://" + this.sourceCred.getUri() + "/" + basePath + fName;

@@ -69,11 +69,7 @@ public class FTPWriter implements ItemWriter<DataChunk> {
 
         //***GETTING STREAM USING APACHE COMMONS VFS2
         try {
-            FileSystemOptions opts = new FileSystemOptions();
-            FtpFileSystemConfigBuilder.getInstance().setPassiveMode(opts, true);
-            FtpFileSystemConfigBuilder.getInstance().setFileType(opts, FtpFileType.BINARY);
-            FtpFileSystemConfigBuilder.getInstance().setAutodetectUtf8(opts, true);
-            FtpFileSystemConfigBuilder.getInstance().setControlEncoding(opts, "UTF-8");
+            FileSystemOptions opts = FtpUtility.generateOpts();
             StaticUserAuthenticator auth = new StaticUserAuthenticator(null, this.destCred.getUsername(), this.destCred.getSecret());
             DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
             foDest = VFS.getManager().resolveFile("ftp://" + this.destCred.getUri() + "/" + dBasePath + this.stepName, opts);

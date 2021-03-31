@@ -116,16 +116,8 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
         //***GETTING STREAM USING APACHE COMMONS jsch
         JSch jsch = new JSch();
         try {
-//            jsch.addIdentity("/home/vishal/.ssh/ods-bastion-dev.pem");
-//            jsch.setKnownHosts("/home/vishal/.ssh/known_hosts");
-            jsch.addIdentity("randomName", sourceCred.getSecret().getBytes(), null, null);
-            String[] sourceCredUri = sourceCred.getUri().split(":");
-            jschSession = jsch.getSession(sourceCred.getUsername(), sourceCredUri[0], Integer.parseInt(sourceCredUri[1]));
-            jschSession.setConfig("StrictHostKeyChecking", "no");
-            jschSession.connect();
-            Channel sftp = jschSession.openChannel("sftp");
-            ChannelSftp channelSftp = (ChannelSftp) sftp;
-            channelSftp.connect();
+
+            ChannelSftp channelSftp = SftpUtility.openSFTPConnection(jsch,sourceCred);
             logger.info("before pwd: ----" + channelSftp.pwd());
             channelSftp.cd(sBasePath);
             logger.info("after pwd: ----" + channelSftp.pwd());
