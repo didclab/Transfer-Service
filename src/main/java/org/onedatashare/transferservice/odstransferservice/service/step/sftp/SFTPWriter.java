@@ -79,11 +79,10 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
 //            jsch.setKnownHosts("/home/vishal/.ssh/known_hosts");
 
             jsch.addIdentity("randomName", destCred.getSecret().getBytes(), null, null);
-
-            jschSession = jsch.getSession(destCred.getUsername(), destCred.getUri().split(":")[0]);
+            String[] destCredUri = destCred.getUri().split(":");
+            jschSession = jsch.getSession(destCred.getUsername(), destCredUri[0], Integer.parseInt(destCredUri[1]));
             jschSession.setConfig("StrictHostKeyChecking", "no");
             jschSession.connect();
-            jschSession.setTimeout(10000);
             Channel sftp = jschSession.openChannel("sftp");
             channelSftp = (ChannelSftp) sftp;
             channelSftp.connect();
