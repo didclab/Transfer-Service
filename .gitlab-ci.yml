@@ -15,6 +15,9 @@ variables:
 
 services:
   - docker:dind
+  - name: cockroachdb/cockroach
+    alias: cockroachdb
+    command: ["start-single-node", "--insecure", "--listen-addr=:26257"]
 
 cache:
   paths:
@@ -24,6 +27,7 @@ cache:
 
 
 before_script:
+  - ./cockroach sql --insecure --execute “create database IF NOT exists my_test_db”
   - chmod +x mvnw
 
 #Run maven tests
