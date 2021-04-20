@@ -25,12 +25,15 @@ cache:
   # keep cache across branch
   key: "$CI_BUILD_REF_NAME"
 
+connect:
+  image: cockroachdb
+  script:
+    - ./cockroach sql --insecure --execute “create database IF NOT exists job_details”
 
 before_script:
-  - ./cockroach sql --insecure --execute “create database IF NOT exists my_test_db”
   - chmod +x mvnw
 
-#Run maven tests
+##Run maven tests
 maven-test:
   image: maven:3-jdk-8
   stage: test
@@ -40,7 +43,7 @@ maven-test:
     paths:
       - target/
 
-#Build the project
+##Build the project
 maven-build:
   image: maven:3-jdk-8
   stage: build
@@ -49,7 +52,7 @@ maven-build:
   artifacts:
     paths:
       - target/
- 
+
 #Run Docker build and push it to the Gitlab Registry
 docker-build:
   stage: package
