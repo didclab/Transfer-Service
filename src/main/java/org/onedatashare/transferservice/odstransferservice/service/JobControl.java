@@ -10,6 +10,8 @@ import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequ
 import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
 import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3Reader;
 import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3Writer;
+import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxReader;
+import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPReader;
@@ -139,6 +141,8 @@ public class JobControl extends DefaultBatchConfigurer {
                 return new FTPReader(request.getSource().getVfsSourceCredential(), fileInfo, request.getChunkSize());
             case s3:
                 return new AmazonS3Reader(request.getSource().getVfsSourceCredential(), request.getChunkSize());
+            case box:
+                return new BoxReader(request.getSource().getOauthSourceCredential(), request.getChunkSize(), fileInfo);
         }
         return null;
     }
@@ -153,6 +157,8 @@ public class JobControl extends DefaultBatchConfigurer {
                 return new FTPWriter(request.getDestination().getVfsDestCredential());
             case s3:
                 return new AmazonS3Writer(request.getDestination().getVfsDestCredential(), fileInfo);
+            case box:
+                return new BoxWriter(request.getDestination().getOauthDestCredential(), fileInfo);
         }
         return null;
     }
