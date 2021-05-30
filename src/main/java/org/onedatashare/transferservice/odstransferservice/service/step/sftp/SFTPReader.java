@@ -113,11 +113,9 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
     public void clientCreateSourceStream() {
         logger.info("Inside clientCreateSourceStream for : " + fName);
 
-        //***GETTING STREAM USING APACHE COMMONS jsch
         JSch jsch = new JSch();
         try {
-
-            ChannelSftp channelSftp = SftpUtility.openSFTPConnection(jsch,sourceCred);
+            ChannelSftp channelSftp = SftpUtility.createConnection(jsch,sourceCred);
             logger.info("before pwd: ----" + channelSftp.pwd());
             channelSftp.cd(sBasePath);
             logger.info("after pwd: ----" + channelSftp.pwd());

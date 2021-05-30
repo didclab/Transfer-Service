@@ -37,17 +37,17 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
         this.stepName = stepExecution.getStepName();
-        //outpuStream = null;
-        dBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
+        this.dBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
     }
 
     @AfterStep
     public void afterStep() {
-        channelSftp.disconnect();
+        if(channelSftp.isConnected()){
+            channelSftp.disconnect();
+        }
     }
 
     public OutputStream getStream(String stepName) {
-
         if (channelSftp == null || !channelSftp.isConnected()) {
             ftpDest();
             try {
@@ -73,7 +73,7 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
 
         JSch jsch = new JSch();
         try {
-            channelSftp = SftpUtility.openSFTPConnection(jsch, destCred);
+            channelSftp = SftpUtility.createConnection(jsch, destCred);
             try {
                 channelSftp.cd(dBasePath);
             } catch (Exception ex) {
@@ -82,11 +82,8 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
                 channelSftp.cd(dBasePath);
                 logger.warn(dBasePath + " folder created.");
             }
-            //outpuStream.add(this.stepName);
             logger.info("present directory: ----" + channelSftp.pwd());
-        } catch (JSchException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
+        } catch (JSchException | SftpException e) {
             e.printStackTrace();
         }
 

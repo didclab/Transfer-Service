@@ -11,17 +11,45 @@ public class SftpUtility {
     Logger logger = LoggerFactory.getLogger(SftpUtility.class);
 
     public static ChannelSftp openSFTPConnection(JSch jsch, AccountEndpointCredential cred) throws JSchException {
-        ChannelSftp channelSftp = null;
-        Session jschSession = null;
-//            jsch.addIdentity("/home/vishal/.ssh/ods-bastion-dev.pem");
-//            jsch.setKnownHosts("/home/vishal/.ssh/known_hosts");
         jsch.addIdentity("randomName", cred.getSecret().getBytes(), null, null);
         String[] destCredUri = cred.getUri().split(":");
-        jschSession = jsch.getSession(cred.getUsername(), destCredUri[0], Integer.parseInt(destCredUri[1]));
+        Session jschSession = jsch.getSession(cred.getUsername(), destCredUri[0], Integer.parseInt(destCredUri[1]));
         jschSession.setConfig("StrictHostKeyChecking", "no");
         jschSession.connect();
         Channel sftp = jschSession.openChannel("sftp");
-        channelSftp = (ChannelSftp) sftp;
+        ChannelSftp channelSftp = (ChannelSftp) sftp;
+        channelSftp.connect();
+        return channelSftp;
+    }
+
+    public static ChannelSftp createConnection(JSch jsch, AccountEndpointCredential credential) throws JSchException {
+        Session jschSession = null;
+        String[] destCredUri = credential.getUri().split(":");
+        boolean connected = false;
+        try {
+            jsch.addIdentity("randomName", credential.getSecret().getBytes(), null, null);
+            jschSession = jsch.getSession(credential.getUsername(), destCredUri[0], Integer.parseInt(destCredUri[1]));
+            jschSession.connect();
+            jschSession.setConfig("StrictHostKeyChecking", "no");
+            connected = true;
+        } catch (JSchException ignored) {
+            connected = false;
+        }
+        if(!connected){
+            try {
+                jschSession = jsch.getSession(credential.getUsername(), destCredUri[0], Integer.parseInt(destCredUri[1]));
+                jschSession.setConfig("StrictHostKeyChecking", "no");
+                jschSession.setPassword(credential.getSecret());
+                jschSession.connect();
+                connected = true;
+            } catch (JSchException ignored) {
+                connected = false;
+            }
+        }
+        if(!connected){
+            return null;
+        }
+        ChannelSftp channelSftp = (ChannelSftp) jschSession.openChannel("sftp");
         channelSftp.connect();
         return channelSftp;
     }
