@@ -24,7 +24,6 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
     Logger logger = LoggerFactory.getLogger(SFTPWriter.class);
 
     String stepName;
-    //OutputStream outpuStream;
     private String dBasePath;
     AccountEndpointCredential destCred;
 
@@ -42,7 +41,7 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
 
     @AfterStep
     public void afterStep() {
-        if(channelSftp.isConnected()){
+        if (channelSftp.isConnected()) {
             channelSftp.disconnect();
         }
     }
@@ -67,10 +66,8 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
     }
 
     public void ftpDest() {
-        logger.info("Inside ftpDest for : " + stepName);
-
+        logger.info("Inside sftpDest for : " + stepName);
         //***GETTING STREAM USING APACHE COMMONS jsch
-
         JSch jsch = new JSch();
         try {
             channelSftp = SftpUtility.createConnection(jsch, destCred);
@@ -91,11 +88,11 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
 
     @Override
     public void write(List<? extends DataChunk> items) {
-        logger.info("Inside Writer---writing chunk of : " + items.get(0).getFileName());
         OutputStream destination = getStream(this.stepName);
         if (destination != null) {
             try {
                 for (DataChunk b : items) {
+                    logger.info("Current chunk in SFTP Writer " + b.toString());
                     destination.write(b.getData());
                     destination.flush();
                 }
@@ -103,7 +100,8 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
                 logger.error("Error during writing chunks...exiting");
                 e.printStackTrace();
             }
-        } else
+        } else {
             logger.error("OutputStream is null....Not able to write : " + items.get(0).getFileName());
+        }
     }
 }
