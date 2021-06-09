@@ -1,5 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.model.credential;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -9,7 +10,7 @@ import java.util.Date;
  * POJO for storing OAuth Credentials
  */
 @Data
-@Accessors(chain = true)
+@AllArgsConstructor
 public class OAuthEndpointCredential extends EndpointCredential {
     private String token;
     private boolean tokenExpires = false;

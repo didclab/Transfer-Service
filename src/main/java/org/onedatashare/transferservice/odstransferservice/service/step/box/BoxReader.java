@@ -34,13 +34,14 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
     private BoxFile currentFile;
     Logger logger = LoggerFactory.getLogger(BoxReader.class);
     EntityInfo fileInfo;
+    private BoxFile.Info boxFileInfo;
 
     public BoxReader(OAuthEndpointCredential credential, int chunkSize, EntityInfo fileInfo){
         this.credential = credential;
-        this.setName(ClassUtils.getShortName(AmazonS3Reader.class));
+        this.setName(ClassUtils.getShortName(BoxReader.class));
         this.chunkSize = Math.max(SIXTYFOUR_KB, chunkSize);
         filePartitioner = new FilePartitioner(this.chunkSize);
-        this.boxAPIConnection = new BoxAPIConnection(((OAuthEndpointCredential) credential).getToken());
+        this.boxAPIConnection = new BoxAPIConnection(credential.getToken());
         this.fileInfo = fileInfo;
     }
 
@@ -51,6 +52,7 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
         this.sourcePath = stepExecution.getJobExecution().getJobParameters().getString(ODSConstants.SOURCE_BASE_PATH);
+        filePartitioner.createParts(boxFileInfo.getSize(), boxFileInfo.getName());
     }
 
 
@@ -60,11 +62,11 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
     /**
      * Read in those chunks
      * @return
-     * @throws Exception
      */
     @Override
-    protected DataChunk doRead() throws Exception {
+    protected DataChunk doRead() {
         FilePart filePart = filePartitioner.nextPart();
+        logger.info("Hello I am in DoRead");
         if (filePart == null) return null;
         ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
         this.currentFile.downloadRange(byteArray, filePart.getStart(), filePart.getEnd());
@@ -79,6 +81,8 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
     @Override
     protected void doOpen() throws Exception {
         this.currentFile = new BoxFile(this.boxAPIConnection, this.fileInfo.getId());
+        logger.info(this.currentFile.getID());
+        this.boxFileInfo = this.currentFile.getInfo();
     }
 
     /**
@@ -87,7 +91,6 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
      */
     @Override
     protected void doClose() throws Exception {
-
     }
 
     @Override
