@@ -51,8 +51,6 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
      */
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
-        this.sourcePath = stepExecution.getJobExecution().getJobParameters().getString(ODSConstants.SOURCE_BASE_PATH);
-        filePartitioner.createParts(boxFileInfo.getSize(), boxFileInfo.getName());
     }
 
 
@@ -66,12 +64,11 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
     @Override
     protected DataChunk doRead() {
         FilePart filePart = filePartitioner.nextPart();
-        logger.info("Hello I am in DoRead");
         if (filePart == null) return null;
         ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
         this.currentFile.downloadRange(byteArray, filePart.getStart(), filePart.getEnd());
         byte[] data = byteArray.toByteArray();
-        return ODSUtility.makeChunk(filePart.getSize(), data, filePart.getStart(), Math.toIntExact(filePart.getPartIdx()), this.fileInfo.getId());
+        return ODSUtility.makeChunk(filePart.getSize(), data, filePart.getStart(), Math.toIntExact(filePart.getPartIdx()), boxFileInfo.getName());
     }
 
     /**
@@ -83,6 +80,7 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
         this.currentFile = new BoxFile(this.boxAPIConnection, this.fileInfo.getId());
         logger.info(this.currentFile.getID());
         this.boxFileInfo = this.currentFile.getInfo();
+        filePartitioner.createParts(this.boxFileInfo.getSize(), this.boxFileInfo.getName());
     }
 
     /**
