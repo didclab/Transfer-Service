@@ -21,9 +21,11 @@ maven-build:
 
 #Run Docker build and push it to the Gitlab Registry
 docker-build:
-  image: 
+  image: docker:19.03.12
   stage: package
+  services:
+    - docker:19.03.12-dind
   script:
-  - docker build -t registry.gitlab.com/onedatashare/transfer-service .
-  - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
-  - docker push registry.gitlab.com/onedatashare/transfer-service
+  - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  - docker build -t $IMAGE_TAG .
+  - docker push $IMAGE_TAG
