@@ -5,26 +5,17 @@ stages:
   - package
 
 variables:
-  MAVEN_OPTS: "-Dmaven.repo.local=./.m2/repository"
   DOCKER_IMAGE_NAME: registry.gitlab.com/jgoldverg/transfer-service
   APP_PORT: 8092
   DOCKER_DRIVER: overlay
   APP_NAME: Transfer Service
   IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
 
-services:
-  - docker:dind
-  - name: cockroachdb/cockroach
-    alias: cockroachdb
-    command: ["start-single-node", "--insecure", "--listen-addr=:26257"]
-
 ##Build the project
 maven-build:
   image: maven:3-jdk-11
   stage: build
-  script:
-    - chmod +x ./gradlew
-    - mvn clean package -DskipTests
+  script: "mvn clean package -DskipTests"
   artifacts:
     paths:
       - target/*.jar
