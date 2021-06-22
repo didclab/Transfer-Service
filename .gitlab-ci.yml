@@ -1,4 +1,4 @@
-image: docker:latest
+image: java:11
 
 stages:
   - build
