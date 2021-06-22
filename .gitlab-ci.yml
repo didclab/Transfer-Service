@@ -1,11 +1,10 @@
-image: java:11
+image: docker:stable
 
 stages:
   - build
   - package
 
 variables:
-  DOCKER_IMAGE_NAME: registry.gitlab.com/jgoldverg/transfer-service
   APP_PORT: 8092
   DOCKER_DRIVER: overlay
   APP_NAME: Transfer Service
@@ -22,6 +21,7 @@ maven-build:
 
 #Run Docker build and push it to the Gitlab Registry
 docker-build:
+  image: 
   stage: package
   script:
   - docker build -t registry.gitlab.com/onedatashare/transfer-service .
