@@ -29,7 +29,7 @@ before_script:
 
 ##Build the project
 maven-build:
-  image: maven:3-jdk-8
+  image: maven:3-jdk-11
   stage: build
   script:
     - mvn clean package -DskipTests
