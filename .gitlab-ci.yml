@@ -18,15 +18,6 @@ services:
     alias: cockroachdb
     command: ["start-single-node", "--insecure", "--listen-addr=:26257"]
 
-cache:
-  paths:
-    - ./.m2/repository
-  # keep cache across branch
-  key: "$CI_BUILD_REF_NAME"
-
-before_script:
-  - chmod +x mvnw
-
 ##Build the project
 maven-build:
   image: maven:3-jdk-11
@@ -36,7 +27,7 @@ maven-build:
     - mvn clean package -DskipTests
   artifacts:
     paths:
-      - target/
+      - target/*.jar
 
 #Run Docker build and push it to the Gitlab Registry
 docker-build:
