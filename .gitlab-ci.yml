@@ -32,6 +32,7 @@ maven-build:
   image: maven:3-jdk-11
   stage: build
   script:
+    - chmod +x ./gradlew
     - mvn clean package -DskipTests
   artifacts:
     paths:
