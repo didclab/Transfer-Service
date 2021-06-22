@@ -1,7 +1,6 @@
 image: docker:latest
 
 stages:
-  - test
   - build
   - package
 
@@ -25,23 +24,8 @@ cache:
   # keep cache across branch
   key: "$CI_BUILD_REF_NAME"
 
-connect:
-  image: cockroachdb
-  script:
-    - ./cockroach sql --insecure --execute “create database IF NOT exists job_details”
-
 before_script:
   - chmod +x mvnw
-
-##Run maven tests
-maven-test:
-  image: maven:3-jdk-8
-  stage: test
-  script:
-    - mvn clean test
-  artifacts:
-    paths:
-      - target/
 
 ##Build the project
 maven-build:
