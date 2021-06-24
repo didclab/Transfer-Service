@@ -13,9 +13,8 @@ import org.springframework.batch.item.ItemWriter;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
@@ -26,11 +25,13 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
     String stepName;
     private String dBasePath;
     AccountEndpointCredential destCred;
-
+    HashMap<String, ChannelSftp> fileToChannel;
     ChannelSftp channelSftp = null;
-
+    JSch jsch;
     public SFTPWriter(AccountEndpointCredential destCred) {
+        fileToChannel = new HashMap<>();
         this.destCred = destCred;
+        jsch = new JSch();
     }
 
     @BeforeStep
@@ -41,54 +42,79 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
 
     @AfterStep
     public void afterStep() {
-        if (channelSftp.isConnected()) {
-            channelSftp.disconnect();
+        for(ChannelSftp value: fileToChannel.values()){
+            if(!value.isConnected()){
+                value.disconnect();
+            }
         }
+    }
+
+    public void establishChannel(String stepName){
+        try {
+            ChannelSftp channelSftp = SftpUtility.createConnection(jsch, destCred);
+            if(!cdIntoDir(dBasePath)){
+                mkdir();
+            }
+            if(fileToChannel.containsKey(stepName)){
+                fileToChannel.remove(stepName);
+            }
+            fileToChannel.put(stepName, channelSftp);
+        } catch (JSchException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public boolean cdIntoDir(String directory){
+        try {
+            channelSftp.cd(directory);
+            return true;
+        } catch (SftpException sftpException) {
+            logger.warn("Could not cd into the directory we might have made moohoo");
+            sftpException.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean mkdir(){
+        try {
+            channelSftp.mkdir(dBasePath);
+            return true;
+        } catch (SftpException sftpException) {
+            logger.warn("Could not make the directory you gave us boohoo");
+            sftpException.printStackTrace();
+        }
+        return false;
     }
 
     public OutputStream getStream(String stepName) {
-        if (channelSftp == null || !channelSftp.isConnected()) {
-            ftpDest();
-            try {
-                return channelSftp.put(this.stepName, ChannelSftp.OVERWRITE);
-            } catch (SftpException e) {
-                logger.error("Unable to retrive outputStream");
-                e.printStackTrace();
-            }
+        boolean appendMode = false;
+        if(!fileToChannel.containsKey(stepName)){
+            establishChannel(stepName);
+        }else if(fileToChannel.get(stepName).isClosed() || !fileToChannel.get(stepName).isConnected()){
+            fileToChannel.remove(stepName);
+            appendMode = true;
+            establishChannel(stepName);
         }
+        ChannelSftp channelSftp = this.fileToChannel.get(stepName);
         try {
-            return channelSftp.put(this.stepName, ChannelSftp.APPEND);
-        } catch (SftpException e) {
-            logger.error("Unable to retrive outputStream");
-            e.printStackTrace();
+            if(appendMode){
+                return channelSftp.put(stepName, ChannelSftp.APPEND);
+            }
+            return channelSftp.put(stepName, ChannelSftp.OVERWRITE);
+        } catch (SftpException sftpException) {
+            logger.warn("We failed getting the OuputStream to a file :(");
+            sftpException.printStackTrace();
         }
         return null;
-    }
-
-    public void ftpDest() {
-        logger.info("Inside sftpDest for : " + stepName);
-        //***GETTING STREAM USING APACHE COMMONS jsch
-        JSch jsch = new JSch();
-        try {
-            channelSftp = SftpUtility.createConnection(jsch, destCred);
-            try {
-                channelSftp.cd(dBasePath);
-            } catch (Exception ex) {
-                logger.warn("Folder was not present so creating...");
-                channelSftp.mkdir(dBasePath);
-                channelSftp.cd(dBasePath);
-                logger.warn(dBasePath + " folder created.");
-            }
-            logger.info("present directory: ----" + channelSftp.pwd());
-        } catch (JSchException | SftpException e) {
-            e.printStackTrace();
-        }
-
     }
 
     @Override
     public void write(List<? extends DataChunk> items) {
         OutputStream destination = getStream(this.stepName);
+        if(destination == null){
+            logger.error("OutputStream is null....Not able to write : " + items.get(0).getFileName());
+            establishChannel(stepName);
+        }
         if (destination != null) {
             try {
                 for (DataChunk b : items) {
@@ -100,8 +126,6 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
                 logger.error("Error during writing chunks...exiting");
                 e.printStackTrace();
             }
-        } else {
-            logger.error("OutputStream is null....Not able to write : " + items.get(0).getFileName());
         }
     }
 }
