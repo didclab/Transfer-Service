@@ -51,13 +51,13 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
     public void establishChannel(String stepName){
         try {
             ChannelSftp channelSftp = SftpUtility.createConnection(jsch, destCred);
+            fileToChannel.put(stepName, channelSftp);
             if(!cdIntoDir(dBasePath)){
                 mkdir();
             }
             if(fileToChannel.containsKey(stepName)){
                 fileToChannel.remove(stepName);
             }
-            fileToChannel.put(stepName, channelSftp);
         } catch (JSchException e) {
             e.printStackTrace();
         }
