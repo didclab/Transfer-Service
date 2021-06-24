@@ -51,21 +51,22 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
     public void establishChannel(String stepName){
         try {
             ChannelSftp channelSftp = SftpUtility.createConnection(jsch, destCred);
-            fileToChannel.put(stepName, channelSftp);
-            if(!cdIntoDir(dBasePath)){
-                mkdir();
+            assert channelSftp != null;
+            if(!cdIntoDir(channelSftp, dBasePath)){
+                mkdir(channelSftp, dBasePath);
             }
             if(fileToChannel.containsKey(stepName)){
                 fileToChannel.remove(stepName);
             }
+            fileToChannel.put(stepName, channelSftp);
         } catch (JSchException e) {
             e.printStackTrace();
         }
     }
 
-    public boolean cdIntoDir(String directory){
+    public boolean cdIntoDir(ChannelSftp channelSftp, String directory){
         try {
-            this.fileToChannel.get(stepName).cd(directory);
+            channelSftp.cd(directory);
             return true;
         } catch (SftpException sftpException) {
             logger.warn("Could not cd into the directory we might have made moohoo");
@@ -74,9 +75,9 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
         return false;
     }
 
-    public boolean mkdir(){
+    public boolean mkdir(ChannelSftp channelSftp, String basePath){
         try {
-            this.fileToChannel.get(stepName).mkdir(dBasePath);
+            channelSftp.mkdir(basePath);
             return true;
         } catch (SftpException sftpException) {
             logger.warn("Could not make the directory you gave us boohoo");
