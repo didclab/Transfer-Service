@@ -164,7 +164,7 @@ public class JobControl extends DefaultBatchConfigurer {
             case s3:
                 return new AmazonS3Writer(request.getDestination().getVfsDestCredential(), fileInfo);
             case box:
-                return new BoxWriter(request.getDestination().getOauthDestCredential(), fileInfo);
+                return new BoxWriter(request.getDestination().getOauthDestCredential(), fileInfo, request.getChunkSize());
         }
         return null;
     }

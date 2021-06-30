@@ -2,6 +2,8 @@ package org.onedatashare.transferservice.odstransferservice.service.step.box;
 
 import com.box.sdk.BoxAPIConnection;
 import com.box.sdk.BoxFile;
+import com.box.sdk.BoxFolder;
+import com.box.sdk.BoxItem;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
@@ -24,7 +26,7 @@ import java.io.ByteArrayOutputStream;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SIXTYFOUR_KB;
 
-public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChunk> implements ResourceAwareItemReaderItemStream<DataChunk>, InitializingBean {
+public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChunk> {
 
     OAuthEndpointCredential credential;
     int chunkSize;
@@ -34,14 +36,13 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
     private BoxFile currentFile;
     Logger logger = LoggerFactory.getLogger(BoxReader.class);
     EntityInfo fileInfo;
-    private BoxFile.Info boxFileInfo;
+    private BoxFolder parentFolder;
 
     public BoxReader(OAuthEndpointCredential credential, int chunkSize, EntityInfo fileInfo){
         this.credential = credential;
         this.setName(ClassUtils.getShortName(BoxReader.class));
         this.chunkSize = Math.max(SIXTYFOUR_KB, chunkSize);
         filePartitioner = new FilePartitioner(this.chunkSize);
-        this.boxAPIConnection = new BoxAPIConnection(credential.getToken());
         this.fileInfo = fileInfo;
     }
 
@@ -51,12 +52,9 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
      */
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
+        this.currentFile = new BoxFile(this.boxAPIConnection, this.fileInfo.getId());
+        filePartitioner.createParts(this.chunkSize, this.currentFile.getInfo().getName());
     }
-
-
-    @Override
-    public void setResource(Resource resource) {}
-
     /**
      * Read in those chunks
      * @return
@@ -67,8 +65,7 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
         if (filePart == null) return null;
         ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
         this.currentFile.downloadRange(byteArray, filePart.getStart(), filePart.getEnd());
-        byte[] data = byteArray.toByteArray();
-        return ODSUtility.makeChunk(filePart.getSize(), data, filePart.getStart(), Math.toIntExact(filePart.getPartIdx()), boxFileInfo.getName());
+        return ODSUtility.makeChunk(filePart.getSize(), byteArray.toByteArray(), filePart.getStart(), Math.toIntExact(filePart.getPartIdx()), currentFile.getInfo().getName());
     }
 
     /**
@@ -76,11 +73,8 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
      * @throws Exception
      */
     @Override
-    protected void doOpen() throws Exception {
-        this.currentFile = new BoxFile(this.boxAPIConnection, this.fileInfo.getId());
-        logger.info(this.currentFile.getID());
-        this.boxFileInfo = this.currentFile.getInfo();
-        filePartitioner.createParts(this.boxFileInfo.getSize(), this.boxFileInfo.getName());
+    protected void doOpen() {
+        this.boxAPIConnection = new BoxAPIConnection(credential.getToken());
     }
 
     /**
@@ -88,11 +82,7 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
      * @throws Exception
      */
     @Override
-    protected void doClose() throws Exception {
-    }
-
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        //Only put things in here if the reader actually needs certain properties to "Read"
+    protected void doClose() {
+        this.boxAPIConnection = null;
     }
 }
