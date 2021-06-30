@@ -28,15 +28,12 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
 
 public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChunk> {
 
-    OAuthEndpointCredential credential;
+    private OAuthEndpointCredential credential;
     int chunkSize;
     FilePartitioner filePartitioner;
     private BoxAPIConnection boxAPIConnection;
-    private String sourcePath;
     private BoxFile currentFile;
-    Logger logger = LoggerFactory.getLogger(BoxReader.class);
     EntityInfo fileInfo;
-    private BoxFolder parentFolder;
 
     public BoxReader(OAuthEndpointCredential credential, int chunkSize, EntityInfo fileInfo){
         this.credential = credential;

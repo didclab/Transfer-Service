@@ -22,13 +22,13 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
 
 public class BoxWriter implements ItemWriter<DataChunk> {
 
-    OAuthEndpointCredential credential;
+    private OAuthEndpointCredential credential;
     int chunkSize;
     private BoxAPIConnection boxAPIConnection;
     EntityInfo fileInfo;
-    HashMap<String, BoxFileUploadSession> fileMap;
-    HashMap<String, MessageDigest> digestMap;
-    List<BoxFileUploadSessionPart> parts;
+    private HashMap<String, BoxFileUploadSession> fileMap;
+    private HashMap<String, MessageDigest> digestMap;
+    private List<BoxFileUploadSessionPart> parts;
     String destinationBasePath;
 
     public BoxWriter(OAuthEndpointCredential oauthDestCredential, EntityInfo fileInfo, int chunkSize) {
