@@ -10,6 +10,8 @@ import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequ
 import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
 import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3Reader;
 import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3Writer;
+import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxReader;
+import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPReader;
@@ -117,8 +119,13 @@ public class JobControl extends DefaultBatchConfigurer {
         logger.info("CreateConcurrentFlow function");
         List<Flow> flows = new ArrayList<>();
         for (EntityInfo file : infoList) {
-            logger.info(file.toString());
-            SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(file.getId()).<DataChunk, DataChunk>chunk(this.request.getOptions().getPipeSize());
+            String idForStep = "";
+            if(file.getPath().isEmpty()){
+                idForStep = file.getId();
+            }else{
+                idForStep = file.getPath();
+            }
+            SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(idForStep).<DataChunk, DataChunk>chunk(this.request.getOptions().getPipeSize());
             if(ODSUtility.fullyOptimizableProtocols.contains(this.request.getSource().getType()) && ODSUtility.fullyOptimizableProtocols.contains(this.request.getDestination().getType()) && this.request.getOptions().getParallelThreadCount() > 1){
                 threadPoolConfig.setParallelThreadPoolSize(request.getOptions().getParallelThreadCount());
                 child.taskExecutor(threadPoolConfig.parallelThreadPool());
@@ -140,6 +147,8 @@ public class JobControl extends DefaultBatchConfigurer {
                 return new FTPReader(request.getSource().getVfsSourceCredential(), fileInfo, request.getChunkSize());
             case s3:
                 return new AmazonS3Reader(request.getSource().getVfsSourceCredential(), request.getChunkSize());
+            case box:
+                return new BoxReader(request.getSource().getOauthSourceCredential(), request.getChunkSize(), fileInfo);
         }
         return null;
     }
@@ -154,6 +163,8 @@ public class JobControl extends DefaultBatchConfigurer {
                 return new FTPWriter(request.getDestination().getVfsDestCredential());
             case s3:
                 return new AmazonS3Writer(request.getDestination().getVfsDestCredential(), fileInfo);
+            case box:
+                return new BoxWriter(request.getDestination().getOauthDestCredential(), fileInfo, request.getChunkSize());
         }
         return null;
     }
