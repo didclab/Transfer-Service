@@ -24,7 +24,6 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
     Logger logger = LoggerFactory.getLogger(SFTPWriter.class);
 
     String stepName;
-    //OutputStream outpuStream;
     private String dBasePath;
     AccountEndpointCredential destCred;
 
@@ -37,17 +36,17 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
         this.stepName = stepExecution.getStepName();
-        //outpuStream = null;
-        dBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
+        this.dBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
     }
 
     @AfterStep
     public void afterStep() {
-        channelSftp.disconnect();
+        if (channelSftp.isConnected()) {
+            channelSftp.disconnect();
+        }
     }
 
     public OutputStream getStream(String stepName) {
-
         if (channelSftp == null || !channelSftp.isConnected()) {
             ftpDest();
             try {
@@ -67,13 +66,11 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
     }
 
     public void ftpDest() {
-        logger.info("Inside ftpDest for : " + stepName);
-
+        logger.info("Inside sftpDest for : " + stepName);
         //***GETTING STREAM USING APACHE COMMONS jsch
-
         JSch jsch = new JSch();
         try {
-            channelSftp = SftpUtility.openSFTPConnection(jsch, destCred);
+            channelSftp = SftpUtility.createConnection(jsch, destCred);
             try {
                 channelSftp.cd(dBasePath);
             } catch (Exception ex) {
@@ -82,11 +79,8 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
                 channelSftp.cd(dBasePath);
                 logger.warn(dBasePath + " folder created.");
             }
-            //outpuStream.add(this.stepName);
             logger.info("present directory: ----" + channelSftp.pwd());
-        } catch (JSchException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
+        } catch (JSchException | SftpException e) {
             e.printStackTrace();
         }
 
@@ -94,11 +88,11 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
 
     @Override
     public void write(List<? extends DataChunk> items) {
-        logger.info("Inside Writer---writing chunk of : " + items.get(0).getFileName());
         OutputStream destination = getStream(this.stepName);
         if (destination != null) {
             try {
                 for (DataChunk b : items) {
+                    logger.info("Current chunk in SFTP Writer " + b.toString());
                     destination.write(b.getData());
                     destination.flush();
                 }
@@ -106,7 +100,8 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
                 logger.error("Error during writing chunks...exiting");
                 e.printStackTrace();
             }
-        } else
+        } else {
             logger.error("OutputStream is null....Not able to write : " + items.get(0).getFileName());
+        }
     }
 }

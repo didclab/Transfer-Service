@@ -1,63 +1,31 @@
-image: docker:latest
+image: docker:stable
 
 stages:
-  - test
   - build
   - package
 
 variables:
-  MAVEN_OPTS: "-Dmaven.repo.local=./.m2/repository"
-  DOCKER_IMAGE_NAME: registry.gitlab.com/jgoldverg/transfer-service
   APP_PORT: 8092
   DOCKER_DRIVER: overlay
   APP_NAME: Transfer Service
   IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
 
-services:
-  - docker:dind
-  - name: cockroachdb/cockroach
-    alias: cockroachdb
-    command: ["start-single-node", "--insecure", "--listen-addr=:26257"]
-
-cache:
-  paths:
-    - ./.m2/repository
-  # keep cache across branch
-  key: "$CI_BUILD_REF_NAME"
-
-connect:
-  image: cockroachdb
-  script:
-    - ./cockroach sql --insecure --execute “create database IF NOT exists job_details”
-
-before_script:
-  - chmod +x mvnw
-
-##Run maven tests
-maven-test:
-  image: maven:3-jdk-8
-  stage: test
-  script:
-    - mvn clean test
-  artifacts:
-    paths:
-      - target/
-
 ##Build the project
 maven-build:
-  image: maven:3-jdk-8
+  image: maven:3-jdk-11
   stage: build
-  script:
-    - mvn clean package -DskipTests
+  script: "mvn clean package -DskipTests"
   artifacts:
     paths:
-      - target/
+      - target/*.jar
 
 #Run Docker build and push it to the Gitlab Registry
 docker-build:
+  image: docker:19.03.12
   stage: package
+  services:
+    - docker:19.03.12-dind
   script:
-  - docker info
   - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   - docker build -t $IMAGE_TAG .
   - docker push $IMAGE_TAG

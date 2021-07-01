@@ -126,7 +126,12 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         FileSystemOptions opts = FtpUtility.generateOpts();
         StaticUserAuthenticator auth = new StaticUserAuthenticator(null, this.sourceCred.getUsername(), this.sourceCred.getSecret());
         DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
-        String wholeThing = "ftp://" + this.sourceCred.getUri() + "/" + basePath + fName;
+        String wholeThing;
+        if(this.sourceCred.getUri().contains("ftp://")){
+            wholeThing = this.sourceCred.getUri() + "/" + basePath + fName;
+        }else{
+            wholeThing = "ftp://" + this.sourceCred.getUri() + "/" + basePath + fName;
+        }
         this.foSrc = VFS.getManager().resolveFile(wholeThing, opts);
         this.inputStream = foSrc.getContent().getInputStream();
     }

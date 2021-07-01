@@ -72,7 +72,13 @@ public class FTPWriter implements ItemWriter<DataChunk> {
             FileSystemOptions opts = FtpUtility.generateOpts();
             StaticUserAuthenticator auth = new StaticUserAuthenticator(null, this.destCred.getUsername(), this.destCred.getSecret());
             DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
-            foDest = VFS.getManager().resolveFile("ftp://" + this.destCred.getUri() + "/" + dBasePath + this.stepName, opts);
+            String wholeThing;
+            if(this.destCred.getUri().contains("ftp://")){
+                wholeThing = this.destCred.getUri() + "/" + dBasePath + this.stepName;
+            }else{
+                wholeThing = "ftp://" + this.destCred.getUri() + "/" + dBasePath + this.stepName;
+            }
+            foDest = VFS.getManager().resolveFile(wholeThing, opts);
             foDest.createFile();
             outputStream =  foDest.getContent().getOutputStream();
         } catch (Exception ex) {

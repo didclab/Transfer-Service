@@ -43,6 +43,7 @@ public class RabbitMQConsumer {
 
         Gson g = new Gson();
         TransferJobRequest request = g.fromJson(jsonStr, TransferJobRequest.class);
+        logger.info(request.toString());
         try {
             JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);
             crudService.insertBeforeTransfer(request);

@@ -113,15 +113,15 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
     public void clientCreateSourceStream() {
         logger.info("Inside clientCreateSourceStream for : " + fName);
 
-        //***GETTING STREAM USING APACHE COMMONS jsch
         JSch jsch = new JSch();
         try {
-
-            ChannelSftp channelSftp = SftpUtility.openSFTPConnection(jsch,sourceCred);
+            ChannelSftp channelSftp = SftpUtility.createConnection(jsch,sourceCred);
             logger.info("before pwd: ----" + channelSftp.pwd());
-            channelSftp.cd(sBasePath);
-            logger.info("after pwd: ----" + channelSftp.pwd());
-            this.inputStream = channelSftp.get(fName);
+            if(!sBasePath.isEmpty()){
+                channelSftp.cd(sBasePath);
+                logger.info("after cd into base path" + channelSftp.pwd());
+            }
+            this.inputStream = channelSftp.get(file.getPath());
         } catch (JSchException e) {
             logger.error("Error in JSch end");
             e.printStackTrace();
