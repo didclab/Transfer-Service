@@ -55,6 +55,7 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
         String destBasepath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
         this.fileName = stepExecution.getStepName();
         this.s3URI = new AmazonS3URI(S3Utility.constructS3URI(this.destCredential.getUri(), this.fileName, destBasepath));//for aws the step name will be the file key.
+        logger.info(this.s3URI.toString());
         AmazonS3 client = createClientWithCreds();
         if(this.currentFileSize < FIVE_MB){
             this.multipartUpload = false;
