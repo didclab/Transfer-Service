@@ -22,7 +22,7 @@ public class ApplicationThreadPoolConfig{
     private int JOB_POOL_SIZE=1;
     @Setter
     @Getter
-    private int JOB_MAX_POOL_SIZE=12;
+    private int JOB_MAX_POOL_SIZE=1;
     @Setter
     @Getter
     private int STEP_POOL_SIZE=5;
@@ -42,8 +42,6 @@ public class ApplicationThreadPoolConfig{
         return executor;
     }
 
-//    @Bean
-//    @Lazy
     public ThreadPoolTaskExecutor stepTaskExecutor(){
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(STEP_POOL_SIZE);
@@ -56,6 +54,8 @@ public class ApplicationThreadPoolConfig{
     public TaskExecutor jobRequestThreadPool(){
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(JOB_POOL_SIZE);
+        executor.setMaxPoolSize(JOB_MAX_POOL_SIZE);
+        executor.setQueueCapacity(Integer.MAX_VALUE);
         executor.setThreadNamePrefix("job");
         executor.initialize();
         return executor;
