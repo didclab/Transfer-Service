@@ -19,7 +19,7 @@ public class ApplicationThreadPoolConfig{
     private int TRANSFER_POOL_SIZE=32;
     @Setter
     @Getter
-    private int JOB_POOL_SIZE=6;
+    private int JOB_POOL_SIZE=1;
     @Setter
     @Getter
     private int JOB_MAX_POOL_SIZE=12;
