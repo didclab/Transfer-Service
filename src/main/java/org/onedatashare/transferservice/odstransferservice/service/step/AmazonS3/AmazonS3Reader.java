@@ -15,16 +15,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
-import org.springframework.batch.item.file.ResourceAwareItemReaderItemStream;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.core.io.Resource;
 import org.springframework.util.ClassUtils;
 
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SIXTYFOUR_KB;
 
-public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<DataChunk> implements ResourceAwareItemReaderItemStream<DataChunk>, InitializingBean {
+public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<DataChunk> {
 
     Logger logger = LoggerFactory.getLogger(AmazonS3Reader.class);
     private AmazonS3 s3Client;
@@ -43,8 +40,8 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
         this.regionAndBucket = this.sourceCredential.getUri().split(":::");
         this.chunkSize = Math.max(SIXTYFOUR_KB, chunkSize);
         this.partitioner = new FilePartitioner(this.chunkSize);
-        this.setName(ClassUtils.getShortName(AmazonS3Reader.class));
         this.s3Client = S3Utility.constructClient(this.sourceCredential, regionAndBucket[0]);
+        this.setName(ClassUtils.getShortName(AmazonS3Reader.class));
     }
 
     @BeforeStep
@@ -62,10 +59,6 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
 
     public void setName(String name) {
         this.setExecutionContextName(name);
-    }
-
-    @Override
-    public void setResource(Resource resource) {
     }
 
 
@@ -89,7 +82,7 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
     }
 
     @Override
-    protected void doOpen() throws Exception {
+    protected void doOpen() {
         logger.info(this.amazonS3URI.toString());
         this.currentFileMetaData = this.s3Client.getObjectMetadata(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey());
         partitioner.createParts(this.currentFileMetaData.getContentLength(), this.fileName);
@@ -97,9 +90,6 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
 
     @Override
     protected void doClose() throws Exception {
-    }
-
-    @Override
-    public void afterPropertiesSet() throws Exception {
+        this.s3Client = null;
     }
 }
