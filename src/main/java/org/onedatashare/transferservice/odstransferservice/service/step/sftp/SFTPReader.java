@@ -121,7 +121,7 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
                 channelSftp.cd(sBasePath);
                 logger.info("after cd into base path" + channelSftp.pwd());
             }
-            this.inputStream = channelSftp.get(file.getPath());
+            this.inputStream = channelSftp.get(file.getId());
         } catch (JSchException e) {
             logger.error("Error in JSch end");
             e.printStackTrace();

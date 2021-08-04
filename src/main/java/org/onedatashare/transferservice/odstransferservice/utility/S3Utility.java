@@ -18,6 +18,7 @@ public class S3Utility {
     }
 
     public static String constructS3URI(String uri, String fileKey, String basePath){
+        if(basePath.equals("/")) basePath = "";
         StringBuilder builder = new StringBuilder();
         String[] temp = uri.split(":::");
         String bucketName = temp[1];

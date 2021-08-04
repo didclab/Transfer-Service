@@ -24,7 +24,8 @@ public class SftpUtility {
 
     public static ChannelSftp createConnection(JSch jsch, AccountEndpointCredential credential) throws JSchException {
         Session jschSession = null;
-        String[] destCredUri = credential.getUri().split(":");
+        String noTypeUri = credential.getUri().replaceFirst("sftp://", "");
+        String[] destCredUri = noTypeUri.split(":");
         boolean connected = false;
         try {
             jsch.addIdentity("randomName", credential.getSecret().getBytes(), null, null);

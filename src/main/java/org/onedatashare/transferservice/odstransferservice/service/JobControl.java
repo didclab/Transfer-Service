@@ -116,7 +116,7 @@ public class JobControl extends DefaultBatchConfigurer {
         List<Flow> flows = new ArrayList<>();
         for (EntityInfo file : infoList) {
             String idForStep = "";
-            if(file.getPath().isEmpty()){
+            if(!file.getId().isEmpty()){
                 idForStep = file.getId();
             }else{
                 idForStep = file.getPath();
