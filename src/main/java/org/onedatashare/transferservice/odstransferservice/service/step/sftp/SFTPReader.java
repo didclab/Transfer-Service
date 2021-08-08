@@ -13,20 +13,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
-import org.springframework.batch.item.file.ResourceAwareItemReaderItemStream;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
 import org.springframework.util.ClassUtils;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
-public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataChunk> implements ResourceAwareItemReaderItemStream<DataChunk>, InitializingBean {
+public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataChunk>{
 
     Logger logger = LoggerFactory.getLogger(SFTPReader.class);
 
@@ -39,7 +33,6 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
     int chunksCreated;
     long fileIdx;
     FilePartitioner filePartitioner;
-    Session jschSession = null;
 
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
@@ -58,10 +51,6 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
         this.chunckSize = chunckSize;
         this.sourceCred = credential;
         this.setName(ClassUtils.getShortName(FTPReader.class));
-    }
-
-    @Override
-    public void setResource(Resource resource) {
     }
 
     @SneakyThrows
@@ -102,11 +91,6 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
             logger.error("Not able to close the input Stream");
             ex.printStackTrace();
         }
-    }
-
-    @Override
-    public void afterPropertiesSet() {
-
     }
 
     @SneakyThrows

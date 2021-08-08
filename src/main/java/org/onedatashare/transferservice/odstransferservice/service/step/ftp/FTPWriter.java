@@ -5,8 +5,6 @@ import org.apache.commons.vfs2.FileSystemOptions;
 import org.apache.commons.vfs2.VFS;
 import org.apache.commons.vfs2.auth.StaticUserAuthenticator;
 import org.apache.commons.vfs2.impl.DefaultFileSystemConfigBuilder;
-import org.apache.commons.vfs2.provider.ftp.FtpFileSystemConfigBuilder;
-import org.apache.commons.vfs2.provider.ftp.FtpFileType;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.slf4j.Logger;
@@ -67,7 +65,6 @@ public class FTPWriter implements ItemWriter<DataChunk> {
     public void ftpDest() {
         logger.info("Creating ftpDest for :" + this.stepName);
 
-        //***GETTING STREAM USING APACHE COMMONS VFS2
         try {
             FileSystemOptions opts = FtpUtility.generateOpts();
             StaticUserAuthenticator auth = new StaticUserAuthenticator(null, this.destCred.getUsername(), this.destCred.getSecret());
