@@ -38,6 +38,7 @@ public class ApplicationThreadPoolConfig{
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(TRANSFER_POOL_SIZE);
         executor.setThreadNamePrefix("Transfer pool");
+        executor.setKeepAliveSeconds(60);
         executor.initialize();
         return executor;
     }
@@ -46,16 +47,17 @@ public class ApplicationThreadPoolConfig{
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(STEP_POOL_SIZE);
         executor.setThreadNamePrefix("step");
+        executor.setKeepAliveSeconds(60);
         executor.initialize();
 
         return executor;
     }
-
     public TaskExecutor jobRequestThreadPool(){
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(JOB_POOL_SIZE);
         executor.setMaxPoolSize(JOB_MAX_POOL_SIZE);
         executor.setQueueCapacity(Integer.MAX_VALUE);
+        executor.setKeepAliveSeconds(60);
         executor.setThreadNamePrefix("job");
         executor.initialize();
         return executor;
@@ -66,6 +68,7 @@ public class ApplicationThreadPoolConfig{
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(1);
         executor.setThreadNamePrefix("sequential");
+        executor.setKeepAliveSeconds(60);
         executor.initialize();
         return executor;
     }
@@ -74,6 +77,7 @@ public class ApplicationThreadPoolConfig{
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(this.parallelThreadPoolSize);
         executor.setThreadNamePrefix("parallel");
+        executor.setKeepAliveSeconds(60);
         executor.initialize();
         return executor;
     }

@@ -50,7 +50,6 @@ public class TransferController {
         crudService.insertBeforeTransfer(request);
         logger.info(request.toString());
         jc.setRequest(request);
-        jc.setChunkSize(request.getChunkSize());
         JobExecution jobExecution = asyncJobLauncher.run(jc.concurrentJobDefinition(), parameters);
         return ResponseEntity.status(HttpStatus.OK).body("Your batch job has been submitted with \n ID: " + jobExecution.getJobId());
     }

@@ -58,7 +58,6 @@ public class FilePartitioner {
                 part.setEnd(startPosition);
                 startPosition++;
                 this.queue.add(part);
-                logger.info(part.toString());
             }
             FilePart lastChunk = new FilePart();
             lastChunk.setStart(startPosition);

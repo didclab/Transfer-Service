@@ -48,7 +48,6 @@ public class RabbitMQConsumer {
             JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);
             crudService.insertBeforeTransfer(request);
             jc.setRequest(request);
-            jc.setChunkSize(request.getChunkSize());
             asyncJobLauncher.run(jc.concurrentJobDefinition(), parameters);
         } catch (Exception e) {
             logger.error("Not able to start job");

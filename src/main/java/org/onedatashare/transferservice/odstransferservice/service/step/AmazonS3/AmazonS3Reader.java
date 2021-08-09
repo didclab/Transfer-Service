@@ -53,10 +53,6 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
         logger.info("Starting the job for this file: " + this.fileName);
     }
 
-    @AfterStep
-    public void afterStep(StepExecution stepExecution) {
-    }
-
     public void setName(String name) {
         this.setExecutionContextName(name);
     }

@@ -34,6 +34,15 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
     long fileIdx;
     FilePartitioner filePartitioner;
 
+    public SFTPReader(AccountEndpointCredential credential, int chunckSize, EntityInfo file) {
+        this.file = file;
+        this.filePartitioner = new FilePartitioner(chunckSize);
+        this.setExecutionContextName(ClassUtils.getShortName(SFTPReader.class));
+        this.chunckSize = chunckSize;
+        this.sourceCred = credential;
+        this.setName(ClassUtils.getShortName(FTPReader.class));
+    }
+
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
         logger.info("Before step for : " + stepExecution.getStepName());
@@ -42,15 +51,6 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
         chunksCreated = 0;
         fileIdx = 0L;
         this.filePartitioner.createParts(this.file.getSize(), this.fName);
-    }
-
-    public SFTPReader(AccountEndpointCredential credential, int chunckSize, EntityInfo file) {
-        this.file = file;
-        this.filePartitioner = new FilePartitioner(chunckSize);
-        this.setExecutionContextName(ClassUtils.getShortName(SFTPReader.class));
-        this.chunckSize = chunckSize;
-        this.sourceCred = credential;
-        this.setName(ClassUtils.getShortName(FTPReader.class));
     }
 
     @SneakyThrows

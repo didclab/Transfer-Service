@@ -64,7 +64,7 @@ public class JobControl extends DefaultBatchConfigurer {
 
     @Autowired
     DataSourceConfig datasource;
-    int chunkSize; //by default this is the file size
+
     public TransferJobRequest request;
     Step parent;
     Logger logger = LoggerFactory.getLogger(JobControl.class);
@@ -94,7 +94,7 @@ public class JobControl extends DefaultBatchConfigurer {
     public JobLauncher asyncJobLauncher() {
         SimpleJobLauncher jobLauncher = new SimpleJobLauncher();
         jobLauncher.setJobRepository(this.createJobRepository());
-        jobLauncher.setTaskExecutor(threadPoolConfig.jobRequestThreadPool());
+        jobLauncher.setTaskExecutor(this.threadPoolConfig.sequentialThreadPool());
         logger.info("Job launcher for the transfer controller has a thread pool");
         return jobLauncher;
     }
@@ -111,7 +111,7 @@ public class JobControl extends DefaultBatchConfigurer {
         return factory.getObject();
     }
 
-    private List<Flow> createConcurrentFlow(List<EntityInfo> infoList, String basePath, String id) throws MalformedURLException {
+    private List<Flow> createConcurrentFlow(List<EntityInfo> infoList, String basePath, String id) {
         logger.info("CreateConcurrentFlow function");
         List<Flow> flows = new ArrayList<>();
         for (EntityInfo file : infoList) {
@@ -124,7 +124,7 @@ public class JobControl extends DefaultBatchConfigurer {
             SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(idForStep).<DataChunk, DataChunk>chunk(this.request.getOptions().getPipeSize());
             if(ODSUtility.fullyOptimizableProtocols.contains(this.request.getSource().getType()) && ODSUtility.fullyOptimizableProtocols.contains(this.request.getDestination().getType()) && this.request.getOptions().getParallelThreadCount() > 1){
                 threadPoolConfig.setParallelThreadPoolSize(request.getOptions().getParallelThreadCount());
-                child.taskExecutor(threadPoolConfig.parallelThreadPool());
+                child.taskExecutor(this.threadPoolConfig.parallelThreadPool());
             }
             child.reader(getRightReader(request.getSource().getType(), file)).writer(getRightWriter(request.getDestination().getType(), file));
             flows.add(new FlowBuilder<Flow>(id + basePath).start(child.build()).build());
@@ -172,7 +172,7 @@ public class JobControl extends DefaultBatchConfigurer {
         Flow[] fl = new Flow[flows.size()];
 
         threadPoolConfig.setSTEP_POOL_SIZE(this.request.getOptions().getConcurrencyThreadCount());
-        Flow f = new FlowBuilder<SimpleFlow>("splitFlow").split(threadPoolConfig.stepTaskExecutor()).add(flows.toArray(fl))
+        Flow f = new FlowBuilder<SimpleFlow>("splitFlow").split(this.threadPoolConfig.stepTaskExecutor()).add(flows.toArray(fl))
                 .build();
         return jobBuilderFactory.get(request.getOwnerId()).listener(new JobCompletionListener())
                 .incrementer(new RunIdIncrementer()).start(f).build().build();
