@@ -96,7 +96,6 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
     @SneakyThrows
     public void clientCreateSourceStream() {
         logger.info("Inside clientCreateSourceStream for : " + fName);
-
         JSch jsch = new JSch();
         try {
             ChannelSftp channelSftp = SftpUtility.createConnection(jsch,sourceCred);
@@ -105,7 +104,7 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
                 channelSftp.cd(sBasePath);
                 logger.info("after cd into base path" + channelSftp.pwd());
             }
-            this.inputStream = channelSftp.get(file.getId());
+            this.inputStream = channelSftp.get(file.getPath());
         } catch (JSchException e) {
             logger.error("Error in JSch end");
             e.printStackTrace();
