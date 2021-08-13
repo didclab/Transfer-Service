@@ -51,7 +51,8 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
     public void beforeStep(StepExecution stepExecution) {
         logger.info("Before step for : " + stepExecution.getStepName());
         sBasePath = stepExecution.getJobParameters().getString(SOURCE_BASE_PATH);
-        fName = stepExecution.getStepName();
+        sBasePath += fileInfo.getPath();
+        fName = fileInfo.getId();
         partitioner.createParts(this.fileInfo.getSize(), fName);
         chunksCreated = 0;
         fileIdx = 0L;
@@ -118,7 +119,7 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         if(this.sourceCred.getUri().contains("ftp://")){
             wholeThing = this.sourceCred.getUri() + "/" + basePath + fName;
         }else{
-            wholeThing = "ftp://" + this.sourceCred.getUri() + "/" + basePath + fName;
+            wholeThing = "ftp://" + this.sourceCred.getUri() + "/" + fileInfo.getPath();
         }
         this.foSrc = VFS.getManager().resolveFile(wholeThing, opts);
         this.inputStream = foSrc.getContent().getInputStream();
