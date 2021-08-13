@@ -30,6 +30,7 @@ public class BoxWriter implements ItemWriter<DataChunk> {
     private HashMap<String, MessageDigest> digestMap;
     private List<BoxFileUploadSessionPart> parts;
     String destinationBasePath;
+    BoxFolder boxFolder;
 
     public BoxWriter(OAuthEndpointCredential oauthDestCredential, EntityInfo fileInfo, int chunkSize) {
         this.credential = oauthDestCredential;
@@ -44,16 +45,7 @@ public class BoxWriter implements ItemWriter<DataChunk> {
     @BeforeStep
     public void beforeStep(StepExecution stepExecution){
         this.destinationBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
-        BoxFolder boxFolder = new BoxFolder(this.boxAPIConnection, this.destinationBasePath);
-        if(!this.fileMap.containsKey(this.fileInfo.getId())){
-            this.fileMap.put(this.fileInfo.getId(), boxFolder.createUploadSession(this.fileInfo.getId(), this.chunkSize).getResource());
-            try {
-                this.digestMap.put(this.fileInfo.getId(), MessageDigest.getInstance("SHA1"));
-            } catch (NoSuchAlgorithmException e) {
-                e.printStackTrace();
-            }
-
-        }
+        this.boxFolder = new BoxFolder(this.boxAPIConnection, this.destinationBasePath);
     }
 
     @AfterStep
@@ -64,12 +56,16 @@ public class BoxWriter implements ItemWriter<DataChunk> {
     }
 
     @Override
-    public void write(List<? extends DataChunk> items) throws Exception {
-        BoxFileUploadSession session = this.fileMap.get(this.fileInfo.getId());
+    public void write(List<? extends DataChunk> items) {
         for(DataChunk dataChunk : items){
-            BoxFileUploadSessionPart boxFileUploadSessionPart = session.uploadPart(dataChunk.getData(), dataChunk.getStartPosition(), Long.valueOf(dataChunk.getSize()).intValue(), this.fileInfo.getSize());
-            this.digestMap.get(this.fileInfo.getId()).update(dataChunk.getData());
-            this.parts.add(boxFileUploadSessionPart);
+            String fileName = dataChunk.getFileName();
+            if(!this.fileMap.containsKey(fileName)){
+                this.boxFolder.createUploadSession(fileName, this.fileInfo.getSize());
+            }else{
+                BoxFileUploadSessionPart part = this.fileMap.get(fileName).uploadPart(dataChunk.getData(), dataChunk.getStartPosition(), Long.valueOf(dataChunk.getSize()).intValue(), this.fileInfo.getSize());
+                this.digestMap.get(fileName).update(dataChunk.getData());
+                this.parts.add(part);
+            }
         }
     }
 }

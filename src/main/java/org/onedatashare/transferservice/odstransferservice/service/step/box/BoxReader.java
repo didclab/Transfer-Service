@@ -2,24 +2,15 @@ package org.onedatashare.transferservice.odstransferservice.service.step.box;
 
 import com.box.sdk.BoxAPIConnection;
 import com.box.sdk.BoxFile;
-import com.box.sdk.BoxFolder;
-import com.box.sdk.BoxItem;
-import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
-import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3Reader;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
-import org.springframework.batch.item.file.ResourceAwareItemReaderItemStream;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.core.io.Resource;
 import org.springframework.util.ClassUtils;
 
 import java.io.ByteArrayOutputStream;
@@ -49,7 +40,6 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
      */
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
-        this.currentFile = new BoxFile(this.boxAPIConnection, this.fileInfo.getId());
         filePartitioner.createParts(this.chunkSize, this.currentFile.getInfo().getName());
     }
     /**
@@ -71,6 +61,7 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
      */
     @Override
     protected void doOpen() {
+        this.currentFile = new BoxFile(this.boxAPIConnection, this.fileInfo.getId());
         this.boxAPIConnection = new BoxAPIConnection(credential.getToken());
     }
 

@@ -72,7 +72,7 @@ public class VfsWriter implements ItemWriter<DataChunk> {
             Files.createDirectories(this.filePath.getParent());
             Files.createFile(this.filePath);
         }catch (FileAlreadyExistsException fileAlreadyExistsException){
-            logger.error("Already have the file with this path \t" + this.filePath.toString());
+            logger.warn("Already have the file with this path \t" + this.filePath.toString());
         } catch (IOException e) {
             e.printStackTrace();
         }
