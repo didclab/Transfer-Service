@@ -153,7 +153,7 @@ public class JobControl extends DefaultBatchConfigurer {
                 ftpReader.setPool(connectionBag.getFtpReaderPool());
                 return ftpReader;
             case s3:
-                return new AmazonS3Reader(request.getSource().getVfsSourceCredential(), request.getChunkSize());
+                return new AmazonS3Reader(request.getSource().getVfsSourceCredential(), request.getChunkSize(), fileInfo);
             case box:
                 return new BoxReader(request.getSource().getOauthSourceCredential(), request.getChunkSize(), fileInfo);
         }
