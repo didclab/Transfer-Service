@@ -1,5 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service;
 
+import com.netflix.discovery.converters.Auto;
 import lombok.*;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.config.ApplicationThreadPoolConfig;
@@ -78,6 +79,12 @@ public class JobControl extends DefaultBatchConfigurer {
     @Autowired
     StepBuilderFactory stepBuilderFactory;
 
+    @Autowired
+    ConnectionBag connectionBag;
+
+    @Autowired
+    JobCompletionListener jobCompletionListener;
+
     @Autowired(required = false)
     public void setDatasource(DataSource datasource) {
         this.dataSource = datasource;
@@ -138,9 +145,13 @@ public class JobControl extends DefaultBatchConfigurer {
             case vfs:
                 return new VfsReader(request.getSource().getVfsSourceCredential(), fileInfo, request.getChunkSize());
             case sftp:
-                return new SFTPReader(request.getSource().getVfsSourceCredential(), request.getChunkSize(), fileInfo);
+                SFTPReader sftpReader =new SFTPReader(request.getSource().getVfsSourceCredential(), request.getChunkSize(), fileInfo);
+                sftpReader.setPool(connectionBag.getSftpReaderPool());
+                return sftpReader;
             case ftp:
-                return new FTPReader(request.getSource().getVfsSourceCredential(), fileInfo, request.getChunkSize());
+                FTPReader ftpReader = new FTPReader(request.getSource().getVfsSourceCredential(), fileInfo, request.getChunkSize());
+                ftpReader.setPool(connectionBag.getFtpReaderPool());
+                return ftpReader;
             case s3:
                 return new AmazonS3Reader(request.getSource().getVfsSourceCredential(), request.getChunkSize());
             case box:
@@ -154,9 +165,13 @@ public class JobControl extends DefaultBatchConfigurer {
             case vfs:
                 return new VfsWriter(request.getDestination().getVfsDestCredential());
             case sftp:
-                return new SFTPWriter(request.getDestination().getVfsDestCredential());
+                SFTPWriter sftpWriter = new SFTPWriter(request.getDestination().getVfsDestCredential());
+                sftpWriter.setPool(connectionBag.getSftpWriterPool());
+                return sftpWriter;
             case ftp:
-                return new FTPWriter(request.getDestination().getVfsDestCredential());
+                FTPWriter ftpWriter = new FTPWriter(request.getDestination().getVfsDestCredential());
+                ftpWriter.setPool(connectionBag.getFtpWriterPool());
+                return ftpWriter;
             case s3:
                 return new AmazonS3Writer(request.getDestination().getVfsDestCredential(), fileInfo);
             case box:
@@ -165,16 +180,14 @@ public class JobControl extends DefaultBatchConfigurer {
         return null;
     }
 
-    @Lazy
-    @Bean
     public Job concurrentJobDefinition() throws MalformedURLException {
+        connectionBag.preparePools(this.request);
         List<Flow> flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getParentInfo().getPath(), request.getJobId());
         Flow[] fl = new Flow[flows.size()];
-
         threadPoolConfig.setSTEP_POOL_SIZE(this.request.getOptions().getConcurrencyThreadCount());
         Flow f = new FlowBuilder<SimpleFlow>("splitFlow").split(this.threadPoolConfig.stepTaskExecutor()).add(flows.toArray(fl))
                 .build();
-        return jobBuilderFactory.get(request.getOwnerId()).listener(new JobCompletionListener())
+        return jobBuilderFactory.get(request.getOwnerId()).listener(jobCompletionListener)
                 .incrementer(new RunIdIncrementer()).start(f).build().build();
     }
 }

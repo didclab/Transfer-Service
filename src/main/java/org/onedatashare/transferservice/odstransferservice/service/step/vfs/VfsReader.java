@@ -37,6 +37,7 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
     FilePartitioner filePartitioner;
     EntityInfo fileInfo;
     AccountEndpointCredential credential;
+    ByteBuffer buffer;
 
 
     public VfsReader(AccountEndpointCredential credential, EntityInfo fInfo, int chunkSize) {
@@ -45,6 +46,7 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
         this.filePartitioner = new FilePartitioner(chunkSize);
         this.fileInfo = fInfo;
         this.chunkSize = chunkSize;
+        buffer = ByteBuffer.allocate(this.chunkSize);
     }
 
     @BeforeStep
@@ -65,7 +67,6 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
         FilePart chunkParameters = this.filePartitioner.nextPart();
         if (chunkParameters == null) return null;// done as there are no more FileParts in the queue
         logger.info("currently reading {}", chunkParameters.getPartIdx());
-        ByteBuffer buffer = ByteBuffer.allocate(this.chunkSize);
         int totalBytes = 0;
         while (totalBytes < chunkParameters.getSize()) {
             int bytesRead = 0;
