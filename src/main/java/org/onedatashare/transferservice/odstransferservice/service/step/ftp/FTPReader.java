@@ -1,6 +1,8 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.ftp;
 
 import lombok.SneakyThrows;
+import org.apache.commons.net.ftp.FTPClient;
+import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemOptions;
 import org.apache.commons.vfs2.VFS;
@@ -9,7 +11,9 @@ import org.apache.commons.vfs2.impl.DefaultFileSystemConfigBuilder;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
+import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.pools.FtpConnectionPool;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
@@ -20,11 +24,12 @@ import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 import org.springframework.util.ClassUtils;
 
+import java.io.IOException;
 import java.io.InputStream;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
-public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataChunk> {
+public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataChunk> implements SetPool {
 
     Logger logger = LoggerFactory.getLogger(FTPReader.class);
     InputStream inputStream;
@@ -37,6 +42,8 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
     long fileIdx;
     FilePartitioner partitioner;
     EntityInfo fileInfo;
+    private FtpConnectionPool connectionPool;
+    private FTPClient client;
 
     public FTPReader(AccountEndpointCredential credential, EntityInfo file ,int chunckSize) {
         this.chunckSize = chunckSize;
@@ -83,6 +90,7 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
             totalBytes += byteRead;
         }
         DataChunk chunk = ODSUtility.makeChunk(totalBytes, data, this.fileIdx, this.chunksCreated, this.fName);
+        this.client.setRestartOffset(filePart.getStart());
         this.fileIdx += totalBytes;
         this.chunksCreated++;
         logger.info(chunk.toString());
@@ -91,9 +99,11 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
 
 
     @Override
-    protected void doOpen() {
+    protected void doOpen() throws InterruptedException, IOException {
         logger.info("Insided doOpen");
-        clientCreateSourceStream(sBasePath, fName);
+        this.client = this.connectionPool.borrowObject();
+        this.inputStream = this.client.retrieveFileStream(this.fileInfo.getPath());
+        //clientCreateSourceStream(sBasePath, fName);
     }
 
     @Override
@@ -105,6 +115,7 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
             logger.error("Not able to close the input Stream");
             ex.printStackTrace();
         }
+        this.connectionPool.returnObject(this.client);
     }
 
     @SneakyThrows
@@ -123,5 +134,10 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         }
         this.foSrc = VFS.getManager().resolveFile(wholeThing, opts);
         this.inputStream = foSrc.getContent().getInputStream();
+    }
+
+    @Override
+    public void setPool(ObjectPool connectionPool) {
+        this.connectionPool = (FtpConnectionPool) connectionPool;
     }
 }

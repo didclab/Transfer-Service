@@ -35,7 +35,8 @@ public class VfsWriter implements ItemWriter<DataChunk> {
     public void beforeStep(StepExecution stepExecution) {
         this.fileName = stepExecution.getStepName();
         this.destinationPath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
-        this.filePath = Paths.get(this.destinationPath + this.fileName);
+        assert this.destinationPath != null;
+        this.filePath = Paths.get(this.destinationPath, this.fileName);
         prepareFile();
     }
 

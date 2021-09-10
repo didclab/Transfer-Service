@@ -2,10 +2,13 @@ package org.onedatashare.transferservice.odstransferservice.service.step.sftp;
 
 import com.jcraft.jsch.*;
 import lombok.SneakyThrows;
+import org.apache.commons.pool2.ObjectPool;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
+import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.pools.JschSessionPool;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPReader;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
@@ -16,26 +19,29 @@ import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 import org.springframework.util.ClassUtils;
 
+import java.io.IOException;
 import java.io.InputStream;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
-public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataChunk>{
+public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChunk> implements SetPool {
 
     Logger logger = LoggerFactory.getLogger(SFTPReader.class);
 
     InputStream inputStream;
     String sBasePath;
-    String fName;
     AccountEndpointCredential sourceCred;
-    EntityInfo file;
+    EntityInfo fileInfo;
     int chunckSize;
     int chunksCreated;
     long fileIdx;
     FilePartitioner filePartitioner;
+    private JschSessionPool connectionPool;
+    private Session session;
+    private ChannelSftp channelSftp;
 
     public SFTPReader(AccountEndpointCredential credential, int chunckSize, EntityInfo file) {
-        this.file = file;
+        this.fileInfo = file;
         this.filePartitioner = new FilePartitioner(chunckSize);
         this.setExecutionContextName(ClassUtils.getShortName(SFTPReader.class));
         this.chunckSize = chunckSize;
@@ -47,15 +53,13 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
     public void beforeStep(StepExecution stepExecution) {
         logger.info("Before step for : " + stepExecution.getStepName());
         sBasePath = stepExecution.getJobParameters().getString(SOURCE_BASE_PATH);
-        fName = stepExecution.getStepName();
         chunksCreated = 0;
         fileIdx = 0L;
-        this.filePartitioner.createParts(this.file.getSize(), this.fName);
+        this.filePartitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
     }
 
-    @SneakyThrows
     @Override
-    protected DataChunk doRead() {
+    protected DataChunk doRead() throws IOException {
         FilePart thisChunk = this.filePartitioner.nextPart();
         if (thisChunk == null) return null;
         byte[] data = new byte[thisChunk.getSize()];
@@ -66,7 +70,7 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
             if (bytesRead == -1) return null;
             totalRead += bytesRead;
         }
-        DataChunk chunk = ODSUtility.makeChunk(thisChunk.getSize(), data, this.fileIdx, this.chunksCreated, this.fName);
+        DataChunk chunk = ODSUtility.makeChunk(thisChunk.getSize(), data, this.fileIdx, this.chunksCreated, this.fileInfo.getId());
         this.fileIdx += totalRead;
         this.chunksCreated++;
         logger.info(chunk.toString());
@@ -79,23 +83,39 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
      * @throws Exception Allows subclasses to throw checked exceptions for interpretation by the framework
      */
     @Override
-    protected void doOpen() {
-        clientCreateSourceStream();
+    protected void doOpen() throws InterruptedException, JSchException, SftpException {
+        this.session = this.connectionPool.borrowObject();
+        this.channelSftp = getChannelSftp(session);
+        this.inputStream = channelSftp.get(fileInfo.getPath());
+        //clientCreateSourceStream();
     }
 
     @Override
     protected void doClose() {
         try {
             if (inputStream != null) inputStream.close();
-        } catch (Exception ex) {
-            logger.error("Not able to close the input Stream");
-            ex.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+        this.channelSftp.disconnect();
+        this.connectionPool.returnObject(this.session);
+    }
+
+    public ChannelSftp getChannelSftp(Session session) throws JSchException, SftpException {
+        if (this.channelSftp == null || !this.channelSftp.isConnected() || this.channelSftp.isClosed()) {
+            channelSftp = (ChannelSftp) session.openChannel("sftp");
+            channelSftp.connect();
+            if(!sBasePath.isEmpty()){
+                channelSftp.cd(sBasePath);
+                logger.info("after cd into base path" + channelSftp.pwd());
+            }
+        }
+        return channelSftp;
     }
 
     @SneakyThrows
     public void clientCreateSourceStream() {
-        logger.info("Inside clientCreateSourceStream for : " + fName);
+        logger.info("Inside clientCreateSourceStream for : " + this.fileInfo.getId());
         JSch jsch = new JSch();
         try {
             ChannelSftp channelSftp = SftpUtility.createConnection(jsch,sourceCred);
@@ -104,12 +124,17 @@ public class SFTPReader<T> extends AbstractItemCountingItemStreamItemReader<Data
                 channelSftp.cd(sBasePath);
                 logger.info("after cd into base path" + channelSftp.pwd());
             }
-            this.inputStream = channelSftp.get(file.getPath());
+            this.inputStream = channelSftp.get(fileInfo.getPath());
         } catch (JSchException e) {
             logger.error("Error in JSch end");
             e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public void setPool(ObjectPool connectionPool) {
+        this.connectionPool = (JschSessionPool) connectionPool;
     }
 }

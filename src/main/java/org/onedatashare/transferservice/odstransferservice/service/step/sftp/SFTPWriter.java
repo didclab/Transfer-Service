@@ -1,9 +1,12 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.sftp;
 
 import com.jcraft.jsch.*;
+import org.apache.commons.pool2.ObjectPool;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 
+import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.pools.JschSessionPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
@@ -18,15 +21,17 @@ import java.util.List;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
-public class SFTPWriter implements ItemWriter<DataChunk> {
+public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
 
     Logger logger = LoggerFactory.getLogger(SFTPWriter.class);
 
-    String stepName;
     private String dBasePath;
     AccountEndpointCredential destCred;
     HashMap<String, ChannelSftp> fileToChannel;
     JSch jsch;
+    private JschSessionPool connectionPool;
+    private Session session;
+
     public SFTPWriter(AccountEndpointCredential destCred) {
         fileToChannel = new HashMap<>();
         this.destCred = destCred;
@@ -34,9 +39,9 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
     }
 
     @BeforeStep
-    public void beforeStep(StepExecution stepExecution) {
-        this.stepName = stepExecution.getStepName();
+    public void beforeStep(StepExecution stepExecution) throws InterruptedException {
         this.dBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
+        this.session = this.connectionPool.borrowObject();
     }
 
     @AfterStep
@@ -46,6 +51,7 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
                 value.disconnect();
             }
         }
+        this.connectionPool.returnObject(this.session);
     }
 
     public void establishChannel(String stepName){
@@ -53,7 +59,7 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
             ChannelSftp channelSftp = SftpUtility.createConnection(jsch, destCred);
             assert channelSftp != null;
             if(!cdIntoDir(channelSftp, dBasePath)){
-                mkdir(channelSftp, dBasePath);
+                SftpUtility.mkdir(channelSftp, dBasePath);
             }
             if(fileToChannel.containsKey(stepName)){
                 fileToChannel.remove(stepName);
@@ -70,17 +76,6 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
             return true;
         } catch (SftpException sftpException) {
             logger.warn("Could not cd into the directory we might have made moohoo");
-            sftpException.printStackTrace();
-        }
-        return false;
-    }
-
-    public boolean mkdir(ChannelSftp channelSftp, String basePath){
-        try {
-            channelSftp.mkdir(basePath);
-            return true;
-        } catch (SftpException sftpException) {
-            logger.warn("Could not make the directory you gave us boohoo");
             sftpException.printStackTrace();
         }
         return false;
@@ -110,12 +105,12 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
 
     @Override
     public void write(List<? extends DataChunk> items) {
-        OutputStream destination = getStream(this.stepName);
+        String fileName = items.get(0).getFileName();
+        OutputStream destination = getStream(items.get(0).getFileName());
         if(destination == null){
             logger.error("OutputStream is null....Not able to write : " + items.get(0).getFileName());
-            establishChannel(stepName);
-        }
-        if (destination != null) {
+            establishChannel(fileName);
+        }else{
             try {
                 for (DataChunk b : items) {
                     logger.info("Current chunk in SFTP Writer " + b.toString());
@@ -127,5 +122,10 @@ public class SFTPWriter implements ItemWriter<DataChunk> {
                 e.printStackTrace();
             }
         }
+    }
+
+    @Override
+    public void setPool(ObjectPool connectionPool) {
+        this.connectionPool = (JschSessionPool) connectionPool;
     }
 }

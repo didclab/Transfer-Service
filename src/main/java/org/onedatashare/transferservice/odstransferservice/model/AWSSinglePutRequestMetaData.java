@@ -36,4 +36,9 @@ public class AWSSinglePutRequestMetaData {
         }
         return new ByteArrayInputStream(buffer.array());
     }
+
+    public void clear(){
+        this.dataChunkPriorityQueue.clear();
+        this.chunkList.clear();
+    }
 }

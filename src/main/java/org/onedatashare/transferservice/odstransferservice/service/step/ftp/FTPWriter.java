@@ -1,12 +1,16 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.ftp;
 
+import org.apache.commons.net.ftp.FTPClient;
+import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemOptions;
 import org.apache.commons.vfs2.VFS;
 import org.apache.commons.vfs2.auth.StaticUserAuthenticator;
 import org.apache.commons.vfs2.impl.DefaultFileSystemConfigBuilder;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
+import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.pools.FtpConnectionPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
@@ -21,7 +25,7 @@ import java.util.List;
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
 
-public class FTPWriter implements ItemWriter<DataChunk> {
+public class FTPWriter implements ItemWriter<DataChunk>, SetPool {
 
     Logger logger = LoggerFactory.getLogger(FTPWriter.class);
 
@@ -30,6 +34,8 @@ public class FTPWriter implements ItemWriter<DataChunk> {
     private String dBasePath;
     AccountEndpointCredential destCred;
     FileObject foDest;
+    private FtpConnectionPool connectionPool;
+    private FTPClient client;
 
     public FTPWriter(AccountEndpointCredential destCred) {
         this.destCred = destCred;
@@ -41,6 +47,11 @@ public class FTPWriter implements ItemWriter<DataChunk> {
         outputStream = null;
         dBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
         stepName = stepExecution.getStepName();
+        try {
+            this.client = this.connectionPool.borrowObject();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     @AfterStep
@@ -52,19 +63,24 @@ public class FTPWriter implements ItemWriter<DataChunk> {
             logger.error("Not able to close the input Stream");
             ex.printStackTrace();
         }
+        this.connectionPool.returnObject(this.client);
     }
 
-    public OutputStream getStream(String stepName) {
+    public OutputStream getStream(String fileName) {
         if(outputStream == null){
-            logger.info("Stream not present...creating OutputStream for "+ stepName);
-            ftpDest();
+            try {
+                this.outputStream = this.client.storeFileStream(this.dBasePath+"/"+fileName);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            logger.info("Stream not present...creating OutputStream for "+ fileName);
+            //ftpDest();
         }
-        return outputStream;
+        return this.outputStream;
     }
 
     public void ftpDest() {
         logger.info("Creating ftpDest for :" + this.stepName);
-
         try {
             FileSystemOptions opts = FtpUtility.generateOpts();
             StaticUserAuthenticator auth = new StaticUserAuthenticator(null, this.destCred.getUsername(), this.destCred.getSecret());
@@ -87,15 +103,26 @@ public class FTPWriter implements ItemWriter<DataChunk> {
 
     public void write(List<? extends DataChunk> list) {
         logger.info("Inside Writer---writing chunk of : " + list.get(0).getFileName());
-        OutputStream destination = getStream(this.stepName);
+        String fileName = list.get(0).getFileName();
+        OutputStream destination = getStream(fileName);
         try {
             for (DataChunk b : list) {
                 destination.write(b.getData());
-                destination.flush();
+                this.client.setRestartOffset(b.getStartPosition());
             }
         } catch (IOException e) {
             logger.error("Error during writing chunks...exiting");
             e.printStackTrace();
         }
+        try {
+            destination.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void setPool(ObjectPool connectionPool) {
+        this.connectionPool = (FtpConnectionPool) connectionPool;
     }
 }
