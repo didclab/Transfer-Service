@@ -15,6 +15,7 @@ import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxR
 import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPWriter;
+import org.onedatashare.transferservice.odstransferservice.service.step.http.HttpReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsReader;
@@ -142,6 +143,8 @@ public class JobControl extends DefaultBatchConfigurer {
 
     protected AbstractItemCountingItemStreamItemReader<DataChunk> getRightReader(EndpointType type, EntityInfo fileInfo) {
         switch (type) {
+            case http:
+                return new HttpReader(fileInfo, request.getChunkSize());
             case vfs:
                 return new VfsReader(request.getSource().getVfsSourceCredential(), fileInfo, request.getChunkSize());
             case sftp:
@@ -162,6 +165,8 @@ public class JobControl extends DefaultBatchConfigurer {
 
     protected ItemWriter<DataChunk> getRightWriter(EndpointType type, EntityInfo fileInfo) {
         switch (type) {
+            case http:
+                return new VfsWriter(request.getDestination().getVfsDestCredential());
             case vfs:
                 return new VfsWriter(request.getDestination().getVfsDestCredential());
             case sftp:

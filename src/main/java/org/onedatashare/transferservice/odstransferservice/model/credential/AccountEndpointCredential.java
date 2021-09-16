@@ -19,6 +19,9 @@ public class AccountEndpointCredential extends EndpointCredential{
         }else if(type.equals(EndpointType.ftp)){
             noTypeUri = credential.getUri().replaceFirst("ftp://", "");
         }
+        else{
+            noTypeUri = credential.getUri().replaceFirst("http://", "");
+        }
         return noTypeUri.split(":");
     }
 }
