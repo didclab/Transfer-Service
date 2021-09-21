@@ -26,8 +26,11 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.util.concurrent.ThreadPoolExecutor;
+
+import java.nio.channels.Channels;
+
+import java.nio.channels.ReadableByteChannel;
+
 
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SOURCE_BASE_PATH;
@@ -35,7 +38,7 @@ import org.onedatashare.transferservice.odstransferservice.pools.HttpConnectionP
 
 public class HttpReader<T> extends AbstractItemCountingItemStreamItemReader<DataChunk>{
 
-    FileChannel channel;
+    ReadableByteChannel channel;
     Logger logger = LoggerFactory.getLogger(HttpReader.class);
     int chunkSize;
     FileInputStream fileInputStream;
@@ -43,12 +46,9 @@ public class HttpReader<T> extends AbstractItemCountingItemStreamItemReader<Data
     String fileName;
     FilePartitioner filePartitioner;
     EntityInfo fileInfo;
-    AccountEndpointCredential credential;
     ByteBuffer buffer;
-    HttpClient client;
-    HttpConnectionPool httpConnectionPool;
-    HttpGet request;
-    HttpResponse response;
+//    FileOutputStream fos;
+//    FileChannel fileChannel;
 
 
     public HttpReader(EntityInfo fileInfo, int chunkSize) {
@@ -57,7 +57,6 @@ public class HttpReader<T> extends AbstractItemCountingItemStreamItemReader<Data
         this.filePartitioner = new FilePartitioner(chunkSize);
         this.chunkSize = chunkSize;
         buffer = ByteBuffer.allocate(this.chunkSize);
-
     }
 
     @BeforeStep
@@ -69,16 +68,50 @@ public class HttpReader<T> extends AbstractItemCountingItemStreamItemReader<Data
     }
 
     @Override
-    protected DataChunk doRead() {
+    protected DataChunk doRead() throws IOException {
         // using range not filePart
-//        HttpResponse response = this.client.execute
-        return null;
+        FilePart filePart = this.filePartitioner.nextPart();
+        if(filePart == null) return null;
+        int totalByte = 0;
+        while(totalByte < filePart.getSize()) {
+            int byteRead = 0;
+            byteRead = this.channel.read(buffer);
+            if(byteRead == -1) return null;
+            totalByte += byteRead;
+        }
+        buffer.flip();
+        byte[] data = new byte[filePart.getSize()];
+        buffer.get(data, 0, totalByte);
+        buffer.clear();
+        return ODSUtility.makeChunk(totalByte, data, filePart.getStart(), Long.valueOf(filePart.getPartIdx()).intValue(), this.fileName);
+
+
+        /**
+         * this is another way to download file to specific path by FOS
+
+         fos.getChannel().transferFrom(channel, 0, filePart.getSize());
+
+         */
+
     }
 
     @Override
     protected void doOpen() throws IOException, InterruptedException, URISyntaxException {
-        this.client = this.httpConnectionPool.borrowObject();
-        this.request = new HttpGet(fileInfo.getPath() + fileInfo.getId());
+//        this.client = this.httpConnectionPool.borrowObject();
+//        this.client.executor();
+        URL url = new URL("https://" + fileInfo.getPath() + fileInfo.getId());
+        this.channel = Channels.newChannel(url.openStream());
+
+        /**
+         * this is another way to download file to specific path by FOS
+
+
+           URL url = new URL("https://" + fileInfo.getPath() + fileInfo.getId());
+           this.channel = Channels.newChannel(url.openStream());
+           this.fileOutputStream = new FileOutputStream("aa");
+           fos = fileOutputStream.getChannel();
+
+         */
     }
 
     @Override
