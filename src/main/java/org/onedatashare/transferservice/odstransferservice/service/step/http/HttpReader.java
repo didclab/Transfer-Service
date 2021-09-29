@@ -100,6 +100,7 @@ public class HttpReader<T> extends AbstractItemCountingItemStreamItemReader<Data
 //        this.client = this.httpConnectionPool.borrowObject();
 //        this.client.executor();
         URL url = new URL("https://" + fileInfo.getPath() + fileInfo.getId());
+        System.out.println("this is the url: "+ url.toString());
         this.channel = Channels.newChannel(url.openStream());
 
         /**
@@ -118,7 +119,7 @@ public class HttpReader<T> extends AbstractItemCountingItemStreamItemReader<Data
     protected void doClose() {
         try{
             if(fileInputStream != null) fileInputStream.close();
-            if(channel.isOpen()) channel.close();
+            channel.close();
         }catch (Exception e) {
             logger.error("Not able to close the input Stream");
             e.printStackTrace();
