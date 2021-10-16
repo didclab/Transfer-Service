@@ -58,7 +58,7 @@ public class VfsWriter implements ItemWriter<DataChunk> {
             logger.info("creating file : " + fileName);
             FileChannel channel = null;
             try {
-                channel = FileChannel.open(this.filePath, StandardOpenOption.WRITE);
+                channel = FileChannel.open(this.filePath, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
                 stepDrain.put(fileName, channel);
             } catch (IOException exception) {
                 logger.error("Not Able to open the channel");

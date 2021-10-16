@@ -3,7 +3,6 @@ package org.onedatashare.transferservice.odstransferservice.service.step.sftp;
 import com.jcraft.jsch.*;
 import org.apache.commons.pool2.ObjectPool;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
-
 import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.pools.JschSessionPool;
@@ -16,10 +15,11 @@ import org.springframework.batch.item.ItemWriter;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
 
 public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
 
@@ -31,6 +31,7 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
     JSch jsch;
     private JschSessionPool connectionPool;
     private Session session;
+    private OutputStream destination;
 
     public SFTPWriter(AccountEndpointCredential destCred) {
         fileToChannel = new HashMap<>();
@@ -46,31 +47,32 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
 
     @AfterStep
     public void afterStep() {
-        for(ChannelSftp value: fileToChannel.values()){
-            if(!value.isConnected()){
+        for (ChannelSftp value : fileToChannel.values()) {
+            if (!value.isConnected()) {
                 value.disconnect();
             }
         }
         this.connectionPool.returnObject(this.session);
     }
 
-    public void establishChannel(String stepName){
+    public void establishChannel(String filePath) {
         try {
-            ChannelSftp channelSftp = SftpUtility.createConnection(jsch, destCred);
-            assert channelSftp != null;
-            if(!cdIntoDir(channelSftp, dBasePath)){
-                SftpUtility.mkdir(channelSftp, dBasePath);
-            }
-            if(fileToChannel.containsKey(stepName)){
-                fileToChannel.remove(stepName);
-            }
-            fileToChannel.put(stepName, channelSftp);
+            ChannelSftp channelSftp = (ChannelSftp) this.session.openChannel("sftp");
+//            channelSftp.setBulkRequests(100); //Not very sure if this should be set to the pipelining parameter or not I would assume so
+            channelSftp.connect();
+            String path = filePath.substring(0, filePath.lastIndexOf("/"));
+            SftpUtility.createRemoteFolder(channelSftp, path);
+//            ChannelSftp channelSftp = SftpUtility.createConnection(jsch, destCred);
+//            if(!cdIntoDir(channelSftp, dBasePath)){
+//                SftpUtility.mkdir(channelSftp, dBasePath);
+//            }
+            fileToChannel.put(filePath, channelSftp);
         } catch (JSchException e) {
             e.printStackTrace();
         }
     }
 
-    public boolean cdIntoDir(ChannelSftp channelSftp, String directory){
+    public boolean cdIntoDir(ChannelSftp channelSftp, String directory) {
         try {
             channelSftp.cd(directory);
             return true;
@@ -83,16 +85,16 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
 
     public OutputStream getStream(String stepName) {
         boolean appendMode = false;
-        if(!fileToChannel.containsKey(stepName)){
+        if (!fileToChannel.containsKey(stepName)) {
             establishChannel(stepName);
-        }else if(fileToChannel.get(stepName).isClosed() || !fileToChannel.get(stepName).isConnected()){
+        } else if (fileToChannel.get(stepName).isClosed() || !fileToChannel.get(stepName).isConnected()) {
             fileToChannel.remove(stepName);
             appendMode = true;
             establishChannel(stepName);
         }
         ChannelSftp channelSftp = this.fileToChannel.get(stepName);
         try {
-            if(appendMode){
+            if (appendMode) {
                 return channelSftp.put(stepName, ChannelSftp.APPEND);
             }
             return channelSftp.put(stepName, ChannelSftp.OVERWRITE);
@@ -104,24 +106,17 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
     }
 
     @Override
-    public void write(List<? extends DataChunk> items) {
-        String fileName = items.get(0).getFileName();
-        OutputStream destination = getStream(items.get(0).getFileName());
-        if(destination == null){
-            logger.error("OutputStream is null....Not able to write : " + items.get(0).getFileName());
-            establishChannel(fileName);
-        }else{
-            try {
-                for (DataChunk b : items) {
-                    logger.info("Current chunk in SFTP Writer " + b.toString());
-                    destination.write(b.getData());
-                    destination.flush();
-                }
-            } catch (IOException e) {
-                logger.error("Error during writing chunks...exiting");
-                e.printStackTrace();
-            }
+    public void write(List<? extends DataChunk> items) throws IOException {
+        String fileName = Paths.get(this.dBasePath, items.get(0).getFileName()).toString();
+        if (this.destination == null) {
+            this.destination = getStream(fileName);
         }
+        for (DataChunk b : items) {
+            logger.info("Current chunk in SFTP Writer " + b.toString());
+            destination.write(b.getData());
+        }
+        destination.flush();
+        items = null;
     }
 
     @Override

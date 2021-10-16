@@ -87,8 +87,11 @@ public class SftpUtility {
     }
 
     @SneakyThrows
-    private static ChannelSftp createRemoteFolder(ChannelSftp channelSftp, String remotePath) {
+    public static ChannelSftp createRemoteFolder(ChannelSftp channelSftp, String remotePath) {
         String[] folders = remotePath.split("/");
+        if(remotePath.startsWith("/")){
+            folders[0] = "/" + folders[0];
+        }
         for (String folder : folders) {
             if (!folder.isEmpty()) {
                 boolean flag = true;
