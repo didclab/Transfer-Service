@@ -40,9 +40,13 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
     }
 
     @BeforeStep
-    public void beforeStep(StepExecution stepExecution) throws InterruptedException {
+    public void beforeStep(StepExecution stepExecution) throws InterruptedException, JSchException {
         this.dBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
         this.session = this.connectionPool.borrowObject();
+        ChannelSftp channelSftp = (ChannelSftp) this.session.openChannel("sftp");
+        channelSftp.connect();
+        SftpUtility.createRemoteFolder(channelSftp, this.dBasePath);
+        channelSftp.disconnect();
     }
 
     @AfterStep
@@ -55,18 +59,17 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
         this.connectionPool.returnObject(this.session);
     }
 
-    public void establishChannel(String filePath) {
+    public void establishChannel(String fileName) {
         try {
             ChannelSftp channelSftp = (ChannelSftp) this.session.openChannel("sftp");
-//            channelSftp.setBulkRequests(100); //Not very sure if this should be set to the pipelining parameter or not I would assume so
+            channelSftp.setBulkRequests(100); //Not very sure if this should be set to the pipelining parameter or not I would assume so
             channelSftp.connect();
-            String path = filePath.substring(0, filePath.lastIndexOf("/"));
-            SftpUtility.createRemoteFolder(channelSftp, path);
+            this.cdIntoDir(channelSftp, this.dBasePath);
 //            ChannelSftp channelSftp = SftpUtility.createConnection(jsch, destCred);
 //            if(!cdIntoDir(channelSftp, dBasePath)){
 //                SftpUtility.mkdir(channelSftp, dBasePath);
 //            }
-            fileToChannel.put(filePath, channelSftp);
+            fileToChannel.put(fileName, channelSftp);
         } catch (JSchException e) {
             e.printStackTrace();
         }
@@ -83,21 +86,21 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
         return false;
     }
 
-    public OutputStream getStream(String stepName) {
+    public OutputStream getStream(String fileName) {
         boolean appendMode = false;
-        if (!fileToChannel.containsKey(stepName)) {
-            establishChannel(stepName);
-        } else if (fileToChannel.get(stepName).isClosed() || !fileToChannel.get(stepName).isConnected()) {
-            fileToChannel.remove(stepName);
+        if (!fileToChannel.containsKey(fileName)) {
+            establishChannel(fileName);
+        } else if (fileToChannel.get(fileName).isClosed() || !fileToChannel.get(fileName).isConnected()) {
+            fileToChannel.remove(fileName);
             appendMode = true;
-            establishChannel(stepName);
+            establishChannel(fileName);
         }
-        ChannelSftp channelSftp = this.fileToChannel.get(stepName);
+        ChannelSftp channelSftp = this.fileToChannel.get(fileName);
         try {
             if (appendMode) {
-                return channelSftp.put(stepName, ChannelSftp.APPEND);
+                return channelSftp.put(fileName, ChannelSftp.APPEND);
             }
-            return channelSftp.put(stepName, ChannelSftp.OVERWRITE);
+            return channelSftp.put(fileName, ChannelSftp.OVERWRITE);
         } catch (SftpException sftpException) {
             logger.warn("We failed getting the OuputStream to a file :(");
             sftpException.printStackTrace();
@@ -107,7 +110,8 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
 
     @Override
     public void write(List<? extends DataChunk> items) throws IOException {
-        String fileName = Paths.get(this.dBasePath, items.get(0).getFileName()).toString();
+//        String fileName = Paths.get(this.dBasePath, items.get(0).getFileName()).toString();
+        String fileName = Paths.get(items.get(0).getFileName()).toString();
         if (this.destination == null) {
             this.destination = getStream(fileName);
         }
