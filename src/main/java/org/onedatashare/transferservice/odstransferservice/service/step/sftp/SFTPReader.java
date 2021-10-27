@@ -26,6 +26,7 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
 
 public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChunk> implements SetPool {
 
+    private final int pipeSize;
     Logger logger = LoggerFactory.getLogger(SFTPReader.class);
 
     InputStream inputStream;
@@ -40,13 +41,14 @@ public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChu
     private Session session;
     private ChannelSftp channelSftp;
 
-    public SFTPReader(AccountEndpointCredential credential, int chunckSize, EntityInfo file) {
+    public SFTPReader(AccountEndpointCredential credential, int chunkSize, EntityInfo file, int pipeSize) {
         this.fileInfo = file;
-        this.filePartitioner = new FilePartitioner(chunckSize);
+        this.filePartitioner = new FilePartitioner(chunkSize);
         this.setExecutionContextName(ClassUtils.getShortName(SFTPReader.class));
-        this.chunckSize = chunckSize;
+        this.chunckSize = chunkSize;
         this.sourceCred = credential;
         this.setName(ClassUtils.getShortName(FTPReader.class));
+        this.pipeSize = pipeSize;
     }
 
     @BeforeStep
@@ -86,6 +88,7 @@ public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChu
     protected void doOpen() throws InterruptedException, JSchException, SftpException {
         this.session = this.connectionPool.borrowObject();
         this.channelSftp = getChannelSftp(session);
+        this.channelSftp.setBulkRequests(this.pipeSize);
         this.inputStream = channelSftp.get(fileInfo.getPath());
         //clientCreateSourceStream();
     }

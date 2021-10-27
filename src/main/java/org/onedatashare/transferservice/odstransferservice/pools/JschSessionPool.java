@@ -15,17 +15,19 @@ public class JschSessionPool implements ObjectPool<Session> {
     private final int bufferSize;
     private final LinkedBlockingQueue<Session> connectionPool;
     JSch jsch;
+    private boolean compression;
 
     public JschSessionPool(AccountEndpointCredential credential, int bufferSize){
         this.credential = credential;
         this.bufferSize = bufferSize;
         this.connectionPool = new LinkedBlockingQueue();
         jsch = new JSch();
+        compression = false;
     }
 
     @Override
     public void addObject() {
-        this.connectionPool.add(Objects.requireNonNull(SftpUtility.createJschSession(jsch, this.credential)));
+        this.connectionPool.add(Objects.requireNonNull(SftpUtility.createJschSession(jsch, this.credential, compression)));
     }
 
     @Override
@@ -90,5 +92,9 @@ public class JschSessionPool implements ObjectPool<Session> {
     @Override
     public void returnObject(Session obj) {
         this.connectionPool.add(obj);
+    }
+
+    public void setCompression(boolean compression) {
+        this.compression = compression;
     }
 }

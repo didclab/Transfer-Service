@@ -23,6 +23,7 @@ public class ConnectionBag {
     EndpointType writerType;
     boolean readerMade;
     boolean writerMade;
+    boolean compression;
 
     public ConnectionBag() {
         readerMade = false;
@@ -30,6 +31,7 @@ public class ConnectionBag {
     }
 
     public void preparePools(TransferJobRequest request) {
+        compression = request.getOptions().getCompress();
         if (request.getSource().getType().equals(EndpointType.sftp)) {
             readerMade = true;
             readerType = EndpointType.sftp;
@@ -95,11 +97,13 @@ public class ConnectionBag {
 
     public void createSftpReaderPool(AccountEndpointCredential credential, int connectionCount, int chunkSize) {
         this.sftpReaderPool = new JschSessionPool(credential, chunkSize);
+        this.sftpReaderPool.setCompression(compression);
         this.sftpReaderPool.addObjects(connectionCount);
     }
 
     public void createSftpWriterPool(AccountEndpointCredential credential, int connectionCount, int chunkSize) {
         this.sftpWriterPool = new JschSessionPool(credential, chunkSize);
+        this.sftpWriterPool.setCompression(compression);
         this.sftpWriterPool.addObjects(connectionCount);
     }
 }

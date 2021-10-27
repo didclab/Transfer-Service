@@ -33,10 +33,10 @@ public class VfsWriter implements ItemWriter<DataChunk> {
 
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
-        this.fileName = stepExecution.getStepName();
+//        this.fileName = stepExecution.getStepName();
         this.destinationPath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
         assert this.destinationPath != null;
-        this.filePath = Paths.get(this.destinationPath, this.fileName);
+        this.filePath = Paths.get(this.destinationPath);
         prepareFile();
     }
 
@@ -70,8 +70,8 @@ public class VfsWriter implements ItemWriter<DataChunk> {
 
     public void prepareFile() {
         try {
-            Files.createDirectories(this.filePath.getParent());
-            Files.createFile(this.filePath);
+            Files.createDirectories(this.filePath);
+//            Files.createFile(this.filePath);
         }catch (FileAlreadyExistsException fileAlreadyExistsException){
             logger.warn("Already have the file with this path \t" + this.filePath.toString());
         } catch (IOException e) {
@@ -81,7 +81,8 @@ public class VfsWriter implements ItemWriter<DataChunk> {
 
     @Override
     public void write(List<? extends DataChunk> items) throws Exception {
-        logger.info(Thread.currentThread().getName());
+        this.fileName = items.get(0).getFileName();
+        this.filePath = Paths.get(this.filePath.toString(), this.fileName);
         for (int i = 0; i < items.size(); i++) {
             DataChunk chunk = items.get(i);
             FileChannel channel = getChannel(chunk.getFileName());

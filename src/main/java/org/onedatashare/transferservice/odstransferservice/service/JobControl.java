@@ -145,7 +145,7 @@ public class JobControl extends DefaultBatchConfigurer {
             case vfs:
                 return new VfsReader(request.getSource().getVfsSourceCredential(), fileInfo, request.getChunkSize());
             case sftp:
-                SFTPReader sftpReader =new SFTPReader(request.getSource().getVfsSourceCredential(), request.getChunkSize(), fileInfo);
+                SFTPReader sftpReader =new SFTPReader(request.getSource().getVfsSourceCredential(), request.getChunkSize(), fileInfo, request.getOptions().getPipeSize());
                 sftpReader.setPool(connectionBag.getSftpReaderPool());
                 return sftpReader;
             case ftp:
