@@ -60,7 +60,6 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         sBasePath = stepExecution.getJobParameters().getString(SOURCE_BASE_PATH);
         sBasePath += fileInfo.getPath();
         fName = fileInfo.getId();
-        partitioner.createParts(this.fileInfo.getSize(), fName);
         chunksCreated = 0;
         fileIdx = 0L;
         this.partitioner.createParts(this.fileInfo.getSize(), this.fName);
