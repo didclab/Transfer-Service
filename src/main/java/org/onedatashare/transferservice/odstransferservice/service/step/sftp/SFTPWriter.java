@@ -23,6 +23,7 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
 
 public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
 
+    private final int pipeSize;
     Logger logger = LoggerFactory.getLogger(SFTPWriter.class);
 
     private String dBasePath;
@@ -33,10 +34,11 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
     private Session session;
     private OutputStream destination;
 
-    public SFTPWriter(AccountEndpointCredential destCred) {
+    public SFTPWriter(AccountEndpointCredential destCred, int pipeSize) {
         fileToChannel = new HashMap<>();
         this.destCred = destCred;
         jsch = new JSch();
+        this.pipeSize = pipeSize;
     }
 
     @BeforeStep
@@ -62,7 +64,7 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
     public void establishChannel(String fileName) {
         try {
             ChannelSftp channelSftp = (ChannelSftp) this.session.openChannel("sftp");
-            channelSftp.setBulkRequests(100); //Not very sure if this should be set to the pipelining parameter or not I would assume so
+            channelSftp.setBulkRequests(this.pipeSize); //Not very sure if this should be set to the pipelining parameter or not I would assume so
             channelSftp.connect();
             this.cdIntoDir(channelSftp, this.dBasePath);
 //            ChannelSftp channelSftp = SftpUtility.createConnection(jsch, destCred);

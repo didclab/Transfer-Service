@@ -165,7 +165,7 @@ public class JobControl extends DefaultBatchConfigurer {
             case vfs:
                 return new VfsWriter(request.getDestination().getVfsDestCredential());
             case sftp:
-                SFTPWriter sftpWriter = new SFTPWriter(request.getDestination().getVfsDestCredential());
+                SFTPWriter sftpWriter = new SFTPWriter(request.getDestination().getVfsDestCredential(), request.getOptions().getPipeSize());
                 sftpWriter.setPool(connectionBag.getSftpWriterPool());
                 return sftpWriter;
             case ftp:
