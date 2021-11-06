@@ -3,22 +3,26 @@ package org.onedatashare.transferservice.odstransferservice.pools;
 import org.apache.commons.pool2.ObjectPool;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.step.http.HttpReader;
 import org.springframework.batch.core.step.item.Chunk;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.net.Authenticator;
 import java.net.InetSocketAddress;
 import java.net.PasswordAuthentication;
 import java.net.ProxySelector;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.time.Duration;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class HttpConnectionPool implements ObjectPool<HttpClient> {
-
+    Logger logger = LoggerFactory.getLogger(HttpConnectionPool.class);
     AccountEndpointCredential credential;
     int bufferSize;
     LinkedBlockingQueue<HttpClient> connectionPool;
-    HttpClient borrowObj;
+
 
     public HttpConnectionPool(AccountEndpointCredential credential, int bufferSize){
         this.credential = credential;
@@ -28,12 +32,12 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
 
     @Override
     public void addObject(){
-        String[] hostAndPort = AccountEndpointCredential.uriFormat(credential, EndpointType.http);
+//        String[] hostAndPort = AccountEndpointCredential.uriFormat(credential, EndpointType.http);
         HttpClient client = HttpClient.newBuilder()
-                    .authenticator(Authenticator.getDefault())
-                    .proxy(ProxySelector.of(new InetSocketAddress(hostAndPort[0], Integer.parseInt(hostAndPort[1]))))
-                    .version(HttpClient.Version.HTTP_2)
-                    .build();
+                .version(HttpClient.Version.HTTP_1_1)
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .connectTimeout(Duration.ofSeconds(20))
+                .build();
         connectionPool.add(client);
     }
 
@@ -41,11 +45,13 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
     public void addObjects(int count){
         for(int i = 0; i < count; i++) {
             this.addObject();
+            logger.info("add object: " + i);
         }
     }
 
     @Override
     public HttpClient borrowObject() throws InterruptedException {
+        logger.info(String.valueOf(connectionPool.size()));
         return this.connectionPool.take();
     }
 
@@ -79,5 +85,9 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
     @Override
     public void returnObject(HttpClient httpClient){
         this.connectionPool.add(httpClient);
+    }
+
+    public int getSize() {
+        return this.connectionPool.size();
     }
 }

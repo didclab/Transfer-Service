@@ -144,7 +144,9 @@ public class JobControl extends DefaultBatchConfigurer {
     protected AbstractItemCountingItemStreamItemReader<DataChunk> getRightReader(EndpointType type, EntityInfo fileInfo) {
         switch (type) {
             case http:
-                return new HttpReader(fileInfo, request.getChunkSize());
+                HttpReader hr = new HttpReader(fileInfo, request.getChunkSize());
+                hr.setPool(connectionBag.getHttpReaderPool());
+                return hr;
             case vfs:
                 return new VfsReader(request.getSource().getVfsSourceCredential(), fileInfo, request.getChunkSize());
             case sftp:
@@ -165,8 +167,6 @@ public class JobControl extends DefaultBatchConfigurer {
 
     protected ItemWriter<DataChunk> getRightWriter(EndpointType type, EntityInfo fileInfo) {
         switch (type) {
-            case http:
-                return new VfsWriter(request.getDestination().getVfsDestCredential());
             case vfs:
                 return new VfsWriter(request.getDestination().getVfsDestCredential());
             case sftp:
