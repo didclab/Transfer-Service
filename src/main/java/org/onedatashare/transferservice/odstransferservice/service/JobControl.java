@@ -144,7 +144,7 @@ public class JobControl extends DefaultBatchConfigurer {
     protected AbstractItemCountingItemStreamItemReader<DataChunk> getRightReader(EndpointType type, EntityInfo fileInfo) {
         switch (type) {
             case http:
-                HttpReader hr = new HttpReader(fileInfo, request.getChunkSize());
+                HttpReader hr = new HttpReader(fileInfo, request.getChunkSize(), request.getSource().getVfsSourceCredential());
                 hr.setPool(connectionBag.getHttpReaderPool());
                 return hr;
             case vfs:

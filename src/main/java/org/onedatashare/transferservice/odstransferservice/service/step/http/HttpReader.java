@@ -1,18 +1,13 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.http;
 
-import com.fasterxml.jackson.databind.util.ClassUtil;
 import lombok.SneakyThrows;
 import org.apache.commons.pool2.ObjectPool;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.HttpGet;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
-import org.onedatashare.transferservice.odstransferservice.pools.JschSessionPool;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
-import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsReader;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,20 +17,12 @@ import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 import org.springframework.util.ClassUtils;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.*;
 import java.net.http.HttpClient;
-import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.ByteBuffer;
-
-import java.nio.channels.Channels;
-
-import java.nio.channels.ReadableByteChannel;
-import java.time.Duration;
+import java.nio.file.Paths;
 
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SOURCE_BASE_PATH;
@@ -43,26 +30,24 @@ import org.onedatashare.transferservice.odstransferservice.pools.HttpConnectionP
 
 public class HttpReader<T> extends AbstractItemCountingItemStreamItemReader<DataChunk> implements SetPool {
 
-    ReadableByteChannel channel;
     Logger logger = LoggerFactory.getLogger(HttpReader.class);
     int chunkSize;
-    FileInputStream fileInputStream;
     String sBasePath;
     String fileName;
     FilePartitioner filePartitioner;
     EntityInfo fileInfo;
-    ByteBuffer buffer;
     HttpClient client;
     HttpConnectionPool httpConnectionPool;
     Boolean range;
+    AccountEndpointCredential sourceCred;
 
 
-    public HttpReader(EntityInfo fileInfo, int chunkSize) {
+    public HttpReader(EntityInfo fileInfo, int chunkSize, AccountEndpointCredential credential) {
         this.setExecutionContextName(ClassUtils.getShortName(HttpReader.class));
         this.fileInfo = fileInfo;
         this.filePartitioner = new FilePartitioner(chunkSize);
         this.chunkSize = chunkSize;
-        buffer = ByteBuffer.allocate(this.chunkSize);
+        this.sourceCred = credential;
     }
 
     @BeforeStep
@@ -72,20 +57,6 @@ public class HttpReader<T> extends AbstractItemCountingItemStreamItemReader<Data
         this.sBasePath = params.getString(SOURCE_BASE_PATH);
         this.filePartitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
         this.fileName = stepExecution.getStepName();
-
-        HttpRequest request = HttpRequest.newBuilder()
-                .GET()
-                .uri(URI.create("https://"+ fileInfo.getPath() + fileInfo.getId())) //make http a string constant as well
-                .setHeader("Range", "bytes=0-10") //make Range into a string constant as well as bytes
-                .build();
-        HttpClient client = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .connectTimeout(Duration.ofSeconds(20))
-                .build();
-        HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
-        if(response.statusCode() == 206) this.range = true;
-        else this.range = false;
     }
 
     @Override
@@ -93,11 +64,13 @@ public class HttpReader<T> extends AbstractItemCountingItemStreamItemReader<Data
         FilePart filePart = this.filePartitioner.nextPart();
         if(filePart == null) return null;
         byte[] bodyArray;
+        String uri = sourceCred.getUri() + Paths.get(fileInfo.getPath()).toString() + Paths.get(fileInfo.getId()).toString();
+        logger.info("final uri = " + uri);
         if(range){
             HttpRequest request = HttpRequest.newBuilder()
                     .GET()
-                    .uri(URI.create("https://" + fileInfo.getPath() + fileInfo.getId())) //make http a string constant as well
-                    .setHeader("Range", "bytes="+filePart.getStart()+"-"+(filePart.getStart()+chunkSize)) //make Range into a string constant as well as bytes
+                    .uri(URI.create(uri))
+                    .setHeader("Range", "bytes="+filePart.getStart()+"-"+(filePart.getEnd())) //make Range into a string constant as well as bytes
                     .build();
             HttpResponse<byte[]> response = this.client.send(request, HttpResponse.BodyHandlers.ofByteArray());
             bodyArray = response.body();
@@ -105,18 +78,12 @@ public class HttpReader<T> extends AbstractItemCountingItemStreamItemReader<Data
         else{
             HttpRequest fullRequest = HttpRequest.newBuilder()
                     .GET()
-                    .uri(URI.create("https://" + fileInfo.getPath() + fileInfo.getId())) //make http a string constant as well
+                    .uri(URI.create(uri))
                     .setHeader("Access-Control-Expose-Headers", "Content-Range")
                     .build();
             HttpResponse<byte[]> fullResponse = this.client.send(fullRequest, HttpResponse.BodyHandlers.ofByteArray());
             bodyArray = fullResponse.body();
         }
-
-
-
-
-//
-//
 //        logger.info("headers: " + request.headers());
 //        logger.info("status code is: " + response.statusCode());
 //        logger.info("header is: " + response.headers());
@@ -124,31 +91,34 @@ public class HttpReader<T> extends AbstractItemCountingItemStreamItemReader<Data
 //        logger.info("file getStart: " + filePart.getStart());
 //        logger.info("file get Idx: " + Long.valueOf(filePart.getPartIdx()).intValue());
 //        logger.info("file name:" + this.fileName);
-
         return ODSUtility.makeChunk(bodyArray.length, bodyArray, filePart.getStart(), Long.valueOf(filePart.getPartIdx()).intValue(), this.fileName);
     }
 
     @SneakyThrows
     @Override
-    protected void doOpen() throws InterruptedException {
+    protected void doOpen() {
         logger.info("current httpConnectionPoll size: " + this.httpConnectionPool.getSize());
         this.client = this.httpConnectionPool.borrowObject();
+        String uri = Paths.get(fileInfo.getPath()).toString();
+        uri = sourceCred.getUri() + uri + fileInfo.getId();
+        HttpRequest request = HttpRequest.newBuilder()
+                .GET()
+                .uri(URI.create(uri)) //make http a string constant as well
+                .setHeader("Range", "bytes=0-1") //make Range into a string constant as well as bytes
+                .build();
+        HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+        if(response.statusCode() == 206) this.range = true;
+        else this.range = false;
     }
 
     @Override
     protected void doClose() {
-//        try{
-//            if(fileInputStream != null) fileInputStream.close();
-//            channel.close();
-//        }catch (Exception e) {
-//            logger.error("Not able to close the input Stream");
-//            e.printStackTrace();
-//        }
+        this.httpConnectionPool.returnObject(this.client);
     }
 
     @Override
     public void setPool(ObjectPool connectionPool) {
         this.httpConnectionPool = (HttpConnectionPool) connectionPool;
-        logger.info("I set the poll");
+        logger.info("I am setting the poll");
     }
 }
