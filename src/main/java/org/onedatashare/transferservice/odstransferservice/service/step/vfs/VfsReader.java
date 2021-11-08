@@ -22,10 +22,11 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Paths;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
-public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChunk> implements ResourceAwareItemReaderItemStream<DataChunk>, InitializingBean {
+public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChunk> implements ResourceAwareItemReaderItemStream<DataChunk> {
 
     FileChannel sink;
     Logger logger = LoggerFactory.getLogger(VfsReader.class);
@@ -54,7 +55,7 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
         logger.info("Before step for : " + stepExecution.getStepName());
         JobParameters params = stepExecution.getJobExecution().getJobParameters();
         this.sBasePath = params.getString(SOURCE_BASE_PATH);
-        this.fileName = stepExecution.getStepName();
+        this.fileName = this.fileInfo.getId();
         this.fsize = this.fileInfo.getSize();
         this.filePartitioner.createParts(fsize, fileName);
     }
@@ -90,7 +91,7 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
     protected void doOpen() {
         logger.info("Starting Open in VFS");
         try {
-            this.inputStream = new FileInputStream(this.sBasePath + this.fileInfo.getPath());
+            this.inputStream = new FileInputStream(Paths.get(this.sBasePath, this.fileInfo.getPath()).toString());
         } catch (FileNotFoundException e) {
             logger.error("Path not found : " + this.sBasePath + this.fileName);
             e.printStackTrace();
@@ -107,9 +108,5 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
             logger.error("Not able to close the input Stream");
             ex.printStackTrace();
         }
-    }
-
-    @Override
-    public void afterPropertiesSet() {
     }
 }
