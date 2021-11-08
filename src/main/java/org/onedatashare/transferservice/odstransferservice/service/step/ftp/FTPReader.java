@@ -102,7 +102,6 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
         logger.info("Insided doOpen");
         this.client = this.connectionPool.borrowObject();
         this.inputStream = this.client.retrieveFileStream(this.fileInfo.getPath());
-        //clientCreateSourceStream(sBasePath, fName);
     }
 
     @Override
@@ -115,24 +114,6 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
             ex.printStackTrace();
         }
         this.connectionPool.returnObject(this.client);
-    }
-
-    @SneakyThrows
-    public void clientCreateSourceStream(String basePath, String fName) {
-        logger.info("Inside clientCreateSourceStream for : " + fName + " ");
-
-        //***GETTING STREAM USING APACHE COMMONS VFS2
-        FileSystemOptions opts = FtpUtility.generateOpts();
-        StaticUserAuthenticator auth = new StaticUserAuthenticator(null, this.sourceCred.getUsername(), this.sourceCred.getSecret());
-        DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
-        String wholeThing;
-        if(this.sourceCred.getUri().contains("ftp://")){
-            wholeThing = this.sourceCred.getUri() + "/" + basePath + fName;
-        }else{
-            wholeThing = "ftp://" + this.sourceCred.getUri() + "/" + fileInfo.getPath();
-        }
-        this.foSrc = VFS.getManager().resolveFile(wholeThing, opts);
-        this.inputStream = foSrc.getContent().getInputStream();
     }
 
     @Override
