@@ -81,7 +81,7 @@ public class SftpUtility {
         if(compression){
             jschSession.setConfig("compression.s2c", "zlib@openssh.com,zlib,none");
             jschSession.setConfig("compression.c2s", "zlib@openssh.com,zlib,none");
-            jschSession.setConfig("compression_level", "9");
+            jschSession.setConfig("compression_level", "5");
         }
         jschSession.connect();
         return jschSession;
@@ -94,7 +94,7 @@ public class SftpUtility {
         if(compression){
             jschSession.setConfig("compression.s2c", "zlib@openssh.com,zlib,none");
             jschSession.setConfig("compression.c2s", "zlib@openssh.com,zlib,none");
-            jschSession.setConfig("compression_level", "9");
+            jschSession.setConfig("compression_level", "5");
         }
         jschSession.connect();
         return jschSession;
