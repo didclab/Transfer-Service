@@ -34,35 +34,14 @@ public class ApplicationThreadPoolConfig{
     @Setter
     private int parallelThreadPoolSize = 20;
 
-    public TaskExecutor transferTaskExecutor(){
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(TRANSFER_POOL_SIZE);
-        executor.setThreadNamePrefix("Transfer pool");
-        executor.setKeepAliveSeconds(60);
-        executor.initialize();
-        return executor;
-    }
-
     public ThreadPoolTaskExecutor stepTaskExecutor(){
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(STEP_POOL_SIZE);
         executor.setThreadNamePrefix("step");
         executor.setKeepAliveSeconds(60);
         executor.initialize();
-
         return executor;
     }
-    public TaskExecutor jobRequestThreadPool(){
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(JOB_POOL_SIZE);
-        executor.setMaxPoolSize(JOB_MAX_POOL_SIZE);
-        executor.setQueueCapacity(Integer.MAX_VALUE);
-        executor.setKeepAliveSeconds(60);
-        executor.setThreadNamePrefix("job");
-        executor.initialize();
-        return executor;
-    }
-
 
     public TaskExecutor sequentialThreadPool(){
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
