@@ -33,5 +33,10 @@ public class ODSConstants {
     public static final int SIXTYFOUR_KB=64000;
     public static final int TRANSFER_SLICE_SIZE = 1<<20;
     public static final int FIVE_MB = 5 * 1024 * 1024;
+    public static final String RANGE = "Range";
+    public static final String byteRange = "bytes=%s-%s";
+    public static final String AccessControlExposeHeaders = "Access-Control-Expose-Headers";
+    public static final String ContentRange = "Content-Range";
+
 
 }

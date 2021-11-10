@@ -2,6 +2,7 @@ package org.onedatashare.transferservice.odstransferservice.service.step.http;
 
 import lombok.SneakyThrows;
 import org.apache.commons.pool2.ObjectPool;
+import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
@@ -40,6 +41,7 @@ public class HttpReader<T> extends AbstractItemCountingItemStreamItemReader<Data
     HttpConnectionPool httpConnectionPool;
     Boolean range;
     AccountEndpointCredential sourceCred;
+    private String uri;
 
 
     public HttpReader(EntityInfo fileInfo, int chunkSize, AccountEndpointCredential credential) {
@@ -57,6 +59,8 @@ public class HttpReader<T> extends AbstractItemCountingItemStreamItemReader<Data
         this.sBasePath = params.getString(SOURCE_BASE_PATH);
         this.filePartitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
         this.fileName = stepExecution.getStepName();
+        this.uri = sourceCred.getUri() + Paths.get(fileInfo.getPath()).toString();
+        logger.info("final uri = " + uri);
     }
 
     @Override
@@ -64,13 +68,11 @@ public class HttpReader<T> extends AbstractItemCountingItemStreamItemReader<Data
         FilePart filePart = this.filePartitioner.nextPart();
         if(filePart == null) return null;
         byte[] bodyArray;
-        String uri = sourceCred.getUri() + Paths.get(fileInfo.getPath()).toString() + Paths.get(fileInfo.getId()).toString();
-        logger.info("final uri = " + uri);
         if(range){
             HttpRequest request = HttpRequest.newBuilder()
                     .GET()
                     .uri(URI.create(uri))
-                    .setHeader("Range", "bytes="+filePart.getStart()+"-"+(filePart.getEnd())) //make Range into a string constant as well as bytes
+                    .setHeader(ODSConstants.RANGE, String.format(ODSConstants.byteRange,filePart.getStart(), filePart.getEnd()))
                     .build();
             HttpResponse<byte[]> response = this.client.send(request, HttpResponse.BodyHandlers.ofByteArray());
             bodyArray = response.body();
@@ -79,7 +81,7 @@ public class HttpReader<T> extends AbstractItemCountingItemStreamItemReader<Data
             HttpRequest fullRequest = HttpRequest.newBuilder()
                     .GET()
                     .uri(URI.create(uri))
-                    .setHeader("Access-Control-Expose-Headers", "Content-Range")
+                    .setHeader(ODSConstants.AccessControlExposeHeaders, ODSConstants.ContentRange)
                     .build();
             HttpResponse<byte[]> fullResponse = this.client.send(fullRequest, HttpResponse.BodyHandlers.ofByteArray());
             bodyArray = fullResponse.body();
@@ -100,11 +102,11 @@ public class HttpReader<T> extends AbstractItemCountingItemStreamItemReader<Data
         logger.info("current httpConnectionPoll size: " + this.httpConnectionPool.getSize());
         this.client = this.httpConnectionPool.borrowObject();
         String uri = Paths.get(fileInfo.getPath()).toString();
-        uri = sourceCred.getUri() + uri + fileInfo.getId();
+        uri = sourceCred.getUri() + uri;
         HttpRequest request = HttpRequest.newBuilder()
                 .GET()
                 .uri(URI.create(uri)) //make http a string constant as well
-                .setHeader("Range", "bytes=0-1") //make Range into a string constant as well as bytes
+                .setHeader("Range", String.format(ODSConstants.byteRange,0, 1)) //make Range into a string constant as well as bytes
                 .build();
         HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
         if(response.statusCode() == 206) this.range = true;
