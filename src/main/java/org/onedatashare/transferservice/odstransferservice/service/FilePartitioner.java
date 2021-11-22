@@ -69,7 +69,6 @@ public class FilePartitioner {
             queue.add(lastChunk);
             logger.info(lastChunk.toString());
         }
-        logger.info(queue.peek().toString());
         logger.info("The total size of the queue after parsing file: " + fileName +" " +queue.size());
         return queue.size();
     }

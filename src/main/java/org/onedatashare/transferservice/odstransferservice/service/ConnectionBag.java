@@ -61,7 +61,6 @@ public class ConnectionBag {
         if (request.getSource().getType().equals(EndpointType.http)) {
             readerMade = true;
             readerType = EndpointType.http;
-//            logger.info("creating pool!!! with value: " + request.getSource().getVfsSourceCredential().toString() + ", " + request.getOptions().toString() + ", " + request.getChunkSize());
             this.createHttpReaderPoll(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount(), request.getChunkSize());
         }
     }
@@ -120,9 +119,7 @@ public class ConnectionBag {
     }
 
     public void createHttpReaderPoll(AccountEndpointCredential credential, int connectionCount, int chunkSize) {
-
         this.httpReaderPool = new HttpConnectionPool(credential, chunkSize);
         this.httpReaderPool.addObjects(connectionCount);
-        logger.info("this is total num in pool: " + connectionCount + " this is the size of poll: " + String.valueOf(this.httpReaderPool.getSize()));
     }
 }

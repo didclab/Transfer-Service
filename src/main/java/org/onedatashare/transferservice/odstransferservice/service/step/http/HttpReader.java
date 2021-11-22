@@ -1,5 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.http;
 
+import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.commons.pool2.ObjectPool;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
@@ -54,13 +55,11 @@ public class HttpReader<T> extends AbstractItemCountingItemStreamItemReader<Data
 
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) throws IOException, InterruptedException {
-        logger.info("Before step for : " + stepExecution.getStepName());
         JobParameters params = stepExecution.getJobExecution().getJobParameters();
         this.sBasePath = params.getString(SOURCE_BASE_PATH);
         this.filePartitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
-        this.fileName = stepExecution.getStepName();
+        this.fileName = fileInfo.getId();
         this.uri = sourceCred.getUri() + Paths.get(fileInfo.getPath()).toString();
-        logger.info("final uri = " + uri);
     }
 
     @Override
@@ -86,20 +85,14 @@ public class HttpReader<T> extends AbstractItemCountingItemStreamItemReader<Data
             HttpResponse<byte[]> fullResponse = this.client.send(fullRequest, HttpResponse.BodyHandlers.ofByteArray());
             bodyArray = fullResponse.body();
         }
-//        logger.info("headers: " + request.headers());
-//        logger.info("status code is: " + response.statusCode());
-//        logger.info("header is: " + response.headers());
-//        logger.info("body byte length: " + bodyArray.length);
-//        logger.info("file getStart: " + filePart.getStart());
-//        logger.info("file get Idx: " + Long.valueOf(filePart.getPartIdx()).intValue());
-//        logger.info("file name:" + this.fileName);
-        return ODSUtility.makeChunk(bodyArray.length, bodyArray, filePart.getStart(), Long.valueOf(filePart.getPartIdx()).intValue(), this.fileName);
+        DataChunk chunk = ODSUtility.makeChunk(bodyArray.length, bodyArray, filePart.getStart(), Long.valueOf(filePart.getPartIdx()).intValue(), this.fileName);
+        logger.info(chunk.toString());
+        return chunk;
     }
 
     @SneakyThrows
     @Override
     protected void doOpen() {
-        logger.info("current httpConnectionPoll size: " + this.httpConnectionPool.getSize());
         this.client = this.httpConnectionPool.borrowObject();
         String uri = Paths.get(fileInfo.getPath()).toString();
         uri = sourceCred.getUri() + uri;
@@ -121,6 +114,5 @@ public class HttpReader<T> extends AbstractItemCountingItemStreamItemReader<Data
     @Override
     public void setPool(ObjectPool connectionPool) {
         this.httpConnectionPool = (HttpConnectionPool) connectionPool;
-        logger.info("I am setting the poll");
     }
 }
