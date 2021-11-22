@@ -95,6 +95,7 @@ public class ConnectionBag {
     public void createFtpReaderPool(AccountEndpointCredential credential, int connectionCount, int chunkSize) {
         this.ftpReaderPool = new FtpConnectionPool(credential, chunkSize);
         try {
+            this.ftpReaderPool.setCompression(this.compression);
             this.ftpReaderPool.addObjects(connectionCount);
         } catch (Exception e) {
             e.printStackTrace();
@@ -104,6 +105,7 @@ public class ConnectionBag {
     public void createFtpWriterPool(AccountEndpointCredential credential, int connectionCount, int chunkSize) {
         this.ftpWriterPool = new FtpConnectionPool(credential, chunkSize);
         try {
+            this.ftpWriterPool.setCompression(this.compression);
             this.ftpWriterPool.addObjects(connectionCount);
         } catch (Exception e) {
             e.printStackTrace();
