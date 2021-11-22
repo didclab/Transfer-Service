@@ -61,7 +61,7 @@ public class ConnectionBag {
         if (request.getSource().getType().equals(EndpointType.http)) {
             readerMade = true;
             readerType = EndpointType.http;
-            this.createHttpReaderPoll(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount(), request.getChunkSize());
+            this.createHttpReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount(), request.getChunkSize());
         }
     }
 
@@ -118,7 +118,7 @@ public class ConnectionBag {
         this.sftpWriterPool.addObjects(connectionCount);
     }
 
-    public void createHttpReaderPoll(AccountEndpointCredential credential, int connectionCount, int chunkSize) {
+    public void createHttpReaderPool(AccountEndpointCredential credential, int connectionCount, int chunkSize) {
         this.httpReaderPool = new HttpConnectionPool(credential, chunkSize);
         this.httpReaderPool.addObjects(connectionCount);
     }
