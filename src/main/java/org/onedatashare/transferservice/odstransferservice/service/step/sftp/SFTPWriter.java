@@ -42,11 +42,14 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
     }
 
     @BeforeStep
-    public void beforeStep(StepExecution stepExecution) throws InterruptedException, JSchException {
+    public void beforeStep(StepExecution stepExecution) throws InterruptedException, JSchException, SftpException {
         this.dBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
         this.session = this.connectionPool.borrowObject();
         ChannelSftp channelSftp = (ChannelSftp) this.session.openChannel("sftp");
         channelSftp.connect();
+        if(this.dBasePath.isEmpty()){
+            this.dBasePath = channelSftp.pwd();
+        }
         SftpUtility.createRemoteFolder(channelSftp, this.dBasePath);
         channelSftp.disconnect();
     }
