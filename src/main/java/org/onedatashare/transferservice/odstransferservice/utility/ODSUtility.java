@@ -1,14 +1,21 @@
 package org.onedatashare.transferservice.odstransferservice.utility;
 
 import com.amazonaws.services.s3.model.UploadPartRequest;
+import com.dropbox.core.DbxRequestConfig;
 import edu.emory.mathcs.backport.java.util.Arrays;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.io.ByteArrayInputStream;
 import java.util.HashSet;
 
 public class ODSUtility {
+
+    @Value("${dropbox.identifier}")
+    private static String odsClientID = "OneDataShare-DIDCLab";
+
+    public static DbxRequestConfig dbxRequestConfig = DbxRequestConfig.newBuilder(odsClientID).build();
 
     public static DataChunk makeChunk(int size, byte[] data, int startPosition, int chunkIdx, String fileName) {
         DataChunk dataChunk = new DataChunk();

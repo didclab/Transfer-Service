@@ -40,7 +40,7 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
      */
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
-        filePartitioner.createParts(this.chunkSize, this.currentFile.getInfo().getName());
+        filePartitioner.createParts(this.chunkSize, this.fileInfo.getId());
     }
     /**
      * Read in those chunks

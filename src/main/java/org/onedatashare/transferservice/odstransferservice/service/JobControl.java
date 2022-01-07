@@ -13,6 +13,8 @@ import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3
 import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3Writer;
 import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxWriter;
+import org.onedatashare.transferservice.odstransferservice.service.step.dropbox.DropBoxReader;
+import org.onedatashare.transferservice.odstransferservice.service.step.dropbox.DropBoxWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.http.HttpReader;
@@ -161,6 +163,8 @@ public class JobControl extends DefaultBatchConfigurer {
                 return new AmazonS3Reader(request.getSource().getVfsSourceCredential(), request.getChunkSize(), fileInfo);
             case box:
                 return new BoxReader(request.getSource().getOauthSourceCredential(), request.getChunkSize(), fileInfo);
+            case dropbox:
+                return new DropBoxReader(request.getSource().getOauthSourceCredential(), fileInfo,request.getChunkSize());
         }
         return null;
     }
@@ -181,6 +185,8 @@ public class JobControl extends DefaultBatchConfigurer {
                 return new AmazonS3Writer(request.getDestination().getVfsDestCredential(), fileInfo);
             case box:
                 return new BoxWriter(request.getDestination().getOauthDestCredential(), fileInfo, request.getChunkSize());
+            case dropbox:
+                return new DropBoxWriter(request.getDestination().getOauthDestCredential());
         }
         return null;
     }

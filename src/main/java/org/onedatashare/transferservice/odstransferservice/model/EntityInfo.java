@@ -11,4 +11,5 @@ public class EntityInfo {
     private String id;
     private String path;
     private long size;
+    private int chunkSize;
 }
