@@ -39,6 +39,5 @@ public class AWSSinglePutRequestMetaData {
 
     public void clear(){
         this.dataChunkPriorityQueue.clear();
-        this.chunkList.clear();
     }
 }
