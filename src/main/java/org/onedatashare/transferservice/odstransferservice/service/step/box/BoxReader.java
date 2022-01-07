@@ -61,8 +61,8 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
      */
     @Override
     protected void doOpen() {
-        this.currentFile = new BoxFile(this.boxAPIConnection, this.fileInfo.getId());
         this.boxAPIConnection = new BoxAPIConnection(credential.getToken());
+        this.currentFile = new BoxFile(this.boxAPIConnection, this.fileInfo.getId());
     }
 
     /**
