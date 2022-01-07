@@ -16,7 +16,6 @@ import java.util.PriorityQueue;
 @Setter
 public class AWSSinglePutRequestMetaData {
     private PriorityQueue<DataChunk> dataChunkPriorityQueue;
-    private List<DataChunk> chunkList;
 
     public AWSSinglePutRequestMetaData(){
         this.dataChunkPriorityQueue = new PriorityQueue<DataChunk>(new DataChunkComparator());
