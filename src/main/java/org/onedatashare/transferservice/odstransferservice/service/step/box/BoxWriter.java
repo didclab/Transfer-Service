@@ -7,16 +7,16 @@ import com.box.sdk.BoxFolder;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3Reader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemWriter;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Base64;
+import java.util.*;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
 
@@ -31,6 +31,9 @@ public class BoxWriter implements ItemWriter<DataChunk> {
     private List<BoxFileUploadSessionPart> parts;
     String destinationBasePath;
     BoxFolder boxFolder;
+
+    Logger logger = LoggerFactory.getLogger(BoxWriter.class);
+
 
     public BoxWriter(OAuthEndpointCredential oauthDestCredential, EntityInfo fileInfo, int chunkSize) {
         this.credential = oauthDestCredential;
@@ -51,7 +54,9 @@ public class BoxWriter implements ItemWriter<DataChunk> {
     @AfterStep
     public void afterStep(){
         BoxFileUploadSession session = this.fileMap.get(this.fileInfo.getId());
+        logger.info(session.toString());
         MessageDigest messageDigest = this.digestMap.get(this.fileInfo.getId());
+        logger.info(Arrays.toString(messageDigest.digest()));
         session.commit(Base64.getEncoder().encodeToString(messageDigest.digest()), this.parts,new HashMap<>(), null, null);
     }
 
