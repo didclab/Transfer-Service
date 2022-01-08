@@ -52,7 +52,7 @@ public class BoxWriter implements ItemWriter<DataChunk> {
     public void afterStep(){
         BoxFileUploadSession session = this.fileMap.get(this.fileInfo.getId());
         MessageDigest messageDigest = this.digestMap.get(this.fileInfo.getId());
-        session.commit(Base64.getEncoder().encodeToString(messageDigest.digest()), this.parts,null, null, null);
+        session.commit(Base64.getEncoder().encodeToString(messageDigest.digest()), this.parts,new HashMap<>(), null, null);
     }
 
     @Override
