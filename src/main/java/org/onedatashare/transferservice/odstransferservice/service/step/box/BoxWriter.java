@@ -56,14 +56,20 @@ public class BoxWriter implements ItemWriter<DataChunk> {
     }
 
     @Override
-    public void write(List<? extends DataChunk> items) {
+    public void write(List<? extends DataChunk> items) throws NoSuchAlgorithmException {
         for(DataChunk dataChunk : items){
             String fileName = dataChunk.getFileName();
             if(!this.fileMap.containsKey(fileName)){
                 this.boxFolder.createUploadSession(fileName, this.fileInfo.getSize());
             }else{
                 BoxFileUploadSessionPart part = this.fileMap.get(fileName).uploadPart(dataChunk.getData(), dataChunk.getStartPosition(), Long.valueOf(dataChunk.getSize()).intValue(), this.fileInfo.getSize());
-                this.digestMap.get(fileName).update(dataChunk.getData());
+                if(this.digestMap.containsKey(fileName)){
+                    this.digestMap.get(fileName).update(dataChunk.getData());
+                }else{
+                    MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
+                    this.digestMap.put(fileName, messageDigest);
+                    this.digestMap.get(fileName).update(dataChunk.getData());
+                }
                 this.parts.add(part);
             }
         }
