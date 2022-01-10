@@ -36,7 +36,6 @@ public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChun
     String sBasePath;
     String fName;
     AccountEndpointCredential sourceCred;
-    FileObject foSrc;
     int chunksCreated;
     long fileIdx;
     FilePartitioner partitioner;
@@ -79,6 +78,7 @@ public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChun
     protected DataChunk doRead() {
         FilePart filePart = this.partitioner.nextPart();
         if(filePart == null) return null;
+        logger.info("Currently reading part: {}",filePart.toString());
         byte[] data = new byte[filePart.getSize()];
         int totalBytes = 0;
         while(totalBytes < filePart.getSize()){
@@ -86,7 +86,7 @@ public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChun
             if (byteRead == -1) return null;
             totalBytes += byteRead;
         }
-        DataChunk chunk = ODSUtility.makeChunk(totalBytes, data, this.fileIdx, this.chunksCreated, this.fName);
+        DataChunk chunk = ODSUtility.makeChunk(totalBytes, data, filePart.getStart(), (int) filePart.getPartIdx(), filePart.getFileName());
         this.client.setRestartOffset(filePart.getStart());
         this.fileIdx += totalBytes;
         this.chunksCreated++;
@@ -99,13 +99,6 @@ public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChun
     protected void doOpen() throws InterruptedException, IOException {
         logger.info("Insided doOpen");
         this.client = this.connectionPool.borrowObject();
-        boolean answer = this.client.sendNoOp();
-        if(answer){
-            logger.info("The client is connected properly");
-        }else{
-            logger.info("CLIENT NOT CONNECTED");
-        }
-
         this.inputStream = this.client.retrieveFileStream(this.fileInfo.getPath());
     }
 
