@@ -50,7 +50,6 @@ public class FtpConnectionPool implements ObjectPool<FTPClient> {
         client.setFileType(FTPClient.BINARY_FILE_TYPE);
         client.setAutodetectUTF8(true);
         client.setControlKeepAliveTimeout(300);
-        client.completePendingCommand();
         this.connectionPool.add(client);
     }
 
