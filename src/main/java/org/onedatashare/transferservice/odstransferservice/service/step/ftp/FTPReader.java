@@ -91,7 +91,7 @@ public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChun
     @Override
     protected void doOpen() throws InterruptedException, IOException {
         this.client = this.connectionPool.borrowObject();
-        this.inputStream = this.client.retrieveFileStream(this.fileInfo.getPath());
+        this.inputStream = this.client.retrieveFileStream(this.fileInfo.getId());
         if(this.inputStream == null){
             logger.info("We have NULL inputstream why??");
         }
