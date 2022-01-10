@@ -46,8 +46,8 @@ public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChun
 
     public FTPReader(AccountEndpointCredential credential, EntityInfo file) {
         this.sourceCred = credential;
-        this.partitioner = new FilePartitioner(fileInfo.getChunkSize());
         fileInfo = file;
+        this.partitioner = new FilePartitioner(file.getChunkSize());
         this.setName(ClassUtils.getShortName(FTPReader.class));
     }
 
