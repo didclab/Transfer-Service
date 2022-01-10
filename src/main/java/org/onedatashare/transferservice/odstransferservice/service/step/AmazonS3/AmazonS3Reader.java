@@ -64,7 +64,7 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
     @Override
     protected DataChunk doRead() throws Exception {
         FilePart part = partitioner.nextPart();
-        if (part == null) return null;
+        if (part == null || part.getStart() == part.getEnd()) return null;
         logger.info("Current Part:-"+part.toString());
         S3Object partOfFile = this.s3Client.getObject(this.getSkeleton.withRange(part.getStart(), part.getEnd()));//this is inclusive or on both start and end so take one off so there is no colision
         byte[] dataSet = new byte[part.getSize()];
