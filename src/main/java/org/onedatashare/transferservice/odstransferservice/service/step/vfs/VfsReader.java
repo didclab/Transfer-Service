@@ -31,7 +31,6 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
     FileChannel sink;
     Logger logger = LoggerFactory.getLogger(VfsReader.class);
     long fsize;
-    int chunkSize;
     FileInputStream inputStream;
     String sBasePath;
     String fileName;
@@ -41,13 +40,12 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
     ByteBuffer buffer;
 
 
-    public VfsReader(AccountEndpointCredential credential, EntityInfo fInfo, int chunkSize) {
+    public VfsReader(AccountEndpointCredential credential, EntityInfo fInfo) {
         this.setExecutionContextName(ClassUtils.getShortName(VfsReader.class));
         this.credential = credential;
-        this.filePartitioner = new FilePartitioner(chunkSize);
+        this.filePartitioner = new FilePartitioner(fInfo.getChunkSize());
         this.fileInfo = fInfo;
-        this.chunkSize = chunkSize;
-        buffer = ByteBuffer.allocate(this.chunkSize);
+        buffer = ByteBuffer.allocate(fInfo.getChunkSize());
     }
 
     @BeforeStep

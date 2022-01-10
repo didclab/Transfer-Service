@@ -29,7 +29,7 @@ import java.io.InputStream;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
-public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataChunk> implements SetPool {
+public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChunk> implements SetPool {
 
     Logger logger = LoggerFactory.getLogger(FTPReader.class);
     InputStream inputStream;
@@ -37,7 +37,6 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
     String fName;
     AccountEndpointCredential sourceCred;
     FileObject foSrc;
-    int chunckSize;
     int chunksCreated;
     long fileIdx;
     FilePartitioner partitioner;
@@ -45,10 +44,9 @@ public class FTPReader<T> extends AbstractItemCountingItemStreamItemReader<DataC
     private FtpConnectionPool connectionPool;
     private FTPClient client;
 
-    public FTPReader(AccountEndpointCredential credential, EntityInfo file ,int chunckSize) {
-        this.chunckSize = chunckSize;
+    public FTPReader(AccountEndpointCredential credential, EntityInfo file) {
         this.sourceCred = credential;
-        this.partitioner = new FilePartitioner(this.chunckSize);
+        this.partitioner = new FilePartitioner(fileInfo.getChunkSize());
         fileInfo = file;
         this.setName(ClassUtils.getShortName(FTPReader.class));
     }

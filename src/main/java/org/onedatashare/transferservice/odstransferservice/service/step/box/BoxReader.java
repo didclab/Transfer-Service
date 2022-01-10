@@ -20,17 +20,15 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
 public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChunk> {
 
     private OAuthEndpointCredential credential;
-    int chunkSize;
     FilePartitioner filePartitioner;
     private BoxAPIConnection boxAPIConnection;
     private BoxFile currentFile;
     EntityInfo fileInfo;
 
-    public BoxReader(OAuthEndpointCredential credential, int chunkSize, EntityInfo fileInfo){
+    public BoxReader(OAuthEndpointCredential credential, EntityInfo fileInfo){
         this.credential = credential;
         this.setName(ClassUtils.getShortName(BoxReader.class));
-        this.chunkSize = Math.max(SIXTYFOUR_KB, chunkSize);
-        filePartitioner = new FilePartitioner(this.chunkSize);
+        filePartitioner = new FilePartitioner(fileInfo.getChunkSize());
         this.fileInfo = fileInfo;
     }
 
@@ -42,6 +40,7 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
     public void beforeStep(StepExecution stepExecution) {
         filePartitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
     }
+
     /**
      * Read in those chunks
      * @return

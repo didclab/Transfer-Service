@@ -30,10 +30,9 @@ import java.nio.file.Paths;
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SOURCE_BASE_PATH;
 import org.onedatashare.transferservice.odstransferservice.pools.HttpConnectionPool;
 
-public class HttpReader<T> extends AbstractItemCountingItemStreamItemReader<DataChunk> implements SetPool {
+public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChunk> implements SetPool {
 
     Logger logger = LoggerFactory.getLogger(HttpReader.class);
-    int chunkSize;
     String sBasePath;
     String fileName;
     FilePartitioner filePartitioner;
@@ -45,11 +44,10 @@ public class HttpReader<T> extends AbstractItemCountingItemStreamItemReader<Data
     private String uri;
 
 
-    public HttpReader(EntityInfo fileInfo, int chunkSize, AccountEndpointCredential credential) {
+    public HttpReader(EntityInfo fileInfo, AccountEndpointCredential credential) {
         this.setExecutionContextName(ClassUtils.getShortName(HttpReader.class));
         this.fileInfo = fileInfo;
-        this.filePartitioner = new FilePartitioner(chunkSize);
-        this.chunkSize = chunkSize;
+        this.filePartitioner = new FilePartitioner(fileInfo.getChunkSize());
         this.sourceCred = credential;
     }
 

@@ -37,10 +37,10 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
     ObjectMetadata currentFileMetaData;
     GetObjectRequest getSkeleton;
 
-    public AmazonS3Reader(AccountEndpointCredential sourceCredential, int chunkSize, EntityInfo fileInfo) {
+    public AmazonS3Reader(AccountEndpointCredential sourceCredential, EntityInfo fileInfo) {
         this.sourceCredential = sourceCredential;
         this.regionAndBucket = this.sourceCredential.getUri().split(":::");
-        this.chunkSize = Math.max(SIXTYFOUR_KB, chunkSize);
+        this.chunkSize = fileInfo.getChunkSize();
         this.partitioner = new FilePartitioner(this.chunkSize);
         this.s3Client = S3Utility.constructClient(this.sourceCredential, regionAndBucket[0]);
         this.fileInfo = fileInfo;

@@ -1,6 +1,5 @@
 package org.onedatashare.transferservice.odstransferservice.service;
 
-import com.netflix.discovery.converters.Auto;
 import lombok.*;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.config.ApplicationThreadPoolConfig;
@@ -12,7 +11,8 @@ import org.onedatashare.transferservice.odstransferservice.service.listner.JobCo
 import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3Reader;
 import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3Writer;
 import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxReader;
-import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxWriter;
+import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxWriterLargeFile;
+import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxWriterSmallFile;
 import org.onedatashare.transferservice.odstransferservice.service.step.dropbox.DropBoxReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.dropbox.DropBoxWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPReader;
@@ -53,6 +53,8 @@ import javax.sql.DataSource;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.TWENTY_MB;
 
 @Service
 @NoArgsConstructor
@@ -146,25 +148,25 @@ public class JobControl extends DefaultBatchConfigurer {
     protected AbstractItemCountingItemStreamItemReader<DataChunk> getRightReader(EndpointType type, EntityInfo fileInfo) {
         switch (type) {
             case http:
-                HttpReader hr = new HttpReader(fileInfo, request.getChunkSize(), request.getSource().getVfsSourceCredential());
+                HttpReader hr = new HttpReader(fileInfo, request.getSource().getVfsSourceCredential());
                 hr.setPool(connectionBag.getHttpReaderPool());
                 return hr;
             case vfs:
-                return new VfsReader(request.getSource().getVfsSourceCredential(), fileInfo, request.getChunkSize());
+                return new VfsReader(request.getSource().getVfsSourceCredential(), fileInfo);
             case sftp:
-                SFTPReader sftpReader =new SFTPReader(request.getSource().getVfsSourceCredential(), request.getChunkSize(), fileInfo, request.getOptions().getPipeSize());
+                SFTPReader sftpReader =new SFTPReader(request.getSource().getVfsSourceCredential(), fileInfo, request.getOptions().getPipeSize());
                 sftpReader.setPool(connectionBag.getSftpReaderPool());
                 return sftpReader;
             case ftp:
-                FTPReader ftpReader = new FTPReader(request.getSource().getVfsSourceCredential(), fileInfo, request.getChunkSize());
+                FTPReader ftpReader = new FTPReader(request.getSource().getVfsSourceCredential(), fileInfo);
                 ftpReader.setPool(connectionBag.getFtpReaderPool());
                 return ftpReader;
             case s3:
-                return new AmazonS3Reader(request.getSource().getVfsSourceCredential(), request.getChunkSize(), fileInfo);
+                return new AmazonS3Reader(request.getSource().getVfsSourceCredential(), fileInfo);
             case box:
-                return new BoxReader(request.getSource().getOauthSourceCredential(), request.getChunkSize(), fileInfo);
+                return new BoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
             case dropbox:
-                return new DropBoxReader(request.getSource().getOauthSourceCredential(), fileInfo,request.getChunkSize());
+                return new DropBoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
         }
         return null;
     }
@@ -184,7 +186,11 @@ public class JobControl extends DefaultBatchConfigurer {
             case s3:
                 return new AmazonS3Writer(request.getDestination().getVfsDestCredential(), fileInfo);
             case box:
-                return new BoxWriter(request.getDestination().getOauthDestCredential(), fileInfo, request.getChunkSize());
+                if(fileInfo.getSize() < TWENTY_MB){
+                    return new BoxWriterSmallFile(request.getDestination().getOauthDestCredential(), fileInfo);
+                }else{
+                    return new BoxWriterLargeFile(request.getDestination().getOauthDestCredential(), fileInfo);
+                }
             case dropbox:
                 return new DropBoxWriter(request.getDestination().getOauthDestCredential());
         }

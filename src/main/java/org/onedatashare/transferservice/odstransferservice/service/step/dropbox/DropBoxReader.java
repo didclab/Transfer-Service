@@ -35,10 +35,10 @@ public class DropBoxReader extends AbstractItemCountingItemStreamItemReader<Data
     private DbxDownloader<FileMetadata> downloader;
 
 
-    public DropBoxReader(OAuthEndpointCredential credential, EntityInfo fileInfo, int chunkSize){
+    public DropBoxReader(OAuthEndpointCredential credential, EntityInfo fileInfo){
         this.credential = credential;
         this.fileInfo = fileInfo;
-        this.partitioner = new FilePartitioner(chunkSize);
+        this.partitioner = new FilePartitioner(fileInfo.getChunkSize());
         this.setName(ClassUtils.getShortName(DropBoxReader.class));
     }
 

@@ -41,11 +41,10 @@ public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChu
     private Session session;
     private ChannelSftp channelSftp;
 
-    public SFTPReader(AccountEndpointCredential credential, int chunkSize, EntityInfo file, int pipeSize) {
+    public SFTPReader(AccountEndpointCredential credential, EntityInfo file, int pipeSize) {
         this.fileInfo = file;
-        this.filePartitioner = new FilePartitioner(chunkSize);
+        this.filePartitioner = new FilePartitioner(file.getChunkSize());
         this.setExecutionContextName(ClassUtils.getShortName(SFTPReader.class));
-        this.chunckSize = chunkSize;
         this.sourceCred = credential;
         this.setName(ClassUtils.getShortName(FTPReader.class));
         this.pipeSize = pipeSize;
