@@ -34,9 +34,7 @@ public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChun
     Logger logger = LoggerFactory.getLogger(FTPReader.class);
     InputStream inputStream;
     String sBasePath;
-    String fName;
     AccountEndpointCredential sourceCred;
-    int chunksCreated;
     long fileIdx;
     FilePartitioner partitioner;
     EntityInfo fileInfo;
@@ -56,16 +54,13 @@ public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChun
         logger.info("Before step for : " + stepExecution.getStepName());
         sBasePath = stepExecution.getJobParameters().getString(SOURCE_BASE_PATH);
         sBasePath += fileInfo.getPath();
-        fName = fileInfo.getId();
-        chunksCreated = 0;
         fileIdx = 0L;
-        this.partitioner.createParts(this.fileInfo.getSize(), this.fName);
+        this.partitioner.createParts(this.fileInfo.getSize(), fileInfo.getId());
     }
 
     @AfterStep
     public void afterStep(){
         this.fileIdx = 0;
-        this.chunksCreated = 0;
     }
 
     public void setName(String name) {
@@ -78,7 +73,6 @@ public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChun
     protected DataChunk doRead() {
         FilePart filePart = this.partitioner.nextPart();
         if(filePart == null) return null;
-        logger.info("Currently reading part: {}",filePart.toString());
         byte[] data = new byte[filePart.getSize()];
         int totalBytes = 0;
         while(totalBytes < filePart.getSize()){
@@ -89,7 +83,6 @@ public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChun
         DataChunk chunk = ODSUtility.makeChunk(totalBytes, data, filePart.getStart(), (int) filePart.getPartIdx(), filePart.getFileName());
         this.client.setRestartOffset(filePart.getStart());
         this.fileIdx += totalBytes;
-        this.chunksCreated++;
         logger.info(chunk.toString());
         return chunk;
     }
@@ -97,14 +90,16 @@ public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChun
 
     @Override
     protected void doOpen() throws InterruptedException, IOException {
-        logger.info("Insided doOpen");
         this.client = this.connectionPool.borrowObject();
         this.inputStream = this.client.retrieveFileStream(this.fileInfo.getPath());
+        if(this.inputStream == null){
+            logger.info("We have NULL inputstream why??");
+        }
+        logger.info("Finished opening FTPReader");
     }
 
     @Override
     protected void doClose() {
-        logger.info("Inside doClose");
         try {
             if (inputStream != null) inputStream.close();
         } catch (Exception ex) {
@@ -112,6 +107,7 @@ public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChun
             ex.printStackTrace();
         }
         this.connectionPool.returnObject(this.client);
+        logger.info("Finished closing FTPReader");
     }
 
     @Override
