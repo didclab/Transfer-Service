@@ -99,6 +99,13 @@ public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChun
     protected void doOpen() throws InterruptedException, IOException {
         logger.info("Insided doOpen");
         this.client = this.connectionPool.borrowObject();
+        boolean answer = this.client.sendNoOp();
+        if(answer){
+            logger.info("The client is connected properly");
+        }else{
+            logger.info("CLIENT NOT CONNECTED");
+        }
+
         this.inputStream = this.client.retrieveFileStream(this.fileInfo.getPath());
     }
 
