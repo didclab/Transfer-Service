@@ -1,6 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.dropbox;
 
-import com.dropbox.core.DbxDownloader;
+import com.dropbox.core.DbxException;
 import com.dropbox.core.v2.DbxClientV2;
 
 import com.dropbox.core.v2.files.*;
@@ -19,6 +19,7 @@ import org.springframework.util.ClassUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Paths;
+import java.util.List;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SOURCE_BASE_PATH;
 
@@ -32,7 +33,7 @@ public class DropBoxReader extends AbstractItemCountingItemStreamItemReader<Data
 
     private DbxClientV2 client;
     private DownloadBuilder requestSkeleton;
-    private DbxDownloader<FileMetadata> downloader;
+    private Metadata fileMetaData;
 
 
     public DropBoxReader(OAuthEndpointCredential credential, EntityInfo fileInfo){
@@ -43,11 +44,13 @@ public class DropBoxReader extends AbstractItemCountingItemStreamItemReader<Data
     }
 
     @BeforeStep
-    public void beforeStep(StepExecution stepExecution) {
+    public void beforeStep(StepExecution stepExecution) throws DbxException {
         logger.info("Before step for : " + stepExecution.getStepName());
         sBasePath = stepExecution.getJobParameters().getString(SOURCE_BASE_PATH);
         this.sBasePath = Paths.get(sBasePath, fileInfo.getPath()).toString();
         this.partitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
+        List<Metadata> listMetaDataTemp = this.client.files().listFolderBuilder(this.fileInfo.getId()).start().getEntries();
+        this.fileMetaData = listMetaDataTemp.get(0);
     }
 
     public void setName(String name) {
@@ -60,7 +63,7 @@ public class DropBoxReader extends AbstractItemCountingItemStreamItemReader<Data
         if(currentPart == null || currentPart.getStart() == currentPart.getEnd()) return null;
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(currentPart.getSize());
         this.requestSkeleton.range(currentPart.getStart(), currentPart.getSize()).download(byteArrayOutputStream);
-        DataChunk chunk = ODSUtility.makeChunk(currentPart.getSize(), byteArrayOutputStream.toByteArray(), currentPart.getStart(), Long.valueOf(currentPart.getPartIdx()).intValue(), this.fileInfo.getId());
+        DataChunk chunk = ODSUtility.makeChunk(currentPart.getSize(), byteArrayOutputStream.toByteArray(), currentPart.getStart(), Long.valueOf(currentPart.getPartIdx()).intValue(),this.fileMetaData.getName());
         byteArrayOutputStream.close();
         return chunk;
     }
