@@ -93,7 +93,8 @@ public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChun
         this.client = this.connectionPool.borrowObject();
         this.inputStream = this.client.retrieveFileStream(this.fileInfo.getPath());
         if(this.inputStream == null){
-            logger.info("We have NULL inputstream why??");
+            String status = this.client.getStatus();
+            logger.info("We have NULL inputstream why??, {}", status);
         }
         logger.info("Finished opening FTPReader");
     }
