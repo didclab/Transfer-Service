@@ -43,7 +43,7 @@ public class FtpConnectionPool implements ObjectPool<FTPClient> {
         }
         client.setBufferSize(this.bufferSize);
         if(!this.compression){
-            client.setFileTransferMode(FTPClient.BLOCK_TRANSFER_MODE);
+            client.setFileTransferMode(FTPClient.STREAM_TRANSFER_MODE);
         }else{
             client.setFileTransferMode(FTPClient.COMPRESSED_TRANSFER_MODE);
         }
