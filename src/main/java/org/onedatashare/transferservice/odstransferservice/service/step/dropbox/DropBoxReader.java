@@ -70,8 +70,7 @@ public class DropBoxReader extends AbstractItemCountingItemStreamItemReader<Data
     protected void doOpen() throws DbxException {
         this.client = new DbxClientV2(ODSUtility.dbxRequestConfig, credential.getToken());
         this.requestSkeleton = this.client.files().downloadBuilder(this.sBasePath);
-        List<Metadata> listMetaDataTemp = this.client.files().listFolderBuilder(this.fileInfo.getId()).start().getEntries();
-        this.fileMetaData = listMetaDataTemp.get(0);
+        this.fileMetaData = this.client.files().getMetadata(this.fileInfo.getId());
     }
 
     @Override
