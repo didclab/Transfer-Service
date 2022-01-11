@@ -49,8 +49,6 @@ public class DropBoxReader extends AbstractItemCountingItemStreamItemReader<Data
         sBasePath = stepExecution.getJobParameters().getString(SOURCE_BASE_PATH);
         this.sBasePath = Paths.get(sBasePath, fileInfo.getPath()).toString();
         this.partitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
-        List<Metadata> listMetaDataTemp = this.client.files().listFolderBuilder(this.fileInfo.getId()).start().getEntries();
-        this.fileMetaData = listMetaDataTemp.get(0);
     }
 
     public void setName(String name) {
@@ -72,6 +70,8 @@ public class DropBoxReader extends AbstractItemCountingItemStreamItemReader<Data
     protected void doOpen() {
         this.client = new DbxClientV2(ODSUtility.dbxRequestConfig, credential.getToken());
         this.requestSkeleton = this.client.files().downloadBuilder(this.sBasePath);
+        List<Metadata> listMetaDataTemp = this.client.files().listFolderBuilder(this.fileInfo.getId()).start().getEntries();
+        this.fileMetaData = listMetaDataTemp.get(0);
     }
 
     @Override
