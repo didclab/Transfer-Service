@@ -5,6 +5,8 @@ import org.onedatashare.transferservice.odstransferservice.model.BoxSmallFileUpl
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
@@ -24,7 +26,7 @@ public class BoxWriterSmallFile implements ItemWriter<DataChunk> {
     BoxFolder boxFolder;
     BoxSmallFileUpload smallFileUpload;
     private String fileName;
-
+    Logger logger = LoggerFactory.getLogger(BoxWriterSmallFile.class);
 
     public BoxWriterSmallFile(OAuthEndpointCredential credential, EntityInfo fileInfo){
         this.boxAPIConnection = new BoxAPIConnection(credential.getToken());
@@ -54,5 +56,6 @@ public class BoxWriterSmallFile implements ItemWriter<DataChunk> {
     public void write(List<? extends DataChunk> items) throws Exception {
         this.fileName = items.get(0).getFileName();
         this.smallFileUpload.addAllChunks(items);
+        logger.info("Small file box writer wrote {} DataChunks", items.size());
     }
 }

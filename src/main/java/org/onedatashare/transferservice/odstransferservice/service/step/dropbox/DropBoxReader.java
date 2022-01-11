@@ -19,7 +19,6 @@ import org.springframework.util.ClassUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Paths;
-import java.util.List;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SOURCE_BASE_PATH;
 
@@ -63,6 +62,7 @@ public class DropBoxReader extends AbstractItemCountingItemStreamItemReader<Data
         this.requestSkeleton.range(currentPart.getStart(), currentPart.getSize()).download(byteArrayOutputStream);
         DataChunk chunk = ODSUtility.makeChunk(currentPart.getSize(), byteArrayOutputStream.toByteArray(), currentPart.getStart(), Long.valueOf(currentPart.getPartIdx()).intValue(),this.fileMetaData.getName());
         byteArrayOutputStream.close();
+        logger.info(chunk.toString());
         return chunk;
     }
 

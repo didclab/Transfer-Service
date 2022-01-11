@@ -7,6 +7,8 @@ import com.dropbox.core.v2.files.UploadSessionCursor;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
@@ -24,6 +26,7 @@ public class DropBoxWriter implements ItemWriter<DataChunk> {
     private DbxClientV2 client;
     String sessionId;
     private UploadSessionCursor cursor;
+    Logger logger = LoggerFactory.getLogger(DropBoxWriter.class);
 
     public DropBoxWriter(OAuthEndpointCredential credential){
         this.credential = credential;
@@ -48,6 +51,7 @@ public class DropBoxWriter implements ItemWriter<DataChunk> {
         this.cursor = new UploadSessionCursor(sessionId, items.get(0).getSize());
         for(DataChunk chunk : items){
             this.client.files().uploadSessionAppendV2(cursor).uploadAndFinish(new ByteArrayInputStream(chunk.getData()));
+            logger.info("Current chunk in DropBox Writer " + chunk.toString());
         }
     }
 }

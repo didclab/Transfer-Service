@@ -8,6 +8,8 @@ import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
@@ -24,6 +26,7 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
     private BoxAPIConnection boxAPIConnection;
     private BoxFile currentFile;
     EntityInfo fileInfo;
+    Logger logger = LoggerFactory.getLogger(BoxReader.class);
 
     public BoxReader(OAuthEndpointCredential credential, EntityInfo fileInfo){
         this.credential = credential;
@@ -51,7 +54,9 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
         if (filePart == null) return null;
         ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
         this.currentFile.downloadRange(byteArray, filePart.getStart(), filePart.getEnd());
-        return ODSUtility.makeChunk(filePart.getSize(), byteArray.toByteArray(), filePart.getStart(), Math.toIntExact(filePart.getPartIdx()), currentFile.getInfo().getName());
+        DataChunk chunk = ODSUtility.makeChunk(filePart.getSize(), byteArray.toByteArray(), filePart.getStart(), Math.toIntExact(filePart.getPartIdx()), currentFile.getInfo().getName());
+        logger.info(chunk.toString());
+        return chunk;
     }
 
     /**

@@ -7,6 +7,8 @@ import com.box.sdk.BoxFolder;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
@@ -34,7 +36,7 @@ public class BoxWriterLargeFile implements ItemWriter<DataChunk> {
     private List<BoxFileUploadSessionPart> parts;
     String destinationBasePath;
     BoxFolder boxFolder;
-
+    Logger logger = LoggerFactory.getLogger(BoxWriterLargeFile.class);
 
     public BoxWriterLargeFile(OAuthEndpointCredential oAuthDestCredential, EntityInfo fileInfo) {
         this.boxAPIConnection = new BoxAPIConnection(oAuthDestCredential.getToken());
@@ -108,6 +110,7 @@ public class BoxWriterLargeFile implements ItemWriter<DataChunk> {
             BoxFileUploadSessionPart part = session.uploadPart(dataChunk.getData(), dataChunk.getStartPosition(), Long.valueOf(dataChunk.getSize()).intValue(), this.fileInfo.getSize());
             this.parts.add(part);
             digest.update(dataChunk.getData());
+            logger.info("Current chunk in BoxLargeFile Writer " + dataChunk.toString());
         }
         this.digestMap.put(fileName, digest);
     }
