@@ -57,6 +57,7 @@ public class DropBoxReader extends AbstractItemCountingItemStreamItemReader<Data
     @Override
     protected DataChunk doRead() throws Exception {
         FilePart currentPart = partitioner.nextPart();
+        if(currentPart == null || currentPart.getStart() == currentPart.getEnd()) return null;
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(currentPart.getSize());
         this.requestSkeleton.range(currentPart.getStart(), currentPart.getSize()).download(byteArrayOutputStream);
         DataChunk chunk = ODSUtility.makeChunk(currentPart.getSize(), byteArrayOutputStream.toByteArray(), currentPart.getStart(), Long.valueOf(currentPart.getPartIdx()).intValue(), this.fileInfo.getId());
