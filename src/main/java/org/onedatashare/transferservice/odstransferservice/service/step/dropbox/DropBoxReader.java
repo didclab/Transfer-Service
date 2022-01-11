@@ -44,7 +44,7 @@ public class DropBoxReader extends AbstractItemCountingItemStreamItemReader<Data
     }
 
     @BeforeStep
-    public void beforeStep(StepExecution stepExecution) throws DbxException {
+    public void beforeStep(StepExecution stepExecution) {
         logger.info("Before step for : " + stepExecution.getStepName());
         sBasePath = stepExecution.getJobParameters().getString(SOURCE_BASE_PATH);
         this.sBasePath = Paths.get(sBasePath, fileInfo.getPath()).toString();
@@ -67,7 +67,7 @@ public class DropBoxReader extends AbstractItemCountingItemStreamItemReader<Data
     }
 
     @Override
-    protected void doOpen() {
+    protected void doOpen() throws DbxException {
         this.client = new DbxClientV2(ODSUtility.dbxRequestConfig, credential.getToken());
         this.requestSkeleton = this.client.files().downloadBuilder(this.sBasePath);
         List<Metadata> listMetaDataTemp = this.client.files().listFolderBuilder(this.fileInfo.getId()).start().getEntries();
