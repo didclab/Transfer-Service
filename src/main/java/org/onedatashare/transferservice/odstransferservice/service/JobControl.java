@@ -200,7 +200,7 @@ public class JobControl extends DefaultBatchConfigurer {
             case dropbox:
                 return new DropBoxWriter(request.getDestination().getOauthDestCredential());
             case scp:
-                SCPWriter scpWriter = new SCPWriter();
+                SCPWriter scpWriter = new SCPWriter(fileInfo);
                 scpWriter.setPool(connectionBag.getSftpWriterPool());
                 return scpWriter;
         }

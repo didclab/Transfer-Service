@@ -209,4 +209,10 @@ public class SftpUtility {
         logger.info("The file size SCP gave us is: {}", filesize);
         return filesize;
     }
+
+    public static void sendFileSize(OutputStream outputStream, String fileName, long fileSize) throws IOException {
+        String command = "C0644 " + fileSize + " " + fileName + "\n";
+        outputStream.write(command.getBytes());
+        outputStream.flush();
+    }
 }
