@@ -18,6 +18,8 @@ import org.onedatashare.transferservice.odstransferservice.service.step.dropbox.
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.http.HttpReader;
+import org.onedatashare.transferservice.odstransferservice.service.step.scp.SCPReader;
+import org.onedatashare.transferservice.odstransferservice.service.step.scp.SCPWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsReader;
@@ -167,6 +169,10 @@ public class JobControl extends DefaultBatchConfigurer {
                 return new BoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
             case dropbox:
                 return new DropBoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
+            case scp:
+                SCPReader reader = new SCPReader(fileInfo);
+                reader.setPool(connectionBag.getSftpReaderPool());
+                return reader;
         }
         return null;
     }
@@ -193,6 +199,10 @@ public class JobControl extends DefaultBatchConfigurer {
                 }
             case dropbox:
                 return new DropBoxWriter(request.getDestination().getOauthDestCredential());
+            case scp:
+                SCPWriter scpWriter = new SCPWriter();
+                scpWriter.setPool(connectionBag.getSftpWriterPool());
+                return scpWriter;
         }
         return null;
     }

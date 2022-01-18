@@ -38,6 +38,8 @@ public class ODSConstants {
     public static final String byteRange = "bytes=%s-%s";
     public static final String AccessControlExposeHeaders = "Access-Control-Expose-Headers";
     public static final String ContentRange = "Content-Range";
-
-
+    public static final String SCP_COMMAND_REMOTE_TO_LOCAL = "scp -f ";
+    public static final String SCP_COMMAND_LOCAL_TO_REMOTE = "scp -t ";
+    public static final String SCP_MKDIR_CMD = "mkdir -p ";
+    public static final String EXEC = "exec";
 }

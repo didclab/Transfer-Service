@@ -33,7 +33,6 @@ public class VfsWriter implements ItemWriter<DataChunk> {
 
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
-//        this.fileName = stepExecution.getStepName();
         this.destinationPath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
         assert this.destinationPath != null;
         this.filePath = Paths.get(this.destinationPath);
@@ -71,7 +70,6 @@ public class VfsWriter implements ItemWriter<DataChunk> {
     public void prepareFile() {
         try {
             Files.createDirectories(this.filePath);
-//            Files.createFile(this.filePath);
         }catch (FileAlreadyExistsException fileAlreadyExistsException){
             logger.warn("Already have the file with this path \t" + this.filePath.toString());
         } catch (IOException e) {

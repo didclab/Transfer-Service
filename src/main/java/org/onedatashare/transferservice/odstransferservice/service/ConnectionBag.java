@@ -49,7 +49,16 @@ public class ConnectionBag {
             writerType = EndpointType.sftp;
             this.createSftpWriterPool(request.getDestination().getVfsDestCredential(), request.getOptions().getConcurrencyThreadCount(), request.getChunkSize());
         }
-
+        if(request.getSource().getType().equals(EndpointType.scp)){
+            readerMade = true;
+            readerType = EndpointType.scp;
+            this.createSftpReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount(), request.getChunkSize());
+        }
+        if(request.getDestination().getType().equals(EndpointType.scp)){
+            writerMade = true;
+            writerType = EndpointType.scp;
+            this.createSftpWriterPool(request.getDestination().getVfsDestCredential(), request.getOptions().getConcurrencyThreadCount(), request.getChunkSize());
+        }
         if (request.getSource().getType().equals(EndpointType.ftp)) {
             readerType = EndpointType.ftp;
             readerMade = true;
