@@ -22,6 +22,7 @@ import org.springframework.batch.item.ItemWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Paths;
 import java.util.List;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
@@ -70,9 +71,10 @@ public class SCPWriter implements ItemWriter<DataChunk>, SetPool {
         this.connectionPool.returnObject(this.session);
         logger.info("Shut Down SCPWriter ");
     }
-    
+
     @Override
     public void write(List<? extends DataChunk> items) throws IOException, JSchException {
+        logger.info("Inside write SCPWriter");
         for (DataChunk b : items) {
             outputStream.write(b.getData());
             logger.info("Wrote {}", b);
@@ -88,12 +90,15 @@ public class SCPWriter implements ItemWriter<DataChunk>, SetPool {
 
     @SneakyThrows
     public void open(String fileName, long fileSize) {
+        String fullPath = Paths.get(this.dBasePath,fileName).toString();
         this.session = this.connectionPool.borrowObject();
+        mkdirSCP(session, this.dBasePath, logger);
         this.scpChannel = (ChannelExec) this.session.openChannel("exec");
-        scpChannel.setCommand(SCP_COMMAND_LOCAL_TO_REMOTE + fileName);
+        scpChannel.setCommand(SCP_COMMAND_LOCAL_TO_REMOTE + fullPath);
         this.outputStream = scpChannel.getOutputStream();
         this.inputStream = scpChannel.getInputStream();
         this.scpChannel.connect();
+        if(checkAck(this.inputStream,logger) != 0) throw new IOException("ACK for SCPReader failed file: " + fileName);
         sendFileSize(this.outputStream, fileName, fileSize);
         if(checkAck(inputStream, logger) != 0) throw new IOException("ACK for SCPReader failed file: " + fileName);
     }

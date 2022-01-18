@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SCP_MKDIR_CMD;
+
 
 public class SftpUtility {
 
@@ -214,5 +216,20 @@ public class SftpUtility {
         String command = "C0644 " + fileSize + " " + fileName + "\n";
         outputStream.write(command.getBytes());
         outputStream.flush();
+    }
+
+    public static void mkdirSCP(Session session, String directoryPath, Logger logger) throws IOException, JSchException {
+        String command = SCP_MKDIR_CMD + directoryPath;
+        ChannelExec mkdirChannel = (ChannelExec) session.openChannel("exec");
+        OutputStream mkdirOut = mkdirChannel.getOutputStream();
+        InputStream mkdirIn = mkdirChannel.getInputStream();
+        mkdirChannel.setCommand(command);
+        mkdirChannel.connect();
+        mkdirIn.read();
+//        okAck(mkdirOut, new byte[1024]);
+//        if(checkAck(mkdirIn, logger) != 0) throw new IOException("ACK failed for SCPReader mkdir -p : " + directoryPath);
+        mkdirChannel.disconnect();
+        mkdirIn.close();
+        mkdirOut.close();
     }
 }
