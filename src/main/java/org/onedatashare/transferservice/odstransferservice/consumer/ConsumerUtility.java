@@ -33,15 +33,10 @@ public class ConsumerUtility {
 
     @Autowired
     CrudService crudService;
-    public void process(final TransferJobRequest request){
-        try {
-            JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);
-            crudService.insertBeforeTransfer(request);
-            jc.setRequest(request);
-            asyncJobLauncher.run(jc.concurrentJobDefinition(), parameters);
-        } catch (Exception e) {
-            logger.error("Not able to start job");
-            e.printStackTrace();
-        }
+    public void process(final TransferJobRequest request) throws Exception{
+        JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);
+        crudService.insertBeforeTransfer(request);
+        jc.setRequest(request);
+        asyncJobLauncher.run(jc.concurrentJobDefinition(), parameters);
     }
 }
