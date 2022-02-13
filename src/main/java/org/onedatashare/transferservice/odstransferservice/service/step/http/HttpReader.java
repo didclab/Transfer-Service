@@ -41,6 +41,7 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
     HttpConnectionPool httpConnectionPool;
     Boolean range;
     AccountEndpointCredential sourceCred;
+    Boolean compress;
     private String uri;
 
 
@@ -65,24 +66,8 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
         FilePart filePart = this.filePartitioner.nextPart();
         if(filePart == null) return null;
         byte[] bodyArray;
-        if(range){
-            HttpRequest request = HttpRequest.newBuilder()
-                    .GET()
-                    .uri(URI.create(uri))
-                    .setHeader(ODSConstants.RANGE, String.format(ODSConstants.byteRange,filePart.getStart(), filePart.getEnd()))
-                    .build();
-            HttpResponse<byte[]> response = this.client.send(request, HttpResponse.BodyHandlers.ofByteArray());
-            bodyArray = response.body();
-        }
-        else{
-            HttpRequest fullRequest = HttpRequest.newBuilder()
-                    .GET()
-                    .uri(URI.create(uri))
-                    .setHeader(ODSConstants.AccessControlExposeHeaders, ODSConstants.ContentRange)
-                    .build();
-            HttpResponse<byte[]> fullResponse = this.client.send(fullRequest, HttpResponse.BodyHandlers.ofByteArray());
-            bodyArray = fullResponse.body();
-        }
+        if(compress) bodyArray = compressMode(uri, filePart, range);
+        else bodyArray = rangeMode(uri, filePart, range);
         DataChunk chunk = ODSUtility.makeChunk(bodyArray.length, bodyArray, filePart.getStart(), Long.valueOf(filePart.getPartIdx()).intValue(), this.fileName);
         logger.info(chunk.toString());
         return chunk;
@@ -97,11 +82,12 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
         HttpRequest request = HttpRequest.newBuilder()
                 .GET()
                 .uri(URI.create(uri)) //make http a string constant as well
-                .setHeader("Range", String.format(ODSConstants.byteRange,0, 1)) //make Range into a string constant as well as bytes
+                .setHeader(ODSConstants.ACCEPT_ENCODING, ODSConstants.GZIP)
+                .setHeader(ODSConstants.RANGE, String.format(ODSConstants.byteRange,0, 1)) //make Range into a string constant as well as bytes
                 .build();
         HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
-        if(response.statusCode() == 206) this.range = true;
-        else this.range = false;
+        range = response.statusCode() == 206;
+        compress = response.headers().allValues(ODSConstants.CONTENT_ENCODING).size() != 0;
     }
 
     @Override
@@ -113,4 +99,28 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
     public void setPool(ObjectPool connectionPool) {
         this.httpConnectionPool = (HttpConnectionPool) connectionPool;
     }
+
+    public byte[] compressMode(String uri, FilePart filePart, boolean valid) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .GET()
+                .uri(URI.create(uri))
+                .setHeader(ODSConstants.ACCEPT_ENCODING, ODSConstants.GZIP)
+                .setHeader(valid ? ODSConstants.RANGE : ODSConstants.AccessControlExposeHeaders,
+                           valid ? String.format(ODSConstants.byteRange,filePart.getStart(), filePart.getEnd()) : ODSConstants.ContentRange)
+                .build();
+        HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+        return response.body();
+    }
+
+    public byte[] rangeMode(String uri, FilePart filePart, boolean valid) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .GET()
+                .uri(URI.create(uri))
+                .setHeader(valid ? ODSConstants.RANGE : ODSConstants.AccessControlExposeHeaders,
+                           valid ? String.format(ODSConstants.byteRange,filePart.getStart(), filePart.getEnd()) : ODSConstants.ContentRange)
+                .build();
+        HttpResponse<byte[]> response = this.client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+        return response.body();
+    }
+
 }
