@@ -135,6 +135,7 @@ public class ConnectionBag {
 
     public void createHttpReaderPool(AccountEndpointCredential credential, int connectionCount, int chunkSize) {
         this.httpReaderPool = new HttpConnectionPool(credential, chunkSize);
+        this.httpReaderPool.setCompress(compression);
         this.httpReaderPool.addObjects(connectionCount);
     }
 }

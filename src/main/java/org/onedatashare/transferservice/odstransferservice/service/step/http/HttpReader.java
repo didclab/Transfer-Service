@@ -41,6 +41,7 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
     HttpConnectionPool httpConnectionPool;
     Boolean range;
     AccountEndpointCredential sourceCred;
+    Boolean compressable;
     Boolean compress;
     private String uri;
 
@@ -57,6 +58,7 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
         JobParameters params = stepExecution.getJobExecution().getJobParameters();
         this.sBasePath = params.getString(SOURCE_BASE_PATH);
         this.filePartitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
+        this.compress = this.httpConnectionPool.getCompress();
         this.fileName = fileInfo.getId();
         this.uri = sourceCred.getUri() + Paths.get(fileInfo.getPath()).toString();
     }
@@ -66,8 +68,12 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
         FilePart filePart = this.filePartitioner.nextPart();
         if(filePart == null) return null;
         byte[] bodyArray;
-        if(compress) bodyArray = compressMode(uri, filePart, range);
-        else bodyArray = rangeMode(uri, filePart, range);
+        if(compress && compressable) {
+            bodyArray = compressMode(uri, filePart, range);
+        }
+        else{
+            bodyArray = rangeMode(uri, filePart, range);
+        }
         DataChunk chunk = ODSUtility.makeChunk(bodyArray.length, bodyArray, filePart.getStart(), Long.valueOf(filePart.getPartIdx()).intValue(), this.fileName);
         logger.info(chunk.toString());
         return chunk;
@@ -87,7 +93,8 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
                 .build();
         HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
         range = response.statusCode() == 206;
-        compress = response.headers().allValues(ODSConstants.CONTENT_ENCODING).size() != 0;
+        compressable = response.headers().allValues(ODSConstants.CONTENT_ENCODING).size() != 0;
+        if(compressable && compress) this.fileName = this.fileName + ".gzip";
     }
 
     @Override
