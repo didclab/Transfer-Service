@@ -1,16 +1,28 @@
 package org.onedatashare.transferservice.odstransferservice.cron;
 
 import com.google.gson.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.apache.commons.exec.*;
+import org.onedatashare.transferservice.odstransferservice.DataRepository.NetworkMetricRepository;
+import org.onedatashare.transferservice.odstransferservice.config.ApplicationThreadPoolConfig;
+import org.onedatashare.transferservice.odstransferservice.config.DataSourceConfig;
 import org.onedatashare.transferservice.odstransferservice.cron.metric.NetworkMetric;
+import org.onedatashare.transferservice.odstransferservice.model.MetaDataDTO;
+import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.MetaDataInterfaceImplementation;
 import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.metric.NetworkMetricService;
+import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.metric.NetworkMetricServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 
+import javax.sql.DataSource;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,7 +31,10 @@ import java.util.Map;
 /**
  * @author deepika
  */
-@Component
+@Service
+@NoArgsConstructor
+@Getter
+@Setter
 public class MetricsCollector {
 
     private static final Logger log = LoggerFactory.getLogger(MetricsCollector.class);
@@ -29,8 +44,11 @@ public class MetricsCollector {
     private static final String REPORT_PATH = "pmeter_measure.txt";
 
     @Autowired
-    @Qualifier("networkMetricServiceImpl")
-    NetworkMetricService networkMetricService;
+    NetworkMetricRepository repository;
+
+    @Autowired
+    NetworkMetricServiceImpl networkMetricService;
+
     /**
      * Running every 10 minutes
      * 1. Execute pmeter script
@@ -48,6 +66,7 @@ public class MetricsCollector {
             log.info("Save to db");
             saveData();
         }catch (Exception e){
+            e.printStackTrace();
             log.error("Exception encountered while running cron");
         }
 
@@ -154,8 +173,13 @@ public class MetricsCollector {
 
     private void saveData(){
         NetworkMetric networkMetric = new NetworkMetric();
-        networkMetric.setId(1l);
-        networkMetricService.save(networkMetric);
+
+        networkMetric.setId("1");
+        MetaDataDTO dataDTO = new MetaDataDTO();
+        dataDTO.setId("1");
+//        metaDataServiceImplementation.saveOrUpdate(dataDTO);
+        repository.save(networkMetric);
+//        networkMetricService.saveOrUpdate(networkMetric);
         log.info("Saved");
     }
 }

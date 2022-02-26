@@ -10,10 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Type;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 
 /**
  * @author deepika
@@ -28,12 +25,6 @@ import javax.persistence.Table;
 public class NetworkMetric {
 
     @Id
-    Long id;
-
-//    String date;
-
-//    @Type(type = "json")
-//    @Column(name = "data", columnDefinition = "jsonb")
-//    String data;
+    private String id;
     
 }
