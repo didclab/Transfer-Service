@@ -17,12 +17,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.ClassUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
 
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SOURCE_BASE_PATH;
 
 public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChunk> implements SetPool {
 
@@ -40,6 +41,7 @@ public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChu
     private JschSessionPool connectionPool;
     private Session session;
     private ChannelSftp channelSftp;
+    private RetryTemplate retryTemplate;
 
     public SFTPReader(AccountEndpointCredential credential, EntityInfo file, int pipeSize) {
         this.fileInfo = file;
@@ -60,22 +62,32 @@ public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChu
     }
 
     @Override
-    protected DataChunk doRead() throws IOException {
+    protected DataChunk doRead() throws Exception {
         FilePart thisChunk = this.filePartitioner.nextPart();
         if (thisChunk == null) return null;
-        byte[] data = new byte[thisChunk.getSize()];
-        int totalRead = 0;//the total we have read in for this stream
-        while (totalRead < thisChunk.getSize()) {
-            int bytesRead = 0;
-            bytesRead = this.inputStream.read(data, totalRead, thisChunk.getSize() - totalRead);
-            if (bytesRead == -1) return null;
-            totalRead += bytesRead;
-        }
-        DataChunk chunk = ODSUtility.makeChunk(thisChunk.getSize(), data, this.fileIdx, this.chunksCreated, this.fileInfo.getId());
-        this.fileIdx += totalRead;
-        this.chunksCreated++;
-        logger.info(chunk.toString());
-        return chunk;
+
+        return this.retryTemplate.execute((c) -> {
+            byte[] data = new byte[thisChunk.getSize()];
+            int totalRead = 0;//the total we have read in for this stream
+            while (totalRead < thisChunk.getSize()) {
+                int bytesRead = 0;
+                try {
+                    bytesRead = this.inputStream.read(data, totalRead, thisChunk.getSize() - totalRead);
+                    if (bytesRead == -1) return null;
+                    totalRead += bytesRead;
+                } catch(IOException ex) {
+                    logger.info("IOException occurred retrying the read operation. Attempting to retry chunk :{} ", thisChunk);
+                    doClose();
+                    doOpen();
+                    throw ex;
+                }
+            }
+            DataChunk chunk = ODSUtility.makeChunk(thisChunk.getSize(), data, this.fileIdx, this.chunksCreated, this.fileInfo.getId());
+            this.fileIdx += totalRead;
+            this.chunksCreated++;
+            logger.info(chunk.toString());
+            return chunk;
+        });
     }
 
     /**
@@ -86,33 +98,36 @@ public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChu
     @Override
     protected void doOpen() throws InterruptedException, JSchException, SftpException {
         this.session = this.connectionPool.borrowObject();
-        this.channelSftp = getChannelSftp(session);
+        this.channelSftp = getChannelSftp();
         this.channelSftp.setBulkRequests(this.pipeSize);
         this.inputStream = channelSftp.get(fileInfo.getPath());
         //clientCreateSourceStream();
     }
 
     @Override
-    protected void doClose() {
+    protected void doClose() throws InterruptedException {
         try {
             if (inputStream != null) inputStream.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.info("Exception occurred while closing the stream: {} ", e.getMessage());
         }
         this.channelSftp.disconnect();
         this.connectionPool.returnObject(this.session);
+        if (!this.session.isConnected()) {
+            this.connectionPool.invalidateAndCreateNewSession(this.session);
+        }
     }
 
-    public ChannelSftp getChannelSftp(Session session) throws JSchException, SftpException {
+    public ChannelSftp getChannelSftp() throws JSchException, SftpException {
         if (this.channelSftp == null || !this.channelSftp.isConnected() || this.channelSftp.isClosed()) {
-            channelSftp = (ChannelSftp) session.openChannel("sftp");
-            channelSftp.connect();
+            this.channelSftp = (ChannelSftp) this.session.openChannel("sftp");
+            this.channelSftp.connect();
             if(!sBasePath.isEmpty()){
-                channelSftp.cd(sBasePath);
-                logger.info("after cd into base path" + channelSftp.pwd());
+                this.channelSftp.cd(sBasePath);
+                logger.info("after cd into base path" + this.channelSftp.pwd());
             }
         }
-        return channelSftp;
+        return this.channelSftp;
     }
 
     @SneakyThrows
@@ -138,5 +153,9 @@ public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChu
     @Override
     public void setPool(ObjectPool connectionPool) {
         this.connectionPool = (JschSessionPool) connectionPool;
+    }
+
+    public void setRetryTemplate(RetryTemplate retryTemplate) {
+        this.retryTemplate = retryTemplate;
     }
 }

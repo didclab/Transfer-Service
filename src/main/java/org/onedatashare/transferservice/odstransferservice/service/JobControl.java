@@ -48,14 +48,20 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import static java.util.Optional.ofNullable;
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.TWENTY_MB;
 
 @Service
@@ -91,6 +97,9 @@ public class JobControl extends DefaultBatchConfigurer {
 
     @Autowired
     JobCompletionListener jobCompletionListener;
+
+    @Autowired
+    RetryTemplate retryTemplateForReaderAndWriter;
 
     @Autowired(required = false)
     public void setDatasource(DataSource datasource) {
@@ -158,6 +167,7 @@ public class JobControl extends DefaultBatchConfigurer {
             case sftp:
                 SFTPReader sftpReader =new SFTPReader(request.getSource().getVfsSourceCredential(), fileInfo, request.getOptions().getPipeSize());
                 sftpReader.setPool(connectionBag.getSftpReaderPool());
+                sftpReader.setRetryTemplate(retryTemplateForReaderAndWriter);
                 return sftpReader;
             case ftp:
                 FTPReader ftpReader = new FTPReader(request.getSource().getVfsSourceCredential(), fileInfo);
@@ -184,6 +194,7 @@ public class JobControl extends DefaultBatchConfigurer {
             case sftp:
                 SFTPWriter sftpWriter = new SFTPWriter(request.getDestination().getVfsDestCredential(), request.getOptions().getPipeSize());
                 sftpWriter.setPool(connectionBag.getSftpWriterPool());
+                sftpWriter.setRetryTemplate(retryTemplateForReaderAndWriter);
                 return sftpWriter;
             case ftp:
                 FTPWriter ftpWriter = new FTPWriter(request.getDestination().getVfsDestCredential());
@@ -209,6 +220,7 @@ public class JobControl extends DefaultBatchConfigurer {
 
     public Job concurrentJobDefinition() throws MalformedURLException {
         connectionBag.preparePools(this.request);
+        setRetryPolicy();
         List<Flow> flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getParentInfo().getPath(), request.getJobId());
         Flow[] fl = new Flow[flows.size()];
         threadPoolConfig.setSTEP_POOL_SIZE(this.request.getOptions().getConcurrencyThreadCount());
@@ -216,5 +228,14 @@ public class JobControl extends DefaultBatchConfigurer {
                 .build();
         return jobBuilderFactory.get(request.getOwnerId()).listener(jobCompletionListener)
                 .incrementer(new RunIdIncrementer()).start(f).build().build();
+    }
+
+    private void setRetryPolicy() {
+        Map<Class<? extends Throwable>, Boolean> retryFor = new HashMap<>();
+        retryFor.put(IOException.class, true);
+        //add other exceptions to retry for in the map above.
+        int retryAttempts = ofNullable(this.request.getOptions().getRetry()).orElse(1);
+        SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy(retryAttempts, retryFor);
+        this.retryTemplateForReaderAndWriter.setRetryPolicy(retryPolicy);
     }
 }

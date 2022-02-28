@@ -80,13 +80,9 @@ public class JschSessionPool implements ObjectPool<Session> {
     }
 
     @Override
-    public void invalidateObject(Session obj) {
-        for(Session session : this.connectionPool){
-            if(session.equals(obj)){
-                session.disconnect();
-                this.connectionPool.remove(session);
-            }
-        }
+    public void invalidateObject(Session session) {
+        session.disconnect();
+        this.connectionPool.remove(session);
     }
 
     @Override
@@ -96,5 +92,10 @@ public class JschSessionPool implements ObjectPool<Session> {
 
     public void setCompression(boolean compression) {
         this.compression = compression;
+    }
+
+    public void invalidateAndCreateNewSession(Session session) {
+        this.invalidateObject(session);
+        this.addObject();
     }
 }

@@ -12,6 +12,7 @@ import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.retry.support.RetryTemplate;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -33,6 +34,7 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
     private JschSessionPool connectionPool;
     private Session session;
     private OutputStream destination;
+    private RetryTemplate retryTemplate;
 
     public SFTPWriter(AccountEndpointCredential destCred, int pipeSize) {
         fileToChannel = new HashMap<>();
@@ -57,7 +59,7 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
     @AfterStep
     public void afterStep() {
         for (ChannelSftp value : fileToChannel.values()) {
-            if (!value.isConnected()) {
+            if (value.isConnected()) {
                 value.disconnect();
             }
         }
@@ -114,22 +116,42 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
     }
 
     @Override
-    public void write(List<? extends DataChunk> items) throws IOException {
+    public void write(List<? extends DataChunk> items) throws Exception {
 //        String fileName = Paths.get(this.dBasePath, items.get(0).getFileName()).toString();
         String fileName = Paths.get(items.get(0).getFileName()).toString();
-        if (this.destination == null) {
-            this.destination = getStream(fileName);
+        List<? extends DataChunk> itemsToProcess = items;
+        this.retryTemplate.execute((c) -> {
+            try {
+                if (this.destination == null) {
+                    this.destination = getStream(fileName);
+                }
+                for (DataChunk b : itemsToProcess) {
+                    logger.info("Current chunk in SFTP Writer " + b.toString());
+                    destination.write(b.getData());
+                }
+                destination.flush();
+            } catch (IOException ex) {
+                this.destination = null;
+                createNewSession();
+                throw ex;
+            }
+            return null;
+        });
+    }
+
+    protected void createNewSession() throws InterruptedException {
+        if (!this.session.isConnected()) {
+            this.connectionPool.invalidateAndCreateNewSession(this.session);
+            this.session = this.connectionPool.borrowObject();
         }
-        for (DataChunk b : items) {
-            logger.info("Current chunk in SFTP Writer " + b.toString());
-            destination.write(b.getData());
-        }
-        destination.flush();
-        items = null;
     }
 
     @Override
     public void setPool(ObjectPool connectionPool) {
         this.connectionPool = (JschSessionPool) connectionPool;
+    }
+
+    public void setRetryTemplate(RetryTemplate retryTemplate) {
+        this.retryTemplate = retryTemplate;
     }
 }
