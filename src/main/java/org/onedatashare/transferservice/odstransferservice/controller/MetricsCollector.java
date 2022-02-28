@@ -1,32 +1,27 @@
-package org.onedatashare.transferservice.odstransferservice.cron;
+package org.onedatashare.transferservice.odstransferservice.controller;
 
 import com.google.gson.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.exec.*;
-import org.onedatashare.transferservice.odstransferservice.DataRepository.NetworkMetricRepository;
-import org.onedatashare.transferservice.odstransferservice.config.ApplicationThreadPoolConfig;
-import org.onedatashare.transferservice.odstransferservice.config.DataSourceConfig;
 import org.onedatashare.transferservice.odstransferservice.cron.metric.NetworkMetric;
 import org.onedatashare.transferservice.odstransferservice.model.MetaDataDTO;
-import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.MetaDataInterfaceImplementation;
-import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.metric.NetworkMetricService;
+import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.CrudService;
 import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.metric.NetworkMetricServiceImpl;
+import org.onedatashare.transferservice.odstransferservice.utility.DataUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
 
-import javax.sql.DataSource;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * @author deepika
@@ -44,9 +39,6 @@ public class MetricsCollector {
     private static final String REPORT_PATH = "pmeter_measure.txt";
 
     @Autowired
-    NetworkMetricRepository repository;
-
-    @Autowired
     NetworkMetricServiceImpl networkMetricService;
 
     /**
@@ -62,9 +54,9 @@ public class MetricsCollector {
             log.info("Collecting network metrics");
 //            executeScript();
             log.info("Read file");
-//            readFile();
+            NetworkMetric networkMetric = readFile();
             log.info("Save to db");
-            saveData();
+            saveData(networkMetric);
         }catch (Exception e){
             e.printStackTrace();
             log.error("Exception encountered while running cron");
@@ -72,9 +64,18 @@ public class MetricsCollector {
 
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws ParseException {
         MetricsCollector metricsCollector = new MetricsCollector();
-        metricsCollector.saveData();
+        String s = "2022-02-19 19:07:02.012633";
+        DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
+        Date date = format.parse(s);
+        System.out.println(format.format(date));
+        System.out.println(date.getTime());
+        //metricsCollector.saveData(null);
+    }
+
+    private void saveData(NetworkMetric networkMetric){
+        networkMetricService.saveOrUpdate(networkMetric);
     }
 
     //python3 src/pmeter/pmeter_cli.py measure eth0 -K
@@ -116,6 +117,8 @@ public class MetricsCollector {
     private NetworkMetric readFile(){
         NetworkMetric networkMetric = new NetworkMetric();
         Gson gson = new Gson();
+        Date startTime = null;
+        Date endTime = null;
 
         /** Reading a json array
 
@@ -158,28 +161,24 @@ public class MetricsCollector {
                 if (metric.isJsonObject()) {
                     Map<?, ?> map = gson.fromJson(metric, Map.class);
                     for (Map.Entry<?, ?> entry : map.entrySet()) {
-                        System.out.println(entry.getKey() + "=" + entry.getValue());
+                       log.info(entry.getKey() + "=" + entry.getValue());
                     }
+                    startTime = DataUtil.getDate((String)map.get("start_time"));
+                    endTime = DataUtil.getDate((String)map.get("end_time"));
                     metricList.add(map);
                 }
             }
-        }catch (IOException e){
-            log.error("Exception occurred while reading file");
+            networkMetric.setData(gson.toJson(metricList));
+            networkMetric.setStartTime(startTime);
+            networkMetric.setEndTime(endTime);
+
+        }catch (IOException | ParseException e){
+            log.error("Exception occurred while reading file",e);
         }
 
         log.info("Read contents of pmeter_metric.txt");
         return networkMetric;
     }
 
-    private void saveData(){
-        NetworkMetric networkMetric = new NetworkMetric();
 
-        networkMetric.setId("1");
-        MetaDataDTO dataDTO = new MetaDataDTO();
-        dataDTO.setId("1");
-//        metaDataServiceImplementation.saveOrUpdate(dataDTO);
-        repository.save(networkMetric);
-//        networkMetricService.saveOrUpdate(networkMetric);
-        log.info("Saved");
-    }
 }
