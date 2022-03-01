@@ -1,5 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service;
 
+import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.model.credential.CredentialGroup;
@@ -39,6 +40,14 @@ public class JobParamService {
             builder.addString(DEST_URI, credential.getUri());
         } else if (CredentialGroup.OAUTH_CRED_TYPE.contains(request.getDestination().getType())) {
             OAuthEndpointCredential oauthCred = request.getDestination().getOauthDestCredential();
+        }
+        builder.addString(COMPRESS, String.valueOf(request.getOptions().getCompress()));
+        builder.addLong(CONCURRENCY, (long) request.getOptions().getConcurrencyThreadCount());
+        builder.addLong(PARALLELISM, (long) request.getOptions().getParallelThreadCount());
+        builder.addLong(PIPELINING, (long) request.getOptions().getPipeSize());
+        builder.addLong(RETRY, (long) request.getOptions().getRetry());
+        for(EntityInfo fileInfo : request.getSource().getInfoList()){
+            builder.addString(fileInfo.getId(), fileInfo.toString());
         }
         return builder.toJobParameters();
     }
