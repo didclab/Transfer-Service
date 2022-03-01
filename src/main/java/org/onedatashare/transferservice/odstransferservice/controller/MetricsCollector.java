@@ -35,8 +35,9 @@ public class MetricsCollector {
     private static final Logger log = LoggerFactory.getLogger(MetricsCollector.class);
 
     //todo - env variable
-    private static final String SCRIPT_PATH = "/Users/DG/Documents/Courses/Spring22/PDP/pmeter/src/pmeter/pmeter_cli.py";
+    private static final String SCRIPT_PATH = "/Users/DG/Documents/Courses/PDP/pmeter/src/pmeter/pmeter_cli.py";
     private static final String REPORT_PATH = "pmeter_measure.txt";
+    private static final String TEMP = "pmeter_measure_temp.txt";
 
     @Autowired
     NetworkMetricServiceImpl networkMetricService;
@@ -52,7 +53,7 @@ public class MetricsCollector {
         try {
             log.info("Starting cron");
             log.info("Collecting network metrics");
-//            executeScript();
+            executeScript();
             log.info("Read file");
             NetworkMetric networkMetric = readFile();
             log.info("Save to db");
@@ -64,14 +65,10 @@ public class MetricsCollector {
 
     }
 
-    public static void main(String[] args) throws ParseException {
+    public static void main(String[] args) throws Exception {
         MetricsCollector metricsCollector = new MetricsCollector();
-        String s = "2022-02-19 19:07:02.012633";
-        DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
-        Date date = format.parse(s);
-        System.out.println(format.format(date));
-        System.out.println(date.getTime());
-        //metricsCollector.saveData(null);
+        metricsCollector.executeScript();
+        metricsCollector.readFile();
     }
 
     private void saveData(NetworkMetric networkMetric){
@@ -120,44 +117,16 @@ public class MetricsCollector {
         Date startTime = null;
         Date endTime = null;
 
-        /** Reading a json array
+        File inputFile = new File(REPORT_PATH);
+        File tempFile = new File(TEMP);
 
-        try (JsonReader reader = new JsonReader(new FileReader("pmeter_measure.txt"))){
-
-            // convert JSON file to map
-            JsonArray array = JsonParser.parseReader(reader).getAsJsonArray();
-
-            List<Map<?, ?>> metricList = new ArrayList<>();
-            for (JsonElement metric : array) { //cropDetails is the JSONArray
-                Map<?, ?> map = gson.fromJson(metric, Map.class);
-                for (Map.Entry<?, ?> entry : map.entrySet()) {
-                    System.out.println(entry.getKey() + "=" + entry.getValue());
-                }
-                metricList.add(map);
-            }
-
-
-
-            //Reading a single json object
-            Map<?, ?> map = gson.fromJson(reader, Map.class);
-            for (Map.Entry<?, ?> entry : map.entrySet()) {
-                System.out.println(entry.getKey() + "=" + entry.getValue());
-            }
-
-
-        } catch (IOException e) {
-            log.error("Exception occurred while reading file");
-            e.printStackTrace();
-        }
-        **/
-
-        try(Reader r = new InputStreamReader( new FileInputStream(REPORT_PATH))) {
+        try(Reader r = new InputStreamReader(new FileInputStream(inputFile))
+        ) {
+            tempFile.createNewFile();
             JsonStreamParser p = new JsonStreamParser(r);
-
             List<Map<?, ?>> metricList = new ArrayList<>();
             while (p.hasNext()) {
                 JsonElement metric = p.next();
-
                 if (metric.isJsonObject()) {
                     Map<?, ?> map = gson.fromJson(metric, Map.class);
                     for (Map.Entry<?, ?> entry : map.entrySet()) {
@@ -175,10 +144,10 @@ public class MetricsCollector {
         }catch (IOException | ParseException e){
             log.error("Exception occurred while reading file",e);
         }
-
+        inputFile.delete();
+        tempFile.renameTo(inputFile);
         log.info("Read contents of pmeter_metric.txt");
         return networkMetric;
     }
-
 
 }
