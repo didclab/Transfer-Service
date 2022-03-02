@@ -27,20 +27,8 @@ public class JobParamService {
         builder.addString(CHUNK_SIZE, String.valueOf(request.getChunkSize()));
         builder.addString(SOURCE_BASE_PATH, request.getSource().getParentInfo().getPath());
         builder.addString(DEST_BASE_PATH, request.getDestination().getParentInfo().getPath());
-        if (CredentialGroup.ACCOUNT_CRED_TYPE.contains(request.getSource().getType())) {
-            AccountEndpointCredential credential = request.getSource().getVfsSourceCredential();
-            builder.addString(SOURCE_CREDENTIAL_ID, credential.getUsername());
-            builder.addString(SOURCE_URI, credential.getUri());
-        } else if (CredentialGroup.OAUTH_CRED_TYPE.contains(request.getSource().getType())) {
-            OAuthEndpointCredential oauthCred = request.getSource().getOauthSourceCredential();
-        }
-        if (CredentialGroup.ACCOUNT_CRED_TYPE.contains(request.getDestination().getType())) {
-            AccountEndpointCredential credential = request.getDestination().getVfsDestCredential();
-            builder.addString(DEST_CREDENTIAL_ID, credential.getUsername());
-            builder.addString(DEST_URI, credential.getUri());
-        } else if (CredentialGroup.OAUTH_CRED_TYPE.contains(request.getDestination().getType())) {
-            OAuthEndpointCredential oauthCred = request.getDestination().getOauthDestCredential();
-        }
+        builder.addString(SOURCE_CREDENTIAL_ID, request.getSource().getCredId());
+        builder.addString(DEST_CREDENTIAL_ID, request.getDestination().getCredId());
         builder.addString(COMPRESS, String.valueOf(request.getOptions().getCompress()));
         builder.addLong(CONCURRENCY, (long) request.getOptions().getConcurrencyThreadCount());
         builder.addLong(PARALLELISM, (long) request.getOptions().getParallelThreadCount());
