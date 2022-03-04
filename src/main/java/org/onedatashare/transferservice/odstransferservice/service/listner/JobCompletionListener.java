@@ -1,6 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service.listner;
 
-import lombok.SneakyThrows;
+import org.onedatashare.transferservice.odstransferservice.service.FileHashValidator;
 import org.onedatashare.transferservice.odstransferservice.service.ConnectionBag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +17,9 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
     @Autowired
     ConnectionBag connectionBag;
 
+    @Autowired
+    FileHashValidator checksumValidator;
+
     @Override
     public void beforeJob(JobExecution jobExecution) {
         logger.info("BEFOR JOB-------------------present time--" + System.currentTimeMillis());
@@ -26,5 +29,11 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
     public void afterJob(JobExecution jobExecution) {
         logger.info("After JOB------------------present time--" + System.currentTimeMillis());
         connectionBag.closePools();
+        String reader = checksumValidator.getReaderHash();
+        String writer = checksumValidator.getWriterHash();
+        if(reader != null && writer!= null &&  !reader.equals(writer)){
+            logger.info("There is a mismatch");
+        }
+        checksumValidator.remove();
     }
 }

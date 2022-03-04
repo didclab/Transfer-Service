@@ -7,19 +7,18 @@ import com.box.sdk.BoxFolder;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.FileHashValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
 
@@ -35,6 +34,8 @@ public class BoxWriterLargeFile implements ItemWriter<DataChunk> {
     private HashMap<String, MessageDigest> digestMap;
     private List<BoxFileUploadSessionPart> parts;
     String destinationBasePath;
+    @Autowired
+    FileHashValidator fileHashValidator;
     BoxFolder boxFolder;
     Logger logger = LoggerFactory.getLogger(BoxWriterLargeFile.class);
 
@@ -60,7 +61,9 @@ public class BoxWriterLargeFile implements ItemWriter<DataChunk> {
     public void afterStep() {
         BoxFileUploadSession session = this.fileMap.get(this.fileInfo.getId());
         MessageDigest messageDigest = this.digestMap.get(this.fileInfo.getId());
-        session.commit(Base64.getEncoder().encodeToString(messageDigest.digest()), this.parts, new HashMap<>(), null, null);
+        String encodedMessageDigest = Base64.getEncoder().encodeToString(messageDigest.digest());
+        fileHashValidator.setWriterHash(encodedMessageDigest);
+        session.commit(encodedMessageDigest, this.parts, new HashMap<>(), null, null);
     }
 
     /**

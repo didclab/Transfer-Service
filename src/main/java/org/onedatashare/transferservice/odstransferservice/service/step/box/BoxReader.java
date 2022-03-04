@@ -6,18 +6,22 @@ import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.FileHashValidator;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
+import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.ClassUtils;
 
 import java.io.ByteArrayOutputStream;
-
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SIXTYFOUR_KB;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 
 public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChunk> {
 
@@ -27,6 +31,9 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
     private BoxFile currentFile;
     EntityInfo fileInfo;
     Logger logger = LoggerFactory.getLogger(BoxReader.class);
+    @Autowired
+    FileHashValidator fileHashValidator;
+    MessageDigest messageDigest;
 
     public BoxReader(OAuthEndpointCredential credential, EntityInfo fileInfo){
         this.credential = credential;
@@ -40,8 +47,15 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
      * @param stepExecution
      */
     @BeforeStep
-    public void beforeStep(StepExecution stepExecution) {
+    public void beforeStep(StepExecution stepExecution) throws NoSuchAlgorithmException {
         filePartitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
+        messageDigest = MessageDigest.getInstance("SHA-1");
+    }
+
+    @AfterStep
+    public void afterStep()  {
+        String encodedHash = Base64.getEncoder().encodeToString(messageDigest.digest());
+        fileHashValidator.setReaderHash(encodedHash);
     }
 
     /**
@@ -56,6 +70,7 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
         this.currentFile.downloadRange(byteArray, filePart.getStart(), filePart.getEnd());
         DataChunk chunk = ODSUtility.makeChunk(filePart.getSize(), byteArray.toByteArray(), filePart.getStart(), Math.toIntExact(filePart.getPartIdx()), currentFile.getInfo().getName());
         logger.info(chunk.toString());
+        messageDigest.update(chunk.getData());
         return chunk;
     }
 
