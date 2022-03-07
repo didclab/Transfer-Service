@@ -84,6 +84,8 @@ public class MetricsCollector {
         cmdLine.addArgument("measure");
         cmdLine.addArgument("eth0");
         cmdLine.addArgument("-K");
+        cmdLine.addArgument("-N");
+        cmdLine.addArgument("-t");
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         PumpStreamHandler streamHandler = new PumpStreamHandler(outputStream);
