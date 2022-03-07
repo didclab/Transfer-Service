@@ -35,8 +35,10 @@ public class MetricsCollector {
     private static final Logger log = LoggerFactory.getLogger(MetricsCollector.class);
 
     //todo - env variable
-    private static final String SCRIPT_PATH = "/Users/DG/Documents/Courses/PDP/pmeter/src/pmeter/pmeter_cli.py";
-    private static final String REPORT_PATH = "pmeter_measure.txt";
+    //private static final String SCRIPT_PATH = "/Users/DG/Documents/Courses/PDP/pmeter/src/pmeter/pmeter_cli.py";
+    private static final String SCRIPT_PATH = "/home/ubuntu/pmeter/src/pmeter/pmeter_cli.py";
+
+    private static final String REPORT_PATH = "/home/ubuntu/.pmeter/pmeter_measure.txt";
     private static final String TEMP = "pmeter_measure_temp.txt";
 
     @Autowired
