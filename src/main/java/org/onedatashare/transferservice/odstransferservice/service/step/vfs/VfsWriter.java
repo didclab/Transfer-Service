@@ -2,29 +2,35 @@ package org.onedatashare.transferservice.odstransferservice.service.step.vfs;
 
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.FileHashValidator;
+import org.onedatashare.transferservice.odstransferservice.service.SetFileHash;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemWriter;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
 
-public class VfsWriter implements ItemWriter<DataChunk> {
+public class VfsWriter implements ItemWriter<DataChunk>, SetFileHash {
     Logger logger = LoggerFactory.getLogger(VfsWriter.class);
     AccountEndpointCredential destCredential;
     HashMap<String, FileChannel> stepDrain;
     String fileName;
     String destinationPath;
     Path filePath;
+    FileHashValidator fileHashValidator;
+    MessageDigest messageDigest;
 
     public VfsWriter(AccountEndpointCredential credential) {
         stepDrain = new HashMap<>();
@@ -32,11 +38,12 @@ public class VfsWriter implements ItemWriter<DataChunk> {
     }
 
     @BeforeStep
-    public void beforeStep(StepExecution stepExecution) {
+    public void beforeStep(StepExecution stepExecution) throws NoSuchAlgorithmException {
         this.destinationPath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
         assert this.destinationPath != null;
         this.filePath = Paths.get(this.destinationPath);
         prepareFile();
+        messageDigest = MessageDigest.getInstance("SHA-1");
     }
 
     @AfterStep
@@ -48,6 +55,9 @@ public class VfsWriter implements ItemWriter<DataChunk> {
         } catch (IOException exception) {
             exception.printStackTrace();
         }
+        String encodedHash = Base64.getEncoder().encodeToString(messageDigest.digest());
+        fileHashValidator.setReaderHash(encodedHash);
+        logger.info("writer hash: " + encodedHash);
     }
 
     public FileChannel getChannel(String fileName) throws IOException {
@@ -88,6 +98,12 @@ public class VfsWriter implements ItemWriter<DataChunk> {
             logger.info("Wrote the amount of bytes: " + String.valueOf(bytesWritten));
             if (chunk.getSize() != bytesWritten)
                 logger.info("Wrote " + bytesWritten + " but we should have written " + chunk.getSize());
+            messageDigest.update(chunk.getData());
         }
+    }
+
+    @Override
+    public void setFileHashValidator(FileHashValidator fileHash) {
+        fileHashValidator = fileHash;
     }
 }

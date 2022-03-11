@@ -92,6 +92,9 @@ public class JobControl extends DefaultBatchConfigurer {
     @Autowired
     JobCompletionListener jobCompletionListener;
 
+    @Autowired
+    FileHashValidator fileHashValidator;
+
     @Autowired(required = false)
     public void setDatasource(DataSource datasource) {
         this.dataSource = datasource;
@@ -154,7 +157,9 @@ public class JobControl extends DefaultBatchConfigurer {
                 hr.setPool(connectionBag.getHttpReaderPool());
                 return hr;
             case vfs:
-                return new VfsReader(request.getSource().getVfsSourceCredential(), fileInfo);
+                VfsReader vfsReader = new VfsReader(request.getSource().getVfsSourceCredential(), fileInfo);
+                vfsReader.setFileHashValidator(fileHashValidator);
+                return vfsReader;
             case sftp:
                 SFTPReader sftpReader =new SFTPReader(request.getSource().getVfsSourceCredential(), fileInfo, request.getOptions().getPipeSize());
                 sftpReader.setPool(connectionBag.getSftpReaderPool());
@@ -164,7 +169,9 @@ public class JobControl extends DefaultBatchConfigurer {
                 ftpReader.setPool(connectionBag.getFtpReaderPool());
                 return ftpReader;
             case s3:
-                return new AmazonS3Reader(request.getSource().getVfsSourceCredential(), fileInfo);
+                AmazonS3Reader amazonS3Reader = new  AmazonS3Reader(request.getSource().getVfsSourceCredential(), fileInfo);
+                amazonS3Reader.setFileHashValidator(fileHashValidator);
+                return amazonS3Reader;
             case box:
                 return new BoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
             case dropbox:
@@ -180,7 +187,9 @@ public class JobControl extends DefaultBatchConfigurer {
     protected ItemWriter<DataChunk> getRightWriter(EndpointType type, EntityInfo fileInfo) {
         switch (type) {
             case vfs:
-                return new VfsWriter(request.getDestination().getVfsDestCredential());
+                VfsWriter vfsWriter = new VfsWriter(request.getDestination().getVfsDestCredential());
+                vfsWriter.setFileHashValidator(fileHashValidator);
+                return vfsWriter;
             case sftp:
                 SFTPWriter sftpWriter = new SFTPWriter(request.getDestination().getVfsDestCredential(), request.getOptions().getPipeSize());
                 sftpWriter.setPool(connectionBag.getSftpWriterPool());

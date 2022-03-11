@@ -4,16 +4,18 @@ import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.FileHashValidator;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
+import org.onedatashare.transferservice.odstransferservice.service.SetFileHash;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.StepExecution;
+import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.file.ResourceAwareItemReaderItemStream;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.io.Resource;
 import org.springframework.util.ClassUtils;
 
@@ -23,10 +25,14 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
-public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChunk> implements ResourceAwareItemReaderItemStream<DataChunk> {
+public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChunk>
+        implements ResourceAwareItemReaderItemStream<DataChunk>, SetFileHash {
 
     FileChannel sink;
     Logger logger = LoggerFactory.getLogger(VfsReader.class);
@@ -38,6 +44,8 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
     EntityInfo fileInfo;
     AccountEndpointCredential credential;
     ByteBuffer buffer;
+    FileHashValidator fileHashValidator;
+    MessageDigest messageDigest;
 
 
     public VfsReader(AccountEndpointCredential credential, EntityInfo fInfo) {
@@ -49,13 +57,14 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
     }
 
     @BeforeStep
-    public void beforeStep(StepExecution stepExecution) {
+    public void beforeStep(StepExecution stepExecution) throws NoSuchAlgorithmException {
         logger.info("Before step for : " + stepExecution.getStepName());
         JobParameters params = stepExecution.getJobExecution().getJobParameters();
         this.sBasePath = params.getString(SOURCE_BASE_PATH);
         this.fileName = this.fileInfo.getId();
         this.fsize = this.fileInfo.getSize();
         this.filePartitioner.createParts(fsize, fileName);
+        messageDigest = MessageDigest.getInstance("SHA-1");
     }
 
     @Override
@@ -80,6 +89,7 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
         }
         buffer.flip();
         byte[] data = new byte[chunkParameters.getSize()];
+        messageDigest.update(data);
         buffer.get(data, 0, totalBytes);
         buffer.clear();
         return ODSUtility.makeChunk(totalBytes, data, chunkParameters.getStart(), Long.valueOf(chunkParameters.getPartIdx()).intValue(), this.fileName);
@@ -106,5 +116,17 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
             logger.error("Not able to close the input Stream");
             ex.printStackTrace();
         }
+    }
+
+    @AfterStep
+    public void afterStep()  {
+        String encodedHash = Base64.getEncoder().encodeToString(messageDigest.digest());
+        logger.info("Hash: " + encodedHash);
+        fileHashValidator.setReaderHash(encodedHash);
+    }
+
+    @Override
+    public void setFileHashValidator(FileHashValidator fileHash) {
+        fileHashValidator = fileHash;
     }
 }

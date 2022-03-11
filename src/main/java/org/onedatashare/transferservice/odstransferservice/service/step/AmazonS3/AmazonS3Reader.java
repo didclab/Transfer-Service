@@ -8,7 +8,9 @@ import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.FileHashValidator;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
+import org.onedatashare.transferservice.odstransferservice.service.SetFileHash;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.onedatashare.transferservice.odstransferservice.utility.S3Utility;
 import org.slf4j.Logger;
@@ -20,9 +22,13 @@ import org.springframework.batch.item.support.AbstractItemCountingItemStreamItem
 import org.springframework.util.ClassUtils;
 
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
+
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SIXTYFOUR_KB;
 
-public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<DataChunk> {
+public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<DataChunk> implements SetFileHash {
 
     private final EntityInfo fileInfo;
     Logger logger = LoggerFactory.getLogger(AmazonS3Reader.class);
@@ -36,6 +42,8 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
     private final int chunkSize;
     ObjectMetadata currentFileMetaData;
     GetObjectRequest getSkeleton;
+    FileHashValidator fileHashValidator;
+    MessageDigest messageDigest;
 
     public AmazonS3Reader(AccountEndpointCredential sourceCredential, EntityInfo fileInfo) {
         this.sourceCredential = sourceCredential;
@@ -48,12 +56,13 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
     }
 
     @BeforeStep
-    public void beforeStep(StepExecution stepExecution) {
+    public void beforeStep(StepExecution stepExecution) throws NoSuchAlgorithmException {
         this.fileName = this.fileInfo.getId();//For an S3 Reader job this should be the object key
         this.sourcePath = stepExecution.getJobExecution().getJobParameters().getString(ODSConstants.SOURCE_BASE_PATH);
         this.amazonS3URI = new AmazonS3URI(S3Utility.constructS3URI(this.sourceCredential.getUri(), this.fileName, this.sourcePath));
         this.getSkeleton = new GetObjectRequest(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey());
         logger.info("Starting the job for this file: " + this.fileName);
+        messageDigest = MessageDigest.getInstance("SHA-1");
     }
 
     public void setName(String name) {
@@ -68,6 +77,7 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
         logger.info("Current Part:-"+part.toString());
         S3Object partOfFile = this.s3Client.getObject(this.getSkeleton.withRange(part.getStart(), part.getEnd()));//this is inclusive or on both start and end so take one off so there is no colision
         byte[] dataSet = new byte[part.getSize()];
+        messageDigest.update(dataSet); //calculating before reading
         long totalBytes = 0;
         S3ObjectInputStream stream = partOfFile.getObjectContent();
         while (totalBytes < part.getSize()) {
@@ -90,5 +100,17 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
     @Override
     protected void doClose() throws Exception {
         this.s3Client = null;
+    }
+
+    @AfterStep
+    public void afterStep()  {
+        String encodedHash = Base64.getEncoder().encodeToString(messageDigest.digest());
+        fileHashValidator.setReaderHash(encodedHash);
+        logger.info("Reader hash " + encodedHash);
+    }
+
+    @Override
+    public void setFileHashValidator(FileHashValidator fileHash) {
+        fileHashValidator = fileHash;
     }
 }
