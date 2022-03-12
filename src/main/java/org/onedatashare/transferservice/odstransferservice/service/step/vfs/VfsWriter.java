@@ -1,5 +1,7 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.vfs;
 
+import edu.emory.mathcs.backport.java.util.Arrays;
+import org.apache.commons.codec.binary.Hex;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.FileHashValidator;
@@ -11,9 +13,11 @@ import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.*;
+import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
@@ -30,7 +34,6 @@ public class VfsWriter implements ItemWriter<DataChunk>, SetFileHash {
     String destinationPath;
     Path filePath;
     FileHashValidator fileHashValidator;
-    MessageDigest messageDigest;
 
     public VfsWriter(AccountEndpointCredential credential) {
         stepDrain = new HashMap<>();
@@ -43,11 +46,12 @@ public class VfsWriter implements ItemWriter<DataChunk>, SetFileHash {
         assert this.destinationPath != null;
         this.filePath = Paths.get(this.destinationPath);
         prepareFile();
-        messageDigest = MessageDigest.getInstance("SHA-1");
+        fileHashValidator.setWriterMessageDigest(MessageDigest.getInstance("SHA-256"));
+
     }
 
     @AfterStep
-    public void afterStep() {
+    public void afterStep() throws NoSuchAlgorithmException {
         try {
             if(this.stepDrain.containsKey(this.fileName)){
                 this.stepDrain.get(this.fileName).close();
@@ -55,9 +59,14 @@ public class VfsWriter implements ItemWriter<DataChunk>, SetFileHash {
         } catch (IOException exception) {
             exception.printStackTrace();
         }
-        String encodedHash = Base64.getEncoder().encodeToString(messageDigest.digest());
-        fileHashValidator.setReaderHash(encodedHash);
-        logger.info("writer hash: " + encodedHash);
+//        String encodedHash = Base64.getEncoder().encodeToString(fileHashValidator.getWriterMessageDigest().digest());
+//        fileHashValidator.setWriterHash(encodedHash);
+        if(!fileHashValidator.check()){
+            logger.info("There's a mismatch"); //todo - retry
+        }else{
+            logger.info("Check sum matches"); //todo - remove log
+        }
+
     }
 
     public FileChannel getChannel(String fileName) throws IOException {
@@ -98,7 +107,7 @@ public class VfsWriter implements ItemWriter<DataChunk>, SetFileHash {
             logger.info("Wrote the amount of bytes: " + String.valueOf(bytesWritten));
             if (chunk.getSize() != bytesWritten)
                 logger.info("Wrote " + bytesWritten + " but we should have written " + chunk.getSize());
-            messageDigest.update(chunk.getData());
+            fileHashValidator.getWriterMessageDigest().update(chunk.getData());
         }
     }
 

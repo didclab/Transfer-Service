@@ -62,7 +62,8 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
         this.amazonS3URI = new AmazonS3URI(S3Utility.constructS3URI(this.sourceCredential.getUri(), this.fileName, this.sourcePath));
         this.getSkeleton = new GetObjectRequest(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey());
         logger.info("Starting the job for this file: " + this.fileName);
-        messageDigest = MessageDigest.getInstance("SHA-1");
+        messageDigest = MessageDigest.getInstance("SHA-256");
+        fileHashValidator.setReaderMessageDigest(messageDigest);
     }
 
     public void setName(String name) {
@@ -77,13 +78,13 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
         logger.info("Current Part:-"+part.toString());
         S3Object partOfFile = this.s3Client.getObject(this.getSkeleton.withRange(part.getStart(), part.getEnd()));//this is inclusive or on both start and end so take one off so there is no colision
         byte[] dataSet = new byte[part.getSize()];
-        messageDigest.update(dataSet); //calculating before reading
         long totalBytes = 0;
         S3ObjectInputStream stream = partOfFile.getObjectContent();
         while (totalBytes < part.getSize()) {
             int bytesRead = 0;
             bytesRead += stream.read(dataSet, Long.valueOf(totalBytes).intValue(), Long.valueOf(part.getSize()).intValue());
             if (bytesRead == -1) return null;
+            fileHashValidator.getReaderMessageDigest().update(dataSet, 0, bytesRead);
             totalBytes += bytesRead;
         }
         stream.close();
@@ -104,9 +105,9 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
 
     @AfterStep
     public void afterStep()  {
-        String encodedHash = Base64.getEncoder().encodeToString(messageDigest.digest());
-        fileHashValidator.setReaderHash(encodedHash);
-        logger.info("Reader hash " + encodedHash);
+//        String encodedHash = Base64.getEncoder().encodeToString(messageDigest.digest());
+//        fileHashValidator.setReaderHash(encodedHash);
+//        logger.info("Reader hash " + encodedHash);
     }
 
     @Override

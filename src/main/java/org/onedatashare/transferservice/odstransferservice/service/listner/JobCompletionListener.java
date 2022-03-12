@@ -29,11 +29,6 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
     public void afterJob(JobExecution jobExecution) {
         logger.info("After JOB------------------present time--" + System.currentTimeMillis());
         connectionBag.closePools();
-        String reader = checksumValidator.getReaderHash();
-        String writer = checksumValidator.getWriterHash();
-        if(reader != null && writer!= null &&  !reader.equals(writer)){
-            logger.info("There is a mismatch");
-        }
         checksumValidator.remove();
     }
 }
