@@ -35,8 +35,8 @@ public class MetricsCollector {
     private static final Logger log = LoggerFactory.getLogger(MetricsCollector.class);
 
     //todo - env variable
-    private static final String SCRIPT_PATH = "/Users/DG/Documents/Courses/PDP/pmeter/src/pmeter/pmeter_cli.py";
-    private static final String REPORT_PATH = "pmeter_measure.txt";
+    private static final String SCRIPT_PATH = System.getenv("PMETER_HOME") + "src/pmeter/pmeter_cli.py";
+    private static final String REPORT_PATH = System.getenv("HOME") + "/.pmeter/pmeter_measure.txt";
     private static final String TEMP = "pmeter_measure_temp.txt";
 
     @Autowired
@@ -94,7 +94,7 @@ public class MetricsCollector {
         executor.setWatchdog(watchDog);
         executor.setStreamHandler(streamHandler);
 
-        try {
+        try{
             executor.execute(new CommandLine(cmdLine));
             log.info(outputStream.toString());
         } catch (IOException e) {
