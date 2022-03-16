@@ -11,9 +11,14 @@ public class CrudService {
     MetaDataInterfaceImplementation metaDataServiceImplementation;
     public void insertBeforeTransfer(TransferJobRequest transferJobRequest){
         MetaDataDTO metaDataDTO = MetaDataDTO.builder().id(transferJobRequest.getJobId())
-                                    .source(transferJobRequest.getSource().getType().toString())
-                                    .destination(transferJobRequest.getDestination().getType().toString())
-                                    .chunks(10).build();
+                .source(transferJobRequest.getSource().getType().toString())
+                .destination(transferJobRequest.getDestination().getType().toString())
+                .parallelism(transferJobRequest.getOptions().getParallelThreadCount())
+                .concurrency(transferJobRequest.getOptions().getConcurrencyThreadCount())
+                .compress(transferJobRequest.getOptions().getCompress().toString())
+                .pipelining(transferJobRequest.getOptions().getPipeSize())
+                .retry(transferJobRequest.getOptions().getRetry())
+                .chunks(10).build();
         metaDataServiceImplementation.saveOrUpdate(metaDataDTO);
     }
 
