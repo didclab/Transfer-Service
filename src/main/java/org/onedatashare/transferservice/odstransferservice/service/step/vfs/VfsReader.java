@@ -101,6 +101,11 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
             stringBuilder.append(part);
             fileHashValidator.getReaderMessageDigest().reset();
             fileHashValidator.setReaderHash(stringBuilder.toString());
+        }else{
+            if(chunkParameters.isLastChunk()) {
+                fileHashValidator.setReaderHash(Hex.encodeHexString(fileHashValidator.getReaderMessageDigest().digest()));
+                fileHashValidator.getReaderMessageDigest().reset();
+            }
         }
         logger.info("Bytes read: " + totalBytes);
         buffer.clear();

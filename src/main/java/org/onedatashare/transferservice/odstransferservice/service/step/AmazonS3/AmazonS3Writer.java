@@ -125,14 +125,9 @@ public class AmazonS3Writer implements ItemWriter<DataChunk>, SetFileHash {
      */
     @AfterStep
     public void afterStep() {
-        boolean match;
-        if(multipartUpload){
-            match = fileHashValidator.getReaderHash().equals(fileHashValidator.getWriterHash());
-        }else{
-            byte[] digest = fileHashValidator.getReaderMessageDigest().digest();
-            String readerHashInHex = Hex.encodeHexString(digest);
-            match = readerHashInHex.equals(fileHashValidator.getWriterHash());
-        }
+       // logger.info(fileHashValidator.getWriterHash());
+        //logger.info(fileHashValidator.getReaderHash());
+        boolean match = fileHashValidator.getReaderHash().equals(fileHashValidator.getWriterHash());
         logger.info("Match: "+ match);
 
         if (this.multipartUpload) {
