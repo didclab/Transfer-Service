@@ -1,5 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice;
 
+import com.amazonaws.util.Base64;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.Test;
 

@@ -199,7 +199,9 @@ public class JobControl extends DefaultBatchConfigurer {
                 ftpWriter.setPool(connectionBag.getFtpWriterPool());
                 return ftpWriter;
             case s3:
-                return new AmazonS3Writer(request.getDestination().getVfsDestCredential(), fileInfo);
+                AmazonS3Writer amazonS3Writer = new AmazonS3Writer(request.getDestination().getVfsDestCredential(), fileInfo);
+                amazonS3Writer.setFileHashValidator(fileHashValidator);
+                return amazonS3Writer;
             case box:
                 if(fileInfo.getSize() < TWENTY_MB){
                     return new BoxWriterSmallFile(request.getDestination().getOauthDestCredential(), fileInfo);

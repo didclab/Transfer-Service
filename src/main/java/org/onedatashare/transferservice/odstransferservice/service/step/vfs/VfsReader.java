@@ -1,5 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.vfs;
 
+import org.apache.commons.codec.binary.Hex;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
@@ -27,7 +28,6 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
@@ -64,7 +64,8 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
         this.fileName = this.fileInfo.getId();
         this.fsize = this.fileInfo.getSize();
         this.filePartitioner.createParts(fsize, fileName);
-        messageDigest = MessageDigest.getInstance("SHA-1");
+        messageDigest = MessageDigest.getInstance("MD5"); //todo - specific to s3 transfer (should come from job)
+        fileHashValidator.setReaderMessageDigest(messageDigest);
     }
 
     @Override
@@ -89,8 +90,19 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
         }
         buffer.flip();
         byte[] data = new byte[chunkParameters.getSize()];
-        messageDigest.update(data);
         buffer.get(data, 0, totalBytes);
+        fileHashValidator.getReaderMessageDigest().update(data, 0, totalBytes);
+        //todo -> string manipulation or string builder?
+        //this implementation is specific for VFS to S3 transfer
+        if(fileInfo.getSize() >= FIVE_MB) {
+            // 67108863 number of chunks can be handled at max
+            StringBuilder stringBuilder = new StringBuilder(fileHashValidator.getReaderHash());
+            String part = Hex.encodeHexString(fileHashValidator.getReaderMessageDigest().digest());
+            stringBuilder.append(part);
+            fileHashValidator.getReaderMessageDigest().reset();
+            fileHashValidator.setReaderHash(stringBuilder.toString());
+        }
+        logger.info("Bytes read: " + totalBytes);
         buffer.clear();
         return ODSUtility.makeChunk(totalBytes, data, chunkParameters.getStart(), Long.valueOf(chunkParameters.getPartIdx()).intValue(), this.fileName);
     }
@@ -116,13 +128,6 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
             logger.error("Not able to close the input Stream");
             ex.printStackTrace();
         }
-    }
-
-    @AfterStep
-    public void afterStep()  {
-        String encodedHash = Base64.getEncoder().encodeToString(messageDigest.digest());
-        logger.info("Hash: " + encodedHash);
-        fileHashValidator.setReaderHash(encodedHash);
     }
 
     @Override
