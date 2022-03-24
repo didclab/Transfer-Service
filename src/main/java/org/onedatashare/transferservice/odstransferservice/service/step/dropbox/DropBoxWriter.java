@@ -49,7 +49,7 @@ public class DropBoxWriter implements ItemWriter<DataChunk> {
 
     @Override
     public void write(List<? extends DataChunk> items) throws Exception {
-        this.cursor = new UploadSessionCursor(sessionId, 0);
+        this.cursor = new UploadSessionCursor(sessionId, items.get(0).getStartPosition());
         for(DataChunk chunk : items){
             this.client.files().uploadSessionAppendV2(cursor).uploadAndFinish(new ByteArrayInputStream(chunk.getData()));
             this.cursor = new UploadSessionCursor(sessionId, chunk.getStartPosition() + chunk.getSize());
