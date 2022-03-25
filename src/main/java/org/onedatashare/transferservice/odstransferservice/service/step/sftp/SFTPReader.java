@@ -48,7 +48,7 @@ public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChu
         this.filePartitioner = new FilePartitioner(file.getChunkSize());
         this.setExecutionContextName(ClassUtils.getShortName(SFTPReader.class));
         this.sourceCred = credential;
-        this.setName(ClassUtils.getShortName(FTPReader.class));
+        this.setName(ClassUtils.getShortName(SFTPReader.class));
         this.pipeSize = pipeSize;
     }
 
