@@ -176,7 +176,9 @@ public class JobControl extends DefaultBatchConfigurer {
             case s3:
                 return new AmazonS3Reader(request.getSource().getVfsSourceCredential(), fileInfo);
             case box:
-                return new BoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
+                BoxReader boxReader = new BoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
+                boxReader.setMaxRetry(ofNullable(this.request.getOptions().getRetry()).orElse(1));
+                return boxReader;
             case dropbox:
                 return new DropBoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
             case scp:
@@ -199,6 +201,7 @@ public class JobControl extends DefaultBatchConfigurer {
             case ftp:
                 FTPWriter ftpWriter = new FTPWriter(request.getDestination().getVfsDestCredential());
                 ftpWriter.setPool(connectionBag.getFtpWriterPool());
+                ftpWriter.setRetryTemplate(retryTemplateForReaderAndWriter);
                 return ftpWriter;
             case s3:
                 return new AmazonS3Writer(request.getDestination().getVfsDestCredential(), fileInfo);

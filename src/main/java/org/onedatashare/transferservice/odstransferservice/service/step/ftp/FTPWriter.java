@@ -17,6 +17,7 @@ import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.retry.support.RetryTemplate;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -36,6 +37,7 @@ public class FTPWriter implements ItemWriter<DataChunk>, SetPool {
     FileObject foDest;
     private FtpConnectionPool connectionPool;
     private FTPClient client;
+    private RetryTemplate retryTemplate;
 
     public FTPWriter(AccountEndpointCredential destCred) {
         this.destCred = destCred;
@@ -66,12 +68,13 @@ public class FTPWriter implements ItemWriter<DataChunk>, SetPool {
         this.connectionPool.returnObject(this.client);
     }
 
-    public OutputStream getStream(String fileName) {
+    private OutputStream getStream(String fileName) throws IOException {
         if(outputStream == null){
             try {
                 this.outputStream = this.client.storeFileStream(this.dBasePath+"/"+fileName);
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error("Error in opening outputstream in FTP Writer for file : {}", fileName );
+                throw new IOException();
             }
             logger.info("Stream not present...creating OutputStream for "+ fileName);
             //ftpDest();
@@ -101,28 +104,46 @@ public class FTPWriter implements ItemWriter<DataChunk>, SetPool {
         }
     }
 
-    public void write(List<? extends DataChunk> list) {
+    public void write(List<? extends DataChunk> list) throws IOException {
         logger.info("Inside Writer---writing chunk of : " + list.get(0).getFileName());
         String fileName = list.get(0).getFileName();
-        OutputStream destination = getStream(fileName);
-        try {
-            for (DataChunk b : list) {
-                destination.write(b.getData());
-                this.client.setRestartOffset(b.getStartPosition());
+
+        this.retryTemplate.execute((c) -> {
+            try {
+                if (this.outputStream == null) {
+                    this.outputStream = getStream(fileName);
+                }
+                for (DataChunk b : list) {
+                    logger.info("Current chunk in FTP Writer " + b.toString());
+                    this.outputStream.write(b.getData());
+                    this.client.setRestartOffset(b.getStartPosition());
+                }
+                this.outputStream.flush();
+            } catch (IOException ex) {
+                this.outputStream = null;
+                this.invalidateAndCreateNewClient();
+                throw ex;
             }
-        } catch (IOException e) {
-            logger.error("Error during writing chunks...exiting");
-            e.printStackTrace();
-        }
-        try {
-            destination.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+            return null;
+        });
+
     }
 
     @Override
     public void setPool(ObjectPool connectionPool) {
         this.connectionPool = (FtpConnectionPool) connectionPool;
+    }
+
+    public void setRetryTemplate(RetryTemplate retryTemplate) {
+        this.retryTemplate = retryTemplate;
+    }
+
+    private void invalidateAndCreateNewClient() {
+        this.connectionPool.invalidateAndCreateNewClient(this.client);
+        try {
+            this.client = this.connectionPool.borrowObject();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 }

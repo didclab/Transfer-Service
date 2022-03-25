@@ -93,7 +93,7 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
         return false;
     }
 
-    public OutputStream getStream(String fileName) {
+    public OutputStream getStream(String fileName) throws IOException {
         boolean appendMode = false;
         if (!fileToChannel.containsKey(fileName)) {
             establishChannel(fileName);
@@ -112,7 +112,7 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
             logger.warn("We failed getting the OuputStream to a file :(");
             sftpException.printStackTrace();
         }
-        return null;
+        throw new IOException();
     }
 
     @Override
