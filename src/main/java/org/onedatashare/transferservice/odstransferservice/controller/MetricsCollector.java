@@ -5,22 +5,20 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.exec.*;
+import org.onedatashare.transferservice.odstransferservice.DataRepository.NetworkMetricsInfluxRepository;
 import org.onedatashare.transferservice.odstransferservice.cron.metric.NetworkMetric;
-import org.onedatashare.transferservice.odstransferservice.model.MetaDataDTO;
-import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.CrudService;
+import org.onedatashare.transferservice.odstransferservice.model.NetworkMetricInflux;
 import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.metric.NetworkMetricServiceImpl;
 import org.onedatashare.transferservice.odstransferservice.utility.DataUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
-import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.*;
 
 /**
@@ -34,8 +32,8 @@ public class MetricsCollector {
 
     private static final Logger log = LoggerFactory.getLogger(MetricsCollector.class);
 
-    private static final String SCRIPT_PATH = System.getenv("PMETER_HOME") + "src/pmeter/pmeter_cli.py";
-    private static final String REPORT_PATH = System.getenv("HOME") + "/.pmeter/pmeter_measure.txt";
+    private static final String SCRIPT_PATH = "/Users/nehamishra/Project/pmeter/src/pmeter/pmeter_cli.py";
+    private static final String REPORT_PATH = "/Users/nehamishra/.pmeter/pmeter_measure.txt";
     private static final String TEMP = "pmeter_measure_temp.txt";
 
     @Autowired
@@ -57,6 +55,9 @@ public class MetricsCollector {
             NetworkMetric networkMetric = readFile();
             log.info("Save to db");
             saveData(networkMetric);
+            NetworkMetricInflux networkMetricInflux= mapper(networkMetric);
+            NetworkMetricsInfluxRepository repo= new NetworkMetricsInfluxRepository();
+            repo.insertDataPoints(networkMetricInflux);
         }catch (Exception e){
             e.printStackTrace();
             log.error("Exception encountered while running cron");
@@ -64,11 +65,13 @@ public class MetricsCollector {
 
     }
 
+/*
     public static void main(String[] args) throws Exception {
         MetricsCollector metricsCollector = new MetricsCollector();
         metricsCollector.executeScript();
         metricsCollector.readFile();
     }
+*/
 
     private void saveData(NetworkMetric networkMetric){
         networkMetricService.saveOrUpdate(networkMetric);
@@ -79,10 +82,10 @@ public class MetricsCollector {
         String line = "python3 " + SCRIPT_PATH;
         CommandLine cmdLine = CommandLine.parse(line);
         cmdLine.addArgument("measure");
-        cmdLine.addArgument("eth0");
+        cmdLine.addArgument("awdl0");
         cmdLine.addArgument("-K");
         cmdLine.addArgument("-N");
-        cmdLine.addArgument("-t");
+        //cmdLine.addArgument("-t");
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         PumpStreamHandler streamHandler = new PumpStreamHandler(outputStream);
@@ -149,6 +152,18 @@ public class MetricsCollector {
         tempFile.renameTo(inputFile);
         log.info("Read contents of pmeter_metric.txt");
         return networkMetric;
+    }
+
+    public NetworkMetricInflux mapper(NetworkMetric nw){
+        NetworkMetricInflux nwf= new NetworkMetricInflux();
+        nwf.setTime(Instant.now());
+        if(nw.getData()!=null)
+            nwf.setData(nw.getData());
+        if(nw.getStartTime()!= null)
+            nwf.setStart_time(nw.getStartTime());
+        if(nw.getEndTime()!= null)
+            nwf.setEnd_time(nw.getEndTime());
+        return nwf;
     }
 
 }
