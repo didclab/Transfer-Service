@@ -37,7 +37,6 @@ public class DropBoxWriter implements ItemWriter<DataChunk> {
             this.destinationPath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
             assert this.destinationPath != null;
             this.client = new DbxClientV2(ODSUtility.dbxRequestConfig, this.credential.getToken());
-            logger.info("session id is + " + this.client.files().uploadSessionStart().finish().getSessionId());
             sessionId = this.client.files().uploadSessionStart().finish().getSessionId();
     }
 
