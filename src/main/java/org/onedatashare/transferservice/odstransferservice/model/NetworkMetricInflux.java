@@ -2,7 +2,6 @@ package org.onedatashare.transferservice.odstransferservice.model;
 
 import com.influxdb.annotations.Column;
 import com.influxdb.annotations.Measurement;
-import lombok.Cleanup;
 import lombok.Data;
 
 import java.time.Instant;

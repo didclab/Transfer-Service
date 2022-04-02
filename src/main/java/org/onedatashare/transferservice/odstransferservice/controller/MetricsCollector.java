@@ -32,8 +32,8 @@ public class MetricsCollector {
 
     private static final Logger log = LoggerFactory.getLogger(MetricsCollector.class);
 
-    private static final String SCRIPT_PATH = "/Users/nehamishra/Project/pmeter/src/pmeter/pmeter_cli.py";
-    private static final String REPORT_PATH = "/Users/nehamishra/.pmeter/pmeter_measure.txt";
+    private static final String SCRIPT_PATH = System.getenv("PMETER_HOME") + "src/pmeter/pmeter_cli.py";
+    private static final String REPORT_PATH = System.getenv("HOME") + "/.pmeter/pmeter_measure.txt";
     private static final String TEMP = "pmeter_measure_temp.txt";
 
     @Autowired
@@ -58,6 +58,7 @@ public class MetricsCollector {
             NetworkMetricInflux networkMetricInflux= mapper(networkMetric);
             NetworkMetricsInfluxRepository repo= new NetworkMetricsInfluxRepository();
             repo.insertDataPoints(networkMetricInflux);
+            log.info("Pushed data: "+ networkMetricInflux.toString());
         }catch (Exception e){
             e.printStackTrace();
             log.error("Exception encountered while running cron");
@@ -72,6 +73,7 @@ public class MetricsCollector {
         metricsCollector.readFile();
     }
 */
+
 
     private void saveData(NetworkMetric networkMetric){
         networkMetricService.saveOrUpdate(networkMetric);

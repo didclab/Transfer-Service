@@ -99,3 +99,6 @@ output.log
 
 # Mongo Explorer plugin
 .idea/**/mongoSettings.xml
+
+boot.sh
+certs/*

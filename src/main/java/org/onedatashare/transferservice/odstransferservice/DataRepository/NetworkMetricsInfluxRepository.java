@@ -3,6 +3,7 @@ package org.onedatashare.transferservice.odstransferservice.DataRepository;
 
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.InfluxDBClientFactory;
+import com.influxdb.client.InfluxDBClientOptions;
 import com.influxdb.client.WriteApiBlocking;
 import com.influxdb.client.domain.WritePrecision;
 import com.influxdb.exceptions.InfluxException;
@@ -17,22 +18,23 @@ import java.util.List;
 @Component
 public class NetworkMetricsInfluxRepository {
     @Value("${influxdb.token}")
-    private String token= "w5KTJ4R9sE4cRrscCEzk6yVl97_8_ZqcjMmGhky6sdERpfqyX0t-FxZjM2qCwQVqElDchiH_LKgTFAc0K8e0dw==";
+    private String token;
 
     @Value("${influxdb.url}")
-    private String url= "http://localhost:8086";
+    private String url;
 
     @Value("${influxdb.bucket}")
-    private String bucket= "network_data";
+    private String bucket;
 
     @Value("${influxdb.org}")
-    private String org= "suny";
+    private String org;
 
     private InfluxDBClient influxDBClient;
 
     public void instantiateInfluxClient(){
         try {
-            influxDBClient = InfluxDBClientFactory.create(url, token.toCharArray());
+            InfluxDBClientOptions influxDBClientOptions= InfluxDBClientOptions.builder().url(url).org(org).bucket(bucket).build();
+            influxDBClient = InfluxDBClientFactory.create(influxDBClientOptions);
         }
         catch (Exception exception){
             System.out.println("Exception: "+exception.getMessage());
@@ -46,7 +48,7 @@ public class NetworkMetricsInfluxRepository {
         Boolean flag= false;
         try{
             WriteApiBlocking writeApi = influxDBClient.getWriteApiBlocking();
-            writeApi.writeMeasurement(bucket, org, WritePrecision.MS, metric);
+            writeApi.writeMeasurement(WritePrecision.MS, metric);
             flag= true;
         }
         catch (InfluxException exception){
