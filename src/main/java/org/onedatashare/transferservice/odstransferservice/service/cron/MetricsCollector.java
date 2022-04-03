@@ -1,4 +1,4 @@
-package org.onedatashare.transferservice.odstransferservice.controller;
+package org.onedatashare.transferservice.odstransferservice.service.cron;
 
 import com.google.gson.*;
 import lombok.Getter;
@@ -6,8 +6,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.exec.*;
 import org.onedatashare.transferservice.odstransferservice.DataRepository.NetworkMetricsInfluxRepository;
-import org.onedatashare.transferservice.odstransferservice.cron.metric.NetworkMetric;
+import org.onedatashare.transferservice.odstransferservice.model.NetworkMetric;
 import org.onedatashare.transferservice.odstransferservice.model.NetworkMetricInflux;
+import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.metric.NetworkMetricServiceImpl;
 import org.onedatashare.transferservice.odstransferservice.utility.DataUtil;
 import org.slf4j.Logger;
@@ -32,10 +33,6 @@ public class MetricsCollector {
 
     private static final Logger log = LoggerFactory.getLogger(MetricsCollector.class);
 
-    private static final String SCRIPT_PATH = System.getenv("PMETER_HOME") + "src/pmeter/pmeter_cli.py";
-    private static final String REPORT_PATH = System.getenv("HOME") + "/.pmeter/pmeter_measure.txt";
-    private static final String TEMP = "pmeter_measure_temp.txt";
-
     @Autowired
     NetworkMetricServiceImpl networkMetricService;
 
@@ -54,6 +51,7 @@ public class MetricsCollector {
             log.info("Read file");
             NetworkMetric networkMetric = readFile();
             log.info("Save to db");
+            //todo - remove save to cdb
             saveData(networkMetric);
             NetworkMetricInflux networkMetricInflux= mapper(networkMetric);
             NetworkMetricsInfluxRepository repo= new NetworkMetricsInfluxRepository();
@@ -66,22 +64,13 @@ public class MetricsCollector {
 
     }
 
-/*
-    public static void main(String[] args) throws Exception {
-        MetricsCollector metricsCollector = new MetricsCollector();
-        metricsCollector.executeScript();
-        metricsCollector.readFile();
-    }
-*/
-
-
     private void saveData(NetworkMetric networkMetric){
         networkMetricService.saveOrUpdate(networkMetric);
     }
 
     //python3 src/pmeter/pmeter_cli.py measure eth0 -K
     private void executeScript() throws Exception {
-        String line = "python3 " + SCRIPT_PATH;
+        String line = "python3 " + ODSConstants.PMETER_SCRIPT_PATH;
         CommandLine cmdLine = CommandLine.parse(line);
         cmdLine.addArgument("measure");
         cmdLine.addArgument("awdl0");
@@ -107,12 +96,6 @@ public class MetricsCollector {
         }
     }
 
-    private String resolvePythonScriptPath(String filename) {
-        File file = new File(filename);
-        return file.getAbsolutePath();
-    }
-
-
     /**
      * todo - parameterize
      * @return
@@ -123,8 +106,8 @@ public class MetricsCollector {
         Date startTime = null;
         Date endTime = null;
 
-        File inputFile = new File(REPORT_PATH);
-        File tempFile = new File(TEMP);
+        File inputFile = new File(ODSConstants.PMETER_REPORT_PATH);
+        File tempFile = new File(ODSConstants.PMETER_TEMP_REPORT);
 
         try(Reader r = new InputStreamReader(new FileInputStream(inputFile))
         ) {

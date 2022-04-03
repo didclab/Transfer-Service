@@ -1,4 +1,4 @@
-package org.onedatashare.transferservice.odstransferservice.cron.metric;
+package org.onedatashare.transferservice.odstransferservice.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
