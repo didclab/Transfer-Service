@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.exec.*;
+import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.NetworkMetric;
 import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.metric.NetworkMetricServiceImpl;
 import org.onedatashare.transferservice.odstransferservice.utility.DataUtil;
@@ -28,10 +29,6 @@ import java.util.*;
 public class MetricsCollector {
 
     private static final Logger log = LoggerFactory.getLogger(MetricsCollector.class);
-
-    private static final String SCRIPT_PATH = System.getenv("PMETER_HOME") + "src/pmeter/pmeter_cli.py";
-    private static final String REPORT_PATH = System.getenv("HOME") + "/.pmeter/pmeter_measure.txt";
-    private static final String TEMP = "pmeter_measure_temp.txt";
 
     @Autowired
     NetworkMetricServiceImpl networkMetricService;
@@ -65,7 +62,7 @@ public class MetricsCollector {
 
     //python3 src/pmeter/pmeter_cli.py measure eth0 -K
     private void executeScript() throws Exception {
-        String line = "python3 " + SCRIPT_PATH;
+        String line = "python3 " + ODSConstants.PMETER_SCRIPT_PATH;
         CommandLine cmdLine = CommandLine.parse(line);
         cmdLine.addArgument("measure");
         cmdLine.addArgument("eth0");
@@ -101,8 +98,8 @@ public class MetricsCollector {
         Date startTime = null;
         Date endTime = null;
 
-        File inputFile = new File(REPORT_PATH);
-        File tempFile = new File(TEMP);
+        File inputFile = new File(ODSConstants.PMETER_REPORT_PATH);
+        File tempFile = new File(ODSConstants.PMETER_TEMP_REPORT);
 
         try(Reader r = new InputStreamReader(new FileInputStream(inputFile))
         ) {
