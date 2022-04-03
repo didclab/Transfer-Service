@@ -42,4 +42,10 @@ public class ODSConstants {
     public static final String SCP_COMMAND_LOCAL_TO_REMOTE = "scp -t ";
     public static final String SCP_MKDIR_CMD = "mkdir -p ";
     public static final String EXEC = "exec";
+    public static final String COMPRESS="compress";
+    public static final String CONCURRENCY="concurrency";
+    public static final String PARALLELISM="parallelism";
+    public static final String PIPELINING="pipelining";
+    public static final String RETRY="retry";
+
 }
