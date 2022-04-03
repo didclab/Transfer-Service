@@ -1,26 +1,21 @@
-package org.onedatashare.transferservice.odstransferservice.controller;
+package org.onedatashare.transferservice.odstransferservice.service.cron;
 
 import com.google.gson.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.exec.*;
-import org.onedatashare.transferservice.odstransferservice.cron.metric.NetworkMetric;
-import org.onedatashare.transferservice.odstransferservice.model.MetaDataDTO;
-import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.CrudService;
+import org.onedatashare.transferservice.odstransferservice.model.NetworkMetric;
 import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.metric.NetworkMetricServiceImpl;
 import org.onedatashare.transferservice.odstransferservice.utility.DataUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
-import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -64,12 +59,6 @@ public class MetricsCollector {
 
     }
 
-    public static void main(String[] args) throws Exception {
-        MetricsCollector metricsCollector = new MetricsCollector();
-        metricsCollector.executeScript();
-        metricsCollector.readFile();
-    }
-
     private void saveData(NetworkMetric networkMetric){
         networkMetricService.saveOrUpdate(networkMetric);
     }
@@ -101,12 +90,6 @@ public class MetricsCollector {
             throw new Exception(e);
         }
     }
-
-    private String resolvePythonScriptPath(String filename) {
-        File file = new File(filename);
-        return file.getAbsolutePath();
-    }
-
 
     /**
      * todo - parameterize
