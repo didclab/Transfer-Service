@@ -3,8 +3,6 @@ package org.onedatashare.transferservice.odstransferservice.model;
 import lombok.Data;
 import lombok.ToString;
 
-import java.io.OutputStream;
-
 @Data
 public class DataChunk {
     int chunkIdx;

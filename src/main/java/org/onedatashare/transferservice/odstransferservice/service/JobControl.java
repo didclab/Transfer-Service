@@ -1,6 +1,13 @@
 package org.onedatashare.transferservice.odstransferservice.service;
 
-import lombok.*;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.TWENTY_MB;
+
+import java.net.MalformedURLException;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.sql.DataSource;
+
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.config.ApplicationThreadPoolConfig;
 import org.onedatashare.transferservice.odstransferservice.config.DataSourceConfig;
@@ -51,12 +58,10 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import javax.sql.DataSource;
-import java.net.MalformedURLException;
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.TWENTY_MB;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.SneakyThrows;
 
 @Service
 @NoArgsConstructor
@@ -77,8 +82,8 @@ public class JobControl extends DefaultBatchConfigurer {
     Step parent;
     Logger logger = LoggerFactory.getLogger(JobControl.class);
 
-    @Autowired
-    private ApplicationContext context;
+    // @Autowired
+    // private ApplicationContext context;
 
     @Autowired
     JobBuilderFactory jobBuilderFactory;
@@ -105,7 +110,7 @@ public class JobControl extends DefaultBatchConfigurer {
 
     @Lazy
     @Bean
-    public JobLauncher asyncJobLauncher() {
+    public JobLauncher asyncJobLauncher() throws Exception {
         SimpleJobLauncher jobLauncher = new SimpleJobLauncher();
         jobLauncher.setJobRepository(this.createJobRepository());
         jobLauncher.setTaskExecutor(this.threadPoolConfig.sequentialThreadPool());
@@ -115,7 +120,7 @@ public class JobControl extends DefaultBatchConfigurer {
 
     //    @Bean
     @SneakyThrows
-    protected JobRepository createJobRepository() {
+    protected JobRepository createJobRepository() throws Exception {
         JobRepositoryFactoryBean factory = new JobRepositoryFactoryBean();
         factory.setDataSource(dataSource);
         factory.setTransactionManager(transactionManager);

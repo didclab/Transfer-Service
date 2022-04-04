@@ -1,10 +1,9 @@
 package org.onedatashare.transferservice.odstransferservice.config;
 
-import org.springframework.boot.jdbc.DataSourceBuilder;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
 import javax.sql.DataSource;
+
+import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class DataSourceConfig {
