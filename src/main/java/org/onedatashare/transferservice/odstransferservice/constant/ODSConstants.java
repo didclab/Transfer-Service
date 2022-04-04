@@ -47,5 +47,8 @@ public class ODSConstants {
     public static final String PARALLELISM="parallelism";
     public static final String PIPELINING="pipelining";
     public static final String RETRY="retry";
+    public static final String PMETER_SCRIPT_PATH = System.getenv("PMETER_HOME") + "src/pmeter/pmeter_cli.py";
+    public static final String PMETER_REPORT_PATH = System.getenv("HOME") + "/.pmeter/pmeter_measure.txt";
+    public static final String PMETER_TEMP_REPORT = "pmeter_measure_temp.txt";
 
 }
