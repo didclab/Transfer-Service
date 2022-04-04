@@ -23,4 +23,6 @@ public class NetworkMetricInflux {
     @Column(name = "end_time")
     private Date end_time;
 
+    @Column(name= "job_metrics")
+    private String jobData;
 }
