@@ -34,10 +34,10 @@ public class DropBoxWriter implements ItemWriter<DataChunk> {
 
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) throws DbxException {
-        this.destinationPath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
-        assert this.destinationPath != null;
-        this.client = new DbxClientV2(ODSUtility.dbxRequestConfig, this.credential.getToken());
-        sessionId = this.client.files().uploadSessionStart().finish().getSessionId();
+            this.destinationPath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
+            assert this.destinationPath != null;
+            this.client = new DbxClientV2(ODSUtility.dbxRequestConfig, this.credential.getToken());
+            sessionId = this.client.files().uploadSessionStart().finish().getSessionId();
     }
 
     @AfterStep
@@ -48,9 +48,10 @@ public class DropBoxWriter implements ItemWriter<DataChunk> {
 
     @Override
     public void write(List<? extends DataChunk> items) throws Exception {
-        this.cursor = new UploadSessionCursor(sessionId, items.get(0).getSize());
+        this.cursor = new UploadSessionCursor(sessionId, items.get(0).getStartPosition());
         for(DataChunk chunk : items){
             this.client.files().uploadSessionAppendV2(cursor).uploadAndFinish(new ByteArrayInputStream(chunk.getData()));
+            this.cursor = new UploadSessionCursor(sessionId, chunk.getStartPosition() + chunk.getSize());
             logger.info("Current chunk in DropBox Writer " + chunk.toString());
         }
     }

@@ -9,6 +9,7 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
     AccountEndpointCredential credential;
     int bufferSize;
     LinkedBlockingQueue<HttpClient> connectionPool;
+    private boolean compress;
 
 
     public HttpConnectionPool(AccountEndpointCredential credential, int bufferSize){
@@ -69,6 +70,14 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
     @Override
     public void returnObject(HttpClient httpClient){
         this.connectionPool.add(httpClient);
+    }
+
+    public void setCompress(boolean compress) {
+        this.compress = compress;
+    }
+
+    public boolean getCompress() {
+        return this.compress;
     }
 
     public int getSize() {
