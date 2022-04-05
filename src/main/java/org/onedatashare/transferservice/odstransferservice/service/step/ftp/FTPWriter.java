@@ -72,9 +72,9 @@ public class FTPWriter implements ItemWriter<DataChunk>, SetPool {
         if(outputStream == null){
             try {
                 this.outputStream = this.client.storeFileStream(this.dBasePath+"/"+fileName);
-            } catch (IOException e) {
+            } catch (IOException ex) {
                 logger.error("Error in opening outputstream in FTP Writer for file : {}", fileName );
-                throw new IOException();
+                throw ex;
             }
             logger.info("Stream not present...creating OutputStream for "+ fileName);
             //ftpDest();
