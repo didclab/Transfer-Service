@@ -76,4 +76,8 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
     protected void doClose() {
         this.boxAPIConnection = null;
     }
+
+    public void setMaxRetry(int attempt) {
+        this.boxAPIConnection.setMaxRetryAttempts(attempt);
+    }
 }

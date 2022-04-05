@@ -118,4 +118,8 @@ public class FtpConnectionPool implements ObjectPool<FTPClient> {
     public void setCompression(Boolean compression){
         this.compression = compression;
     }
+
+    public void invalidateAndCreateNewClient(FTPClient obj) {
+        this.invalidateObject(obj);
+    }
 }
