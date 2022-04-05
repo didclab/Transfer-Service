@@ -1,16 +1,16 @@
 package org.onedatashare.transferservice.odstransferservice.service;
 
-import lombok.Getter;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.pools.FtpConnectionPool;
-import org.onedatashare.transferservice.odstransferservice.pools.JschSessionPool;
 import org.onedatashare.transferservice.odstransferservice.pools.HttpConnectionPool;
-import org.onedatashare.transferservice.odstransferservice.service.step.http.HttpReader;
+import org.onedatashare.transferservice.odstransferservice.pools.JschSessionPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+
+import lombok.Getter;
 
 /**
  * This class is responsible for preparing the SFTP & FTP conneciton pool for readers and writers

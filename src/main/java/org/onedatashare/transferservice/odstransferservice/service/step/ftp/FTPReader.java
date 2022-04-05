@@ -1,13 +1,12 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.ftp;
 
-import lombok.SneakyThrows;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SOURCE_BASE_PATH;
+
+import java.io.IOException;
+import java.io.InputStream;
+
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.pool2.ObjectPool;
-import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSystemOptions;
-import org.apache.commons.vfs2.VFS;
-import org.apache.commons.vfs2.auth.StaticUserAuthenticator;
-import org.apache.commons.vfs2.impl.DefaultFileSystemConfigBuilder;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
@@ -24,10 +23,7 @@ import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 import org.springframework.util.ClassUtils;
 
-import java.io.IOException;
-import java.io.InputStream;
-
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
+import lombok.SneakyThrows;
 
 public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChunk> implements SetPool {
 

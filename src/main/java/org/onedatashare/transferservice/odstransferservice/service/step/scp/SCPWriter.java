@@ -1,7 +1,22 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.scp;
 
-import com.jcraft.jsch.*;
-import lombok.SneakyThrows;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SCP_COMMAND_LOCAL_TO_REMOTE;
+import static org.onedatashare.transferservice.odstransferservice.service.step.sftp.SftpUtility.checkAck;
+import static org.onedatashare.transferservice.odstransferservice.service.step.sftp.SftpUtility.mkdirSCP;
+import static org.onedatashare.transferservice.odstransferservice.service.step.sftp.SftpUtility.okAck;
+import static org.onedatashare.transferservice.odstransferservice.service.step.sftp.SftpUtility.sendFileSize;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Paths;
+import java.util.List;
+
+import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
+
 import org.apache.commons.pool2.ObjectPool;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
@@ -10,24 +25,12 @@ import org.onedatashare.transferservice.odstransferservice.pools.JschSessionPool
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
-import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.AfterWrite;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.core.annotation.BeforeWrite;
-import org.springframework.batch.item.ExecutionContext;
-import org.springframework.batch.item.ItemStreamException;
-import org.springframework.batch.item.ItemStreamWriter;
 import org.springframework.batch.item.ItemWriter;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Paths;
-import java.util.List;
-
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
-import static org.onedatashare.transferservice.odstransferservice.service.step.sftp.SftpUtility.*;
-import static org.onedatashare.transferservice.odstransferservice.service.step.sftp.SftpUtility.okAck;
+import lombok.SneakyThrows;
 
 public class SCPWriter implements ItemWriter<DataChunk>, SetPool {
 

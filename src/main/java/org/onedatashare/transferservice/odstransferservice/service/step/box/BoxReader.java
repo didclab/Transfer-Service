@@ -1,7 +1,10 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.box;
 
+import java.io.ByteArrayOutputStream;
+
 import com.box.sdk.BoxAPIConnection;
 import com.box.sdk.BoxFile;
+
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
@@ -14,10 +17,6 @@ import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 import org.springframework.util.ClassUtils;
-
-import java.io.ByteArrayOutputStream;
-
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SIXTYFOUR_KB;
 
 public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChunk> {
 

@@ -1,18 +1,26 @@
 package org.onedatashare.transferservice.odstransferservice.service;
 
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.CHUNK_SIZE;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.COMPRESS;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.CONCURRENCY;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_CREDENTIAL_ID;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.OWNER_ID;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.PARALLELISM;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.PIPELINING;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.PRIORITY;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.RETRY;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SOURCE_BASE_PATH;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SOURCE_CREDENTIAL_ID;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.TIME;
+
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
-import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
-import org.onedatashare.transferservice.odstransferservice.model.credential.CredentialGroup;
-import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.stereotype.Service;
-
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
 
 @Service
 public class JobParamService {

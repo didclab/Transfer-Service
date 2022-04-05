@@ -1,6 +1,5 @@
 package org.onedatashare.transferservice.odstransferservice.service.listner;
 
-import lombok.SneakyThrows;
 import org.onedatashare.transferservice.odstransferservice.service.ConnectionBag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

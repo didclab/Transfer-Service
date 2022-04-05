@@ -1,7 +1,14 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.http;
 
-import lombok.Data;
-import lombok.SneakyThrows;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SOURCE_BASE_PATH;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Paths;
+
 import org.apache.commons.pool2.ObjectPool;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
@@ -9,6 +16,7 @@ import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.pools.HttpConnectionPool;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
@@ -19,16 +27,7 @@ import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 import org.springframework.util.ClassUtils;
 
-import java.io.IOException;
-import java.net.*;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.file.Paths;
-
-
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SOURCE_BASE_PATH;
-import org.onedatashare.transferservice.odstransferservice.pools.HttpConnectionPool;
+import lombok.SneakyThrows;
 
 public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChunk> implements SetPool {
 
