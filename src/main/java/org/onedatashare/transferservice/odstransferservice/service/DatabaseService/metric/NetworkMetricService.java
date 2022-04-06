@@ -1,6 +1,8 @@
 package org.onedatashare.transferservice.odstransferservice.service.DatabaseService.metric;
 
 import org.onedatashare.transferservice.odstransferservice.model.NetworkMetric;
+import org.onedatashare.transferservice.odstransferservice.model.metrics.DataInflux;
+import org.springframework.scripting.bsh.BshScriptUtils;
 
 import java.util.List;
 
@@ -9,4 +11,7 @@ import java.util.List;
  */
 public interface NetworkMetricService {
     NetworkMetric saveOrUpdate(NetworkMetric networkMetric);
+    NetworkMetric readFile();
+    void executeScript() throws Exception;
+    DataInflux mapData(NetworkMetric networkMetric);
 }

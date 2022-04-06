@@ -20,7 +20,7 @@ public class DataInflux {
     private String networkInterface;
 
     @SerializedName(value="ods_user")
-    @Column(name= "ode_user")
+    @Column(name= "ods_user")
     private String odsUser;
 
     @SerializedName(value="active_core_count")
@@ -28,8 +28,16 @@ public class DataInflux {
     private float coreCount;
 
     @SerializedName(value="cpu_frequency")
-    @Column(name= "cpu_frequency")
     private double[] cpuFrequency;
+
+    @Column(name= "current_cpu_frequency")
+    private double currCpuFrequency;
+
+    @Column(name= "max_cpu_frequency")
+    private double maxCpuFrequency;
+
+    @Column(name= "min_cpu_frequency")
+    private double minCpuFrequency;
 
     @SerializedName(value="energy_consumed")
     @Column(name= "energy_consumed")
@@ -62,6 +70,19 @@ public class DataInflux {
     @SerializedName(value="bytes_sent")
     @Column(name= "bytes_sent")
     private long bytesSent;
+
+    /* Delta values*/
+    @Column(name= "bytes_sent_delta")
+    private long bytesSentDelta;
+
+    @Column(name= "bytes_received_delta")
+    private long bytesReceivedDelta;
+
+    @Column(name= "packets_sent_delta")
+    private long packetsSentDelta;
+
+    @Column(name= "packets_received_delta")
+    private long packetsReceivedDelta;
 
     @SerializedName(value="bytes_recv")
     @Column(name= "bytes_recv")
