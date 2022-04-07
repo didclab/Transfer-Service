@@ -10,7 +10,6 @@ import org.onedatashare.transferservice.odstransferservice.config.CommandLineOpt
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.NetworkMetric;
 import org.onedatashare.transferservice.odstransferservice.model.metrics.DataInflux;
-import org.onedatashare.transferservice.odstransferservice.model.metrics.NetworkMetricInflux;
 import org.onedatashare.transferservice.odstransferservice.utility.DataUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,9 +18,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
-import java.sql.Timestamp;
 import java.text.ParseException;
-import java.time.Instant;
 import java.util.*;
 
 /**
@@ -49,8 +46,6 @@ public class NetworkMetricServiceImpl implements NetworkMetricService {
     private CommandLineOptions cmdLineOptions;
     @Autowired
     private DataInflux dataInflux;
-    @Autowired
-    private NetworkMetricInflux networkMetricInflux;
 
     private static final String SCRIPT_PATH = System.getenv("PMETER_HOME") + "src/pmeter/pmeter_cli.py";
     private static final String REPORT_PATH = System.getenv("HOME") + "/.pmeter/pmeter_measure.txt";
@@ -142,7 +137,6 @@ public class NetworkMetricServiceImpl implements NetworkMetricService {
 
     @Override
     public DataInflux mapData(NetworkMetric networkMetric) {
-        networkMetricInflux.setTime(Instant.now());
         if(networkMetric.getData()!=null) {
 
             GsonBuilder gsonBuilder = new GsonBuilder();
@@ -158,10 +152,6 @@ public class NetworkMetricServiceImpl implements NetworkMetricService {
             mapCpuFrequency();
         }
 
-        if(networkMetric.getStartTime()!= null)
-            networkMetricInflux.setStart_time(networkMetric.getStartTime());
-        if(networkMetric.getEndTime()!= null)
-            networkMetricInflux.setEnd_time(networkMetric.getEndTime());
         return dataInflux;
     }
 

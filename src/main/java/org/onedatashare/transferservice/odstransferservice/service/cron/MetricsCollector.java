@@ -7,7 +7,6 @@ import lombok.SneakyThrows;
 import org.onedatashare.transferservice.odstransferservice.DataRepository.NetworkMetricsInfluxRepository;
 import org.onedatashare.transferservice.odstransferservice.model.NetworkMetric;
 import org.onedatashare.transferservice.odstransferservice.model.metrics.DataInflux;
-import org.onedatashare.transferservice.odstransferservice.model.metrics.NetworkMetricInflux;
 import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.metric.NetworkMetricServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
