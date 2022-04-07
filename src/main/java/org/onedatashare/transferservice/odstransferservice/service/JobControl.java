@@ -59,7 +59,6 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -81,7 +80,6 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
 @NoArgsConstructor
 @Getter
 @Setter
-@Data
 public class JobControl extends DefaultBatchConfigurer {
 
     private DataSource dataSource;
