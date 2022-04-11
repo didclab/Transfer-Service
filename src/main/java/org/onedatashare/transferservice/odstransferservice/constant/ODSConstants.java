@@ -51,4 +51,6 @@ public class ODSConstants {
     public static final String PMETER_REPORT_PATH = System.getenv("HOME") + "/.pmeter/pmeter_measure.txt";
     public static final String PMETER_TEMP_REPORT = "pmeter_measure_temp.txt";
 
+
+    public static final String JOB_SIZE="jobSize";
 }

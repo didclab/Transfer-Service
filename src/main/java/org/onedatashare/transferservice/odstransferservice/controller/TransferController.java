@@ -42,15 +42,10 @@ public class TransferController {
     @Autowired
     CrudService crudService;
 
-    @Autowired
-    MetricsCollector metricsCollector;
-
     @RequestMapping(value = "/start", method = RequestMethod.POST)
     @Async
     public ResponseEntity<String> start(@RequestBody TransferJobRequest request) throws Exception {
         logger.info("Controller Entry point");
-        //todo - to be moved at the last step
-        metricsCollector.collectAndSave();
         JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);
         crudService.insertBeforeTransfer(request);
         logger.info(request.toString());

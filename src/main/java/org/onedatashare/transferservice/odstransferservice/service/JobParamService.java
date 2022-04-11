@@ -34,9 +34,12 @@ public class JobParamService {
         builder.addLong(PARALLELISM, (long) request.getOptions().getParallelThreadCount());
         builder.addLong(PIPELINING, (long) request.getOptions().getPipeSize());
         builder.addLong(RETRY, (long) request.getOptions().getRetry());
+        long totalSize = 0l;
         for(EntityInfo fileInfo : request.getSource().getInfoList()){
             builder.addString(fileInfo.getId(), fileInfo.toString());
+            totalSize+=fileInfo.getSize();
         }
+        builder.addLong(JOB_SIZE, totalSize);
         return builder.toJobParameters();
     }
 }

@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.exec.*;
 import org.onedatashare.transferservice.odstransferservice.DataRepository.NetworkMetricsInfluxRepository;
+import org.onedatashare.transferservice.odstransferservice.model.JobMetric;
 import org.onedatashare.transferservice.odstransferservice.model.NetworkMetric;
 import org.onedatashare.transferservice.odstransferservice.model.NetworkMetricInflux;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
@@ -64,6 +65,9 @@ public class MetricsCollector {
 
     }
 
+    public void collectJobMetrics(JobMetric jobMetric){
+        collectAndSave();
+    }
     private void saveData(NetworkMetric networkMetric){
         networkMetricService.saveOrUpdate(networkMetric);
     }
@@ -148,6 +152,8 @@ public class MetricsCollector {
             nwf.setStart_time(nw.getStartTime());
         if(nw.getEndTime()!= null)
             nwf.setEnd_time(nw.getEndTime());
+        String job = "{'jobId':'123', 'throughput':1029725.0}";
+        nwf.setJobData(job);
         return nwf;
     }
 
