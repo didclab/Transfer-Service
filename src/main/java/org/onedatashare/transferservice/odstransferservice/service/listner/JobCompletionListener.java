@@ -33,11 +33,10 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
     @Override
     public void afterJob(JobExecution jobExecution) {
         logger.info("After JOB------------------present time--" + System.currentTimeMillis());
-        metricsCollector.collectAndSave();
+        metricsCollector.collectJobMetrics();
         long jobCompletionTime = Duration.between(jobExecution.getStartTime().toInstant(), jobExecution.getEndTime().toInstant()).toMillis();
         double throughput = jobExecution.getJobParameters().getLong(JOB_SIZE)/jobCompletionTime; //todo - null check
         logger.info("Job throughput (bytes/ms): " + throughput);
-
 //        logger.info("Saving job metrics");
         connectionBag.closePools();
     }
