@@ -1,6 +1,5 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.http;
 
-import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.commons.pool2.ObjectPool;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
@@ -9,6 +8,7 @@ import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.pools.HttpConnectionPool;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
@@ -17,18 +17,16 @@ import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.ClassUtils;
 
 import java.io.IOException;
-import java.net.*;
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.file.Paths;
-
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SOURCE_BASE_PATH;
-import org.onedatashare.transferservice.odstransferservice.pools.HttpConnectionPool;
 
 public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChunk> implements SetPool {
 
@@ -44,6 +42,7 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
     Boolean compressable;
     Boolean compress;
     private String uri;
+    private RetryTemplate retryTemplate;
 
 
     public HttpReader(EntityInfo fileInfo, AccountEndpointCredential credential) {
@@ -60,41 +59,50 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
         this.filePartitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
         this.compress = this.httpConnectionPool.getCompress();
         this.fileName = fileInfo.getId();
-        this.uri = sourceCred.getUri() + Paths.get(fileInfo.getPath()).toString();
+        this.uri = sourceCred.getUri() + fileInfo.getPath();
     }
 
     @Override
-    protected DataChunk doRead() throws IOException, InterruptedException {
+    protected DataChunk doRead() throws Exception {
         FilePart filePart = this.filePartitioner.nextPart();
         if(filePart == null) return null;
-        byte[] bodyArray;
-        if(compress && compressable) {
-            bodyArray = compressMode(uri, filePart, range);
-        }
-        else{
-            bodyArray = rangeMode(uri, filePart, range);
-        }
-        DataChunk chunk = ODSUtility.makeChunk(bodyArray.length, bodyArray, filePart.getStart(), Long.valueOf(filePart.getPartIdx()).intValue(), this.fileName);
-        logger.info(chunk.toString());
-        return chunk;
+        return this.retryTemplate.execute((c) -> {
+            try {
+                byte[] bodyArray;
+                if (compress && compressable) {
+                    bodyArray = compressMode(uri, filePart, range);
+                } else {
+                    bodyArray = rangeMode(uri, filePart, range);
+                }
+                DataChunk chunk = ODSUtility.makeChunk(bodyArray.length, bodyArray, filePart.getStart(), Long.valueOf(filePart.getPartIdx()).intValue(), this.fileName);
+                logger.info(chunk.toString());
+                return chunk;
+            } catch (IOException | InterruptedException ex) {
+                throw new IOException();//retry will kick in for both the IOException and InterruptedException.
+            }
+        });
+
     }
 
     @SneakyThrows
     @Override
     protected void doOpen() {
         this.client = this.httpConnectionPool.borrowObject();
-        String uri = Paths.get(fileInfo.getPath()).toString();
-        uri = sourceCred.getUri() + uri;
         HttpRequest request = HttpRequest.newBuilder()
                 .GET()
                 .uri(URI.create(uri)) //make http a string constant as well
                 .setHeader(ODSConstants.ACCEPT_ENCODING, ODSConstants.GZIP)
                 .setHeader(ODSConstants.RANGE, String.format(ODSConstants.byteRange,0, 1)) //make Range into a string constant as well as bytes
                 .build();
-        HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
-        range = response.statusCode() == 206;
-        compressable = response.headers().allValues(ODSConstants.CONTENT_ENCODING).size() != 0;
-        if(compressable && compress) this.fileName = this.fileName + ".gzip";
+        this.retryTemplate.execute((c) -> {
+
+            HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            range = response.statusCode() == 206;
+            compressable = response.headers().allValues(ODSConstants.CONTENT_ENCODING).size() != 0;
+            if(compressable && compress) this.fileName = this.fileName + ".gzip";
+            return null;
+        });
+
     }
 
     @Override
@@ -113,7 +121,7 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
                 .uri(URI.create(uri))
                 .setHeader(ODSConstants.ACCEPT_ENCODING, ODSConstants.GZIP)
                 .setHeader(valid ? ODSConstants.RANGE : ODSConstants.AccessControlExposeHeaders,
-                           valid ? String.format(ODSConstants.byteRange,filePart.getStart(), filePart.getEnd()) : ODSConstants.ContentRange)
+                        valid ? String.format(ODSConstants.byteRange,filePart.getStart(), filePart.getEnd()) : ODSConstants.ContentRange)
                 .build();
         HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
         return response.body();
@@ -124,10 +132,14 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
                 .GET()
                 .uri(URI.create(uri))
                 .setHeader(valid ? ODSConstants.RANGE : ODSConstants.AccessControlExposeHeaders,
-                           valid ? String.format(ODSConstants.byteRange,filePart.getStart(), filePart.getEnd()) : ODSConstants.ContentRange)
+                        valid ? String.format(ODSConstants.byteRange,filePart.getStart(), filePart.getEnd()) : ODSConstants.ContentRange)
                 .build();
         HttpResponse<byte[]> response = this.client.send(request, HttpResponse.BodyHandlers.ofByteArray());
         return response.body();
+    }
+
+    public void setRetryTemplate(RetryTemplate retryTemplate) {
+        this.retryTemplate = retryTemplate;
     }
 
 }

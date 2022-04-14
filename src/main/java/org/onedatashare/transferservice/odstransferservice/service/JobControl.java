@@ -161,6 +161,7 @@ public class JobControl extends DefaultBatchConfigurer {
             case http:
                 HttpReader hr = new HttpReader(fileInfo, request.getSource().getVfsSourceCredential());
                 hr.setPool(connectionBag.getHttpReaderPool());
+                hr.setRetryTemplate(retryTemplateForReaderAndWriter);
                 return hr;
             case vfs:
                 return new VfsReader(request.getSource().getVfsSourceCredential(), fileInfo);
