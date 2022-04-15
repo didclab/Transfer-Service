@@ -41,7 +41,7 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
     AccountEndpointCredential sourceCred;
     Boolean compressable;
     Boolean compress;
-    private String uri;
+    private URI uri;
     private RetryTemplate retryTemplate;
 
 
@@ -59,7 +59,7 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
         this.filePartitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
         this.compress = this.httpConnectionPool.getCompress();
         this.fileName = fileInfo.getId();
-        this.uri = sourceCred.getUri() + fileInfo.getPath();
+        this.uri =  URI.create(this.sBasePath + fileInfo.getPath()).normalize();
     }
 
     @Override
@@ -90,7 +90,7 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
         this.client = this.httpConnectionPool.borrowObject();
         HttpRequest request = HttpRequest.newBuilder()
                 .GET()
-                .uri(URI.create(uri)) //make http a string constant as well
+                .uri(uri) //make http a string constant as well
                 .setHeader(ODSConstants.ACCEPT_ENCODING, ODSConstants.GZIP)
                 .setHeader(ODSConstants.RANGE, String.format(ODSConstants.byteRange,0, 1)) //make Range into a string constant as well as bytes
                 .build();
@@ -115,10 +115,10 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
         this.httpConnectionPool = (HttpConnectionPool) connectionPool;
     }
 
-    public byte[] compressMode(String uri, FilePart filePart, boolean valid) throws IOException, InterruptedException {
+    public byte[] compressMode(URI uri, FilePart filePart, boolean valid) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
                 .GET()
-                .uri(URI.create(uri))
+                .uri(uri)
                 .setHeader(ODSConstants.ACCEPT_ENCODING, ODSConstants.GZIP)
                 .setHeader(valid ? ODSConstants.RANGE : ODSConstants.AccessControlExposeHeaders,
                         valid ? String.format(ODSConstants.byteRange,filePart.getStart(), filePart.getEnd()) : ODSConstants.ContentRange)
@@ -127,10 +127,10 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
         return response.body();
     }
 
-    public byte[] rangeMode(String uri, FilePart filePart, boolean valid) throws IOException, InterruptedException {
+    public byte[] rangeMode(URI uri, FilePart filePart, boolean valid) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
                 .GET()
-                .uri(URI.create(uri))
+                .uri(uri)
                 .setHeader(valid ? ODSConstants.RANGE : ODSConstants.AccessControlExposeHeaders,
                         valid ? String.format(ODSConstants.byteRange,filePart.getStart(), filePart.getEnd()) : ODSConstants.ContentRange)
                 .build();
