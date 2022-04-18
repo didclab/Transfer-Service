@@ -95,6 +95,9 @@ public class JobControl extends DefaultBatchConfigurer {
     @Autowired
     FileHashValidator fileHashValidator;
 
+    @Autowired
+    ChecksumAlgorithm checksumAlgorithm; //todo - static?
+
     @Autowired(required = false)
     public void setDatasource(DataSource datasource) {
         this.dataSource = datasource;
@@ -143,6 +146,12 @@ public class JobControl extends DefaultBatchConfigurer {
                 threadPoolConfig.setParallelThreadPoolSize(request.getOptions().getParallelThreadCount());
                 child.taskExecutor(this.threadPoolConfig.parallelThreadPool());
             }
+            fileHashValidator.setAlgorithm(checksumAlgorithm.getAlgorithm(request));
+            if(request.getOptions().getVerify() != null){
+                fileHashValidator.setVerify(request.getOptions().getVerify());
+            } else{
+                fileHashValidator.setVerify(false);
+            }
             child.reader(getRightReader(request.getSource().getType(), file)).writer(getRightWriter(request.getDestination().getType(), file));
             flows.add(new FlowBuilder<Flow>(id + basePath).start(child.build()).build());
         }
@@ -173,7 +182,9 @@ public class JobControl extends DefaultBatchConfigurer {
                 amazonS3Reader.setFileHashValidator(fileHashValidator);
                 return amazonS3Reader;
             case box:
-                return new BoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
+                BoxReader boxReader = new BoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
+                boxReader.setFileHashValidator(fileHashValidator);
+                return boxReader;
             case dropbox:
                 return new DropBoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
             case scp:
@@ -204,9 +215,13 @@ public class JobControl extends DefaultBatchConfigurer {
                 return amazonS3Writer;
             case box:
                 if(fileInfo.getSize() < TWENTY_MB){
-                    return new BoxWriterSmallFile(request.getDestination().getOauthDestCredential(), fileInfo);
+                    BoxWriterSmallFile boxWriterSmallFile = new BoxWriterSmallFile(request.getDestination().getOauthDestCredential(), fileInfo);
+                    boxWriterSmallFile.setFileHashValidator(fileHashValidator);
+                    return boxWriterSmallFile;
                 }else{
-                    return new BoxWriterLargeFile(request.getDestination().getOauthDestCredential(), fileInfo);
+                    BoxWriterLargeFile boxWriterLargeFile = new BoxWriterLargeFile(request.getDestination().getOauthDestCredential(), fileInfo);
+                    boxWriterLargeFile.setFileHashValidator(fileHashValidator);
+                    return boxWriterLargeFile;
                 }
             case dropbox:
                 return new DropBoxWriter(request.getDestination().getOauthDestCredential());

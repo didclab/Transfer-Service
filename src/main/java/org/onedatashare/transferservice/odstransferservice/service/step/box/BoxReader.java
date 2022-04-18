@@ -2,12 +2,14 @@ package org.onedatashare.transferservice.odstransferservice.service.step.box;
 
 import com.box.sdk.BoxAPIConnection;
 import com.box.sdk.BoxFile;
+import org.apache.commons.codec.binary.Hex;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.FileHashValidator;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
+import org.onedatashare.transferservice.odstransferservice.service.SetFileHash;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +25,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
-public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChunk> {
+public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChunk> implements SetFileHash {
 
     private OAuthEndpointCredential credential;
     FilePartitioner filePartitioner;
@@ -49,13 +51,12 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) throws NoSuchAlgorithmException {
         filePartitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
-        messageDigest = MessageDigest.getInstance("SHA-1");
+        messageDigest = MessageDigest.getInstance(fileHashValidator.getAlgorithm());
+        fileHashValidator.setReaderMessageDigest(messageDigest);
     }
 
     @AfterStep
     public void afterStep()  {
-        String encodedHash = Base64.getEncoder().encodeToString(messageDigest.digest());
-        fileHashValidator.setReaderHash(encodedHash);
     }
 
     /**
@@ -69,8 +70,13 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
         ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
         this.currentFile.downloadRange(byteArray, filePart.getStart(), filePart.getEnd());
         DataChunk chunk = ODSUtility.makeChunk(filePart.getSize(), byteArray.toByteArray(), filePart.getStart(), Math.toIntExact(filePart.getPartIdx()), currentFile.getInfo().getName());
-        logger.info(chunk.toString());
-        messageDigest.update(chunk.getData());
+        logger.info("chunk: "+ chunk.toString());
+        fileHashValidator.getReaderMessageDigest().update(chunk.getData(), 0, chunk.getData().length);
+        if(filePart.isLastChunk()){
+            String hash = Hex.encodeHexString(fileHashValidator.getReaderMessageDigest().digest());
+            logger.info("Box Reader hash: " + hash);
+            fileHashValidator.setReaderHash(hash);
+        }
         return chunk;
     }
 
@@ -91,5 +97,10 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
     @Override
     protected void doClose() {
         this.boxAPIConnection = null;
+    }
+
+    @Override
+    public void setFileHashValidator(FileHashValidator fileHash) {
+        this.fileHashValidator = fileHash;
     }
 }

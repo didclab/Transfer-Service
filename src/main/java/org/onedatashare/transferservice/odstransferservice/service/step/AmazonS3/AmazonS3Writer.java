@@ -84,6 +84,7 @@ public class AmazonS3Writer implements ItemWriter<DataChunk>, SetFileHash {
         }
     }
 
+    //not checking verify as checksum calculation is not an overhead
     @Override
     public void write(List<? extends DataChunk> items) {
         prepareS3Transfer(items.get(0).getFileName());
@@ -127,9 +128,10 @@ public class AmazonS3Writer implements ItemWriter<DataChunk>, SetFileHash {
     public void afterStep() {
        // logger.info(fileHashValidator.getWriterHash());
         //logger.info(fileHashValidator.getReaderHash());
-        boolean match = fileHashValidator.getReaderHash().equals(fileHashValidator.getWriterHash());
-        logger.info("Match: "+ match);
-
+        if(fileHashValidator.isVerify()) {
+            boolean match = fileHashValidator.getReaderHash().equals(fileHashValidator.getWriterHash());
+            logger.info("Match: " + match);
+        }
         if (this.multipartUpload) {
             this.metaData.completeMultipartUpload(client);
             this.metaData.reset();

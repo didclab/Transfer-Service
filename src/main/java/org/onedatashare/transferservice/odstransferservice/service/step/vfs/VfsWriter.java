@@ -46,7 +46,7 @@ public class VfsWriter implements ItemWriter<DataChunk>, SetFileHash {
         assert this.destinationPath != null;
         this.filePath = Paths.get(this.destinationPath);
         prepareFile();
-        fileHashValidator.setWriterMessageDigest(MessageDigest.getInstance("SHA-256"));
+        fileHashValidator.setWriterMessageDigest(MessageDigest.getInstance(fileHashValidator.getAlgorithm()));
 
     }
 
@@ -59,12 +59,12 @@ public class VfsWriter implements ItemWriter<DataChunk>, SetFileHash {
         } catch (IOException exception) {
             exception.printStackTrace();
         }
-//        String encodedHash = Base64.getEncoder().encodeToString(fileHashValidator.getWriterMessageDigest().digest());
-//        fileHashValidator.setWriterHash(encodedHash);
-        if(!fileHashValidator.check()){
-            logger.info("There's a mismatch"); //todo - retry
-        }else{
-            logger.info("Check sum matches"); //todo - remove log
+        if(fileHashValidator.isVerify()) {
+            if (!fileHashValidator.check()) {
+                logger.info("There's a mismatch"); //todo - retry
+            } else {
+                logger.info("Check sum matches"); //todo - remove log
+            }
         }
 
     }
@@ -96,6 +96,9 @@ public class VfsWriter implements ItemWriter<DataChunk>, SetFileHash {
         }
     }
 
+    /**
+     * calculating hash after writing all chunks
+     */
     @Override
     public void write(List<? extends DataChunk> items) throws Exception {
         this.fileName = items.get(0).getFileName();
@@ -107,7 +110,15 @@ public class VfsWriter implements ItemWriter<DataChunk>, SetFileHash {
             logger.info("Wrote the amount of bytes: " + String.valueOf(bytesWritten));
             if (chunk.getSize() != bytesWritten)
                 logger.info("Wrote " + bytesWritten + " but we should have written " + chunk.getSize());
-            fileHashValidator.getWriterMessageDigest().update(chunk.getData());
+
+            if(fileHashValidator.isVerify()) {
+                fileHashValidator.getWriterMessageDigest().update(chunk.getData());
+            }
+        }
+        if(fileHashValidator.isVerify()){
+            String fileHash = new String(Hex.encodeHex(fileHashValidator.getWriterMessageDigest().digest()));
+            logger.info("vfs writer hash: "+ fileHash);
+            fileHashValidator.setWriterHash(fileHash);
         }
     }
 

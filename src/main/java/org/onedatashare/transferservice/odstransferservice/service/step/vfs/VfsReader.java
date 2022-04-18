@@ -64,7 +64,7 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
         this.fileName = this.fileInfo.getId();
         this.fsize = this.fileInfo.getSize();
         this.filePartitioner.createParts(fsize, fileName);
-        messageDigest = MessageDigest.getInstance("MD5"); //todo - specific to s3 transfer (should come from job)
+        messageDigest = MessageDigest.getInstance(fileHashValidator.getAlgorithm());
         fileHashValidator.setReaderMessageDigest(messageDigest);
     }
 
@@ -91,20 +91,23 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
         buffer.flip();
         byte[] data = new byte[chunkParameters.getSize()];
         buffer.get(data, 0, totalBytes);
-        fileHashValidator.getReaderMessageDigest().update(data, 0, totalBytes);
-        //todo -> string manipulation or string builder?
-        //this implementation is specific for VFS to S3 transfer
-        if(fileInfo.getSize() >= FIVE_MB) {
-            // 67108863 number of chunks can be handled at max
-            StringBuilder stringBuilder = new StringBuilder(fileHashValidator.getReaderHash());
-            String part = Hex.encodeHexString(fileHashValidator.getReaderMessageDigest().digest());
-            stringBuilder.append(part);
-            fileHashValidator.getReaderMessageDigest().reset();
-            fileHashValidator.setReaderHash(stringBuilder.toString());
-        }else{
-            if(chunkParameters.isLastChunk()) {
-                fileHashValidator.setReaderHash(Hex.encodeHexString(fileHashValidator.getReaderMessageDigest().digest()));
+        //todo - extract out as a function
+        if(fileHashValidator.isVerify()) {
+            fileHashValidator.getReaderMessageDigest().update(data, 0, totalBytes);
+            //todo -> string manipulation or string builder?
+            //this implementation is specific for VFS to S3 transfer
+            if (fileInfo.getSize() >= FIVE_MB) {
+                // 67108863 number of chunks can be handled at max
+                StringBuilder stringBuilder = new StringBuilder(fileHashValidator.getReaderHash());
+                String part = Hex.encodeHexString(fileHashValidator.getReaderMessageDigest().digest());
+                stringBuilder.append(part);
                 fileHashValidator.getReaderMessageDigest().reset();
+                fileHashValidator.setReaderHash(stringBuilder.toString());
+            } else {
+                if (chunkParameters.isLastChunk()) {
+                    fileHashValidator.setReaderHash(Hex.encodeHexString(fileHashValidator.getReaderMessageDigest().digest()));
+                    fileHashValidator.getReaderMessageDigest().reset();
+                }
             }
         }
         logger.info("Bytes read: " + totalBytes);

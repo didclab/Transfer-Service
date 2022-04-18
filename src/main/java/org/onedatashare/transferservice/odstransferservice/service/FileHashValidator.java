@@ -1,6 +1,7 @@
 package org.onedatashare.transferservice.odstransferservice.service;
 
 import com.amazonaws.util.Base64;
+import com.amazonaws.util.StringUtils;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.codec.binary.Hex;
@@ -27,6 +28,8 @@ public class FileHashValidator {
     String readerHash;
     String writerHash;
 
+    String algorithm;
+    boolean verify;
 
     public FileHashValidator() {
         readerHash = Strings.EMPTY;
@@ -34,11 +37,17 @@ public class FileHashValidator {
     }
 
     public void remove(){
-        readerMessageDigest.reset();
-        writerMessageDigest.reset();
+        if(readerMessageDigest!=null) readerMessageDigest.reset();
+        if(writerMessageDigest!=null) writerMessageDigest.reset();
+        readerHash = Strings.EMPTY;
+        writerHash = Strings.EMPTY;
     }
 
     public boolean check(){
+        if(!StringUtils.isNullOrEmpty(readerHash) && !StringUtils.isNullOrEmpty(writerHash)){
+            logger.info(String.format("Reader hash (%s) matches writer hash (%s)"), readerHash, writerHash);
+            return readerHash.equals(writerHash);
+        }
         byte[] read = readerMessageDigest.digest();
         byte[] write =writerMessageDigest.digest();
 //        logger.info("read: " + Arrays.toString(read));

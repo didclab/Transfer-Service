@@ -8,6 +8,7 @@ import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.FileHashValidator;
+import org.onedatashare.transferservice.odstransferservice.service.SetFileHash;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
@@ -26,7 +27,7 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
  * This class is responsible for writing to Box using the chunked upload approach & small file upload
  * Ideally we should separate this out I think.
  */
-public class BoxWriterLargeFile implements ItemWriter<DataChunk> {
+public class BoxWriterLargeFile implements ItemWriter<DataChunk>, SetFileHash {
 
     private BoxAPIConnection boxAPIConnection;
     EntityInfo fileInfo;
@@ -62,8 +63,10 @@ public class BoxWriterLargeFile implements ItemWriter<DataChunk> {
         BoxFileUploadSession session = this.fileMap.get(this.fileInfo.getId());
         MessageDigest messageDigest = this.digestMap.get(this.fileInfo.getId());
         String encodedMessageDigest = Base64.getEncoder().encodeToString(messageDigest.digest());
-        fileHashValidator.setWriterHash(encodedMessageDigest);
         session.commit(encodedMessageDigest, this.parts, new HashMap<>(), null, null);
+        if(fileHashValidator.isVerify()){
+            fileHashValidator.check();
+        }
     }
 
     /**
@@ -109,12 +112,20 @@ public class BoxWriterLargeFile implements ItemWriter<DataChunk> {
         prepareForUpload(fileName);
         BoxFileUploadSession session = this.fileMap.get(fileName);
         MessageDigest digest = this.digestMap.get(fileName);
+        StringBuilder sha1String = new StringBuilder();
         for (DataChunk dataChunk : items) {
             BoxFileUploadSessionPart part = session.uploadPart(dataChunk.getData(), dataChunk.getStartPosition(), Long.valueOf(dataChunk.getSize()).intValue(), this.fileInfo.getSize());
             this.parts.add(part);
             digest.update(dataChunk.getData());
+            sha1String.append(part.getSha1());
             logger.info("Current chunk in BoxLargeFile Writer " + dataChunk.toString());
         }
         this.digestMap.put(fileName, digest);
+        fileHashValidator.setWriterHash(sha1String.toString());
+    }
+
+    @Override
+    public void setFileHashValidator(FileHashValidator fileHash) {
+        this.fileHashValidator = fileHash;
     }
 }

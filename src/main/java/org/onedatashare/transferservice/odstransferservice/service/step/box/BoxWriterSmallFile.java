@@ -5,6 +5,8 @@ import org.onedatashare.transferservice.odstransferservice.model.BoxSmallFileUpl
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.FileHashValidator;
+import org.onedatashare.transferservice.odstransferservice.service.SetFileHash;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
@@ -12,12 +14,14 @@ import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemWriter;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.List;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
 
-public class BoxWriterSmallFile implements ItemWriter<DataChunk> {
+public class BoxWriterSmallFile implements ItemWriter<DataChunk>, SetFileHash {
 
     private BoxAPIConnection boxAPIConnection;
     EntityInfo fileInfo;
@@ -26,6 +30,7 @@ public class BoxWriterSmallFile implements ItemWriter<DataChunk> {
     BoxFolder boxFolder;
     BoxSmallFileUpload smallFileUpload;
     private String fileName;
+    private FileHashValidator fileHashValidator;
     Logger logger = LoggerFactory.getLogger(BoxWriterSmallFile.class);
 
     public BoxWriterSmallFile(OAuthEndpointCredential credential, EntityInfo fileInfo){
@@ -36,9 +41,11 @@ public class BoxWriterSmallFile implements ItemWriter<DataChunk> {
     }
 
     @BeforeStep
-    public void beforeStep(StepExecution stepExecution) {
+    public void beforeStep(StepExecution stepExecution) throws NoSuchAlgorithmException {
         this.destinationBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH); //path to place the files
         this.boxFolder = new BoxFolder(this.boxAPIConnection, this.destinationBasePath);
+        MessageDigest messageDigest = MessageDigest.getInstance(fileHashValidator.getAlgorithm());
+        fileHashValidator.setWriterMessageDigest(messageDigest);
     }
 
     /**
@@ -48,7 +55,13 @@ public class BoxWriterSmallFile implements ItemWriter<DataChunk> {
      */
     @AfterStep
     public void afterStep() {
-        boxFolder.uploadFile(this.smallFileUpload.condenseListToOneStream(this.fileInfo.getSize()), fileName);
+        BoxFile.Info info =  boxFolder.uploadFile(this.smallFileUpload.condenseListToOneStream(this.fileInfo.getSize()), fileName);
+        if(fileHashValidator.isVerify()) {
+            fileHashValidator.setWriterHash(info.getSha1());
+            if(fileHashValidator.check()){
+                System.out.println("Match");
+            }
+        }
     }
 
 
@@ -57,5 +70,10 @@ public class BoxWriterSmallFile implements ItemWriter<DataChunk> {
         this.fileName = items.get(0).getFileName();
         this.smallFileUpload.addAllChunks(items);
         logger.info("Small file box writer wrote {} DataChunks", items.size());
+    }
+
+    @Override
+    public void setFileHashValidator(FileHashValidator fileHash) {
+        this.fileHashValidator = fileHash;
     }
 }
