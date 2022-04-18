@@ -62,7 +62,7 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
         this.amazonS3URI = new AmazonS3URI(S3Utility.constructS3URI(this.sourceCredential.getUri(), this.fileName, this.sourcePath));
         this.getSkeleton = new GetObjectRequest(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey());
         logger.info("Starting the job for this file: " + this.fileName);
-        messageDigest = MessageDigest.getInstance("SHA-256");
+        messageDigest = MessageDigest.getInstance(fileHashValidator.getAlgorithm());
         fileHashValidator.setReaderMessageDigest(messageDigest);
     }
 
@@ -84,7 +84,7 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
             int bytesRead = 0;
             bytesRead += stream.read(dataSet, Long.valueOf(totalBytes).intValue(), Long.valueOf(part.getSize()).intValue());
             if (bytesRead == -1) return null;
-            fileHashValidator.getReaderMessageDigest().update(dataSet, 0, bytesRead);
+            if(fileHashValidator.isVerify()) fileHashValidator.getReaderMessageDigest().update(dataSet, 0, bytesRead);
             totalBytes += bytesRead;
         }
         stream.close();
