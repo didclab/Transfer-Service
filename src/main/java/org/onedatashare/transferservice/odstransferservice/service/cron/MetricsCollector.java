@@ -49,20 +49,18 @@ public class MetricsCollector {
         if(networkMetric==null){
             throw new Exception("networkMetric must not be null");
         }
-        //saveData(networkMetric);
         DataInflux dataInflux = networkMetricService.mapData(networkMetric);
         repo.insertDataPoints(dataInflux);
     }
 
     @SneakyThrows
-    public void collectJobMetrics(){
+    public void collectJobMetrics(JobMetric jobMetric){
         networkMetricService.executeScript();
         NetworkMetric networkMetric = networkMetricService.readFile();
         if(networkMetric==null){
             throw new Exception("networkMetric must not be null");
         }
-        String jobData = "{'id':'12345', 'throughput':234.0}";
-        networkMetric.setJobData(jobData);
+        networkMetric.setJobData(jobMetric);
         DataInflux dataInflux = networkMetricService.mapData(networkMetric);
         repo.insertDataPoints(dataInflux);
     }
