@@ -45,6 +45,7 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
         jobMetric.setParallelism(jobParameters.getLong(PARALLELISM));
         jobMetric.setPipelining(jobParameters.getLong(PIPELINING));
         jobMetric.setThroughput(throughput);
+        logger.info("Job metric: " + jobMetric);
         metricsCollector.collectJobMetrics(jobMetric);
         connectionBag.closePools();
     }

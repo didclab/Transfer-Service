@@ -146,12 +146,15 @@ public class NetworkMetricServiceImpl implements NetworkMetricService {
 
             DataInflux[] dataArr = gsonBuilder.create().fromJson(networkMetric.getData(), DataInflux[].class);
             dataInflux = dataArr[dataArr.length-1];
-            setJobData(networkMetric, dataInflux);
             float[] l = dataInflux.getLatencyArr();
             dataInflux.setLatencyVal(l[0]);
             getDeltaValueByMetric();
             mapCpuFrequency();
         }
+        if(networkMetric.getJobData()==null){
+            networkMetric.setJobData(new JobMetric());
+        }
+        setJobData(networkMetric, dataInflux);
 
         return dataInflux;
     }
