@@ -35,17 +35,7 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
     @Override
     public void afterJob(JobExecution jobExecution) {
         logger.info("After JOB------------------present time--" + System.currentTimeMillis());
-        JobParameters jobParameters = jobExecution.getJobParameters();
-        long jobCompletionTime = Duration.between(jobExecution.getStartTime().toInstant(), jobExecution.getEndTime().toInstant()).toMillis();
-        double throughput = jobParameters.getLong(JOB_SIZE)/jobCompletionTime; //todo - null check
-        logger.info("Job throughput (bytes/ms): " + throughput);
-        JobMetric jobMetric = new JobMetric();
-        jobMetric.setJobId(jobExecution.getJobId().toString());
-        jobMetric.setConcurrency(jobParameters.getLong(CONCURRENCY));
-        jobMetric.setParallelism(jobParameters.getLong(PARALLELISM));
-        jobMetric.setPipelining(jobParameters.getLong(PIPELINING));
-        jobMetric.setThroughput(throughput);
-        logger.info("Job metric: " + jobMetric);
+        JobMetric jobMetric = metricsCollector.populateJobMetric(jobExecution, null);
         metricsCollector.collectJobMetrics(jobMetric);
         connectionBag.closePools();
     }

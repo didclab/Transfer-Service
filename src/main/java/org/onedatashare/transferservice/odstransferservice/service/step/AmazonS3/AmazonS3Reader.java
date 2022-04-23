@@ -9,18 +9,18 @@ import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
+import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.onedatashare.transferservice.odstransferservice.utility.S3Utility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
-import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 import org.springframework.util.ClassUtils;
 
 
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SIXTYFOUR_KB;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.BYTES_READ;
 
 public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<DataChunk> {
 
@@ -36,6 +36,8 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
     private final int chunkSize;
     ObjectMetadata currentFileMetaData;
     GetObjectRequest getSkeleton;
+    StepExecution stepExecution;
+    MetricsCollector metricsCollector;
 
     public AmazonS3Reader(AccountEndpointCredential sourceCredential, EntityInfo fileInfo) {
         this.sourceCredential = sourceCredential;
@@ -54,6 +56,8 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
         this.amazonS3URI = new AmazonS3URI(S3Utility.constructS3URI(this.sourceCredential.getUri(), this.fileName, this.sourcePath));
         this.getSkeleton = new GetObjectRequest(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey());
         logger.info("Starting the job for this file: " + this.fileName);
+        this.stepExecution = stepExecution;
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, 0L);
     }
 
     public void setName(String name) {
@@ -75,7 +79,9 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
             bytesRead += stream.read(dataSet, Long.valueOf(totalBytes).intValue(), Long.valueOf(part.getSize()).intValue());
             if (bytesRead == -1) return null;
             totalBytes += bytesRead;
+            //todo - adding tp here was slowing the transfer down
         }
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, (long) totalBytes);
         stream.close();
         return ODSUtility.makeChunk(part.getSize(), dataSet, part.getStart(), Long.valueOf(part.getPartIdx()).intValue(), this.fileName);
     }
@@ -90,5 +96,9 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
     @Override
     protected void doClose() throws Exception {
         this.s3Client = null;
+    }
+
+    public void setMetricsCollector(MetricsCollector metricsCollector) {
+        this.metricsCollector = metricsCollector;
     }
 }

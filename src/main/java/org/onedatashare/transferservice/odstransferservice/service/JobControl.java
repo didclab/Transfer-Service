@@ -7,6 +7,7 @@ import org.onedatashare.transferservice.odstransferservice.config.DataSourceConf
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
+import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
 import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3Reader;
 import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3Writer;
@@ -92,6 +93,9 @@ public class JobControl extends DefaultBatchConfigurer {
     @Autowired
     JobCompletionListener jobCompletionListener;
 
+    @Autowired
+    MetricsCollector metricsCollector;
+
     @Autowired(required = false)
     public void setDatasource(DataSource datasource) {
         this.dataSource = datasource;
@@ -164,7 +168,9 @@ public class JobControl extends DefaultBatchConfigurer {
                 ftpReader.setPool(connectionBag.getFtpReaderPool());
                 return ftpReader;
             case s3:
-                return new AmazonS3Reader(request.getSource().getVfsSourceCredential(), fileInfo);
+                AmazonS3Reader amazonS3Reader = new AmazonS3Reader(request.getSource().getVfsSourceCredential(), fileInfo);
+                amazonS3Reader.setMetricsCollector(metricsCollector);
+                return amazonS3Reader;
             case box:
                 return new BoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
             case dropbox:
@@ -180,7 +186,9 @@ public class JobControl extends DefaultBatchConfigurer {
     protected ItemWriter<DataChunk> getRightWriter(EndpointType type, EntityInfo fileInfo) {
         switch (type) {
             case vfs:
-                return new VfsWriter(request.getDestination().getVfsDestCredential());
+                VfsWriter vfsWriter = new VfsWriter(request.getDestination().getVfsDestCredential());
+                vfsWriter.setMetricsCollector(metricsCollector);
+                return vfsWriter;
             case sftp:
                 SFTPWriter sftpWriter = new SFTPWriter(request.getDestination().getVfsDestCredential(), request.getOptions().getPipeSize());
                 sftpWriter.setPool(connectionBag.getSftpWriterPool());
