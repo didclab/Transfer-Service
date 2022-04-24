@@ -6,6 +6,7 @@ import com.dropbox.core.v2.files.CommitInfo;
 import com.dropbox.core.v2.files.UploadSessionCursor;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +18,7 @@ import org.springframework.batch.item.ItemWriter;
 import java.io.ByteArrayInputStream;
 import java.util.List;
 
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
 public class DropBoxWriter implements ItemWriter<DataChunk> {
 
@@ -27,6 +28,8 @@ public class DropBoxWriter implements ItemWriter<DataChunk> {
     String sessionId;
     private UploadSessionCursor cursor;
     Logger logger = LoggerFactory.getLogger(DropBoxWriter.class);
+    private StepExecution stepExecution;
+    private MetricsCollector metricsCollector;
 
     public DropBoxWriter(OAuthEndpointCredential credential){
         this.credential = credential;
@@ -38,6 +41,8 @@ public class DropBoxWriter implements ItemWriter<DataChunk> {
         assert this.destinationPath != null;
         this.client = new DbxClientV2(ODSUtility.dbxRequestConfig, this.credential.getToken());
         sessionId = this.client.files().uploadSessionStart().finish().getSessionId();
+        this.stepExecution = stepExecution;
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, 0L);
     }
 
     @AfterStep
@@ -52,6 +57,11 @@ public class DropBoxWriter implements ItemWriter<DataChunk> {
         for(DataChunk chunk : items){
             this.client.files().uploadSessionAppendV2(cursor).uploadAndFinish(new ByteArrayInputStream(chunk.getData()));
             logger.info("Current chunk in DropBox Writer " + chunk.toString());
+            metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, chunk.getSize());
         }
+    }
+
+    public void setMetricsCollector(MetricsCollector metricsCollector) {
+        this.metricsCollector = metricsCollector;
     }
 }

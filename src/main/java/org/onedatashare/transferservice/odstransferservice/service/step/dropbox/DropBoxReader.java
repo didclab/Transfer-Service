@@ -9,6 +9,7 @@ import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
+import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +21,7 @@ import org.springframework.util.ClassUtils;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Paths;
 
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.BYTES_READ;
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SOURCE_BASE_PATH;
 
 public class DropBoxReader extends AbstractItemCountingItemStreamItemReader<DataChunk> {
@@ -33,6 +35,8 @@ public class DropBoxReader extends AbstractItemCountingItemStreamItemReader<Data
     private DbxClientV2 client;
     private DownloadBuilder requestSkeleton;
     private Metadata fileMetaData;
+    private StepExecution stepExecution;
+    private MetricsCollector metricsCollector;
 
 
     public DropBoxReader(OAuthEndpointCredential credential, EntityInfo fileInfo){
@@ -48,6 +52,8 @@ public class DropBoxReader extends AbstractItemCountingItemStreamItemReader<Data
         sBasePath = stepExecution.getJobParameters().getString(SOURCE_BASE_PATH);
         this.sBasePath = Paths.get(sBasePath, fileInfo.getPath()).toString();
         this.partitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
+        this.stepExecution = stepExecution;
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, 0L);
     }
 
     public void setName(String name) {
@@ -63,6 +69,7 @@ public class DropBoxReader extends AbstractItemCountingItemStreamItemReader<Data
         DataChunk chunk = ODSUtility.makeChunk(currentPart.getSize(), byteArrayOutputStream.toByteArray(), currentPart.getStart(), Long.valueOf(currentPart.getPartIdx()).intValue(),this.fileMetaData.getName());
         byteArrayOutputStream.close();
         logger.info(chunk.toString());
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, (long) currentPart.getSize());
         return chunk;
     }
 
@@ -77,5 +84,9 @@ public class DropBoxReader extends AbstractItemCountingItemStreamItemReader<Data
     protected void doClose() throws Exception {
         //this is not needed for some reason the client is auto destroyed somehow.
         //this could be through the closeable interface but not 100% sure will need to test/profile this
+    }
+
+    public void setMetricsCollector(MetricsCollector metricsCollector) {
+        this.metricsCollector = metricsCollector;
     }
 }

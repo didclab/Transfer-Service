@@ -5,6 +5,7 @@ import org.onedatashare.transferservice.odstransferservice.model.BoxSmallFileUpl
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
@@ -15,7 +16,7 @@ import org.springframework.batch.item.ItemWriter;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
 public class BoxWriterSmallFile implements ItemWriter<DataChunk> {
 
@@ -27,6 +28,8 @@ public class BoxWriterSmallFile implements ItemWriter<DataChunk> {
     BoxSmallFileUpload smallFileUpload;
     private String fileName;
     Logger logger = LoggerFactory.getLogger(BoxWriterSmallFile.class);
+    StepExecution stepExecution;
+    MetricsCollector metricsCollector;
 
     public BoxWriterSmallFile(OAuthEndpointCredential credential, EntityInfo fileInfo){
         this.boxAPIConnection = new BoxAPIConnection(credential.getToken());
@@ -39,6 +42,8 @@ public class BoxWriterSmallFile implements ItemWriter<DataChunk> {
     public void beforeStep(StepExecution stepExecution) {
         this.destinationBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH); //path to place the files
         this.boxFolder = new BoxFolder(this.boxAPIConnection, this.destinationBasePath);
+        this.stepExecution = stepExecution;
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, 0L);
     }
 
     /**
@@ -49,6 +54,7 @@ public class BoxWriterSmallFile implements ItemWriter<DataChunk> {
     @AfterStep
     public void afterStep() {
         boxFolder.uploadFile(this.smallFileUpload.condenseListToOneStream(this.fileInfo.getSize()), fileName);
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, fileInfo.getSize());
     }
 
 
@@ -57,5 +63,10 @@ public class BoxWriterSmallFile implements ItemWriter<DataChunk> {
         this.fileName = items.get(0).getFileName();
         this.smallFileUpload.addAllChunks(items);
         logger.info("Small file box writer wrote {} DataChunks", items.size());
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, fileInfo.getSize());
+    }
+
+    public void setMetricsCollector(MetricsCollector metricsCollector) {
+        this.metricsCollector = metricsCollector;
     }
 }

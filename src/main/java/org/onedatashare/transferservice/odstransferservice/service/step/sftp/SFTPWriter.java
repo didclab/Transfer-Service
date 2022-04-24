@@ -6,6 +6,7 @@ import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.pools.JschSessionPool;
+import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
@@ -19,7 +20,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
 public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
 
@@ -33,6 +34,8 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
     private JschSessionPool connectionPool;
     private Session session;
     private OutputStream destination;
+    private StepExecution stepExecution;
+    private MetricsCollector metricsCollector;
 
     public SFTPWriter(AccountEndpointCredential destCred, int pipeSize) {
         fileToChannel = new HashMap<>();
@@ -52,6 +55,8 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
         }
         SftpUtility.createRemoteFolder(channelSftp, this.dBasePath);
         channelSftp.disconnect();
+        this.stepExecution = stepExecution;
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, 0L);
     }
 
     @AfterStep
@@ -123,6 +128,7 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
         for (DataChunk b : items) {
             logger.info("Current chunk in SFTP Writer " + b.toString());
             destination.write(b.getData());
+            metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, b.getSize());
         }
         destination.flush();
         items = null;
@@ -131,5 +137,9 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
     @Override
     public void setPool(ObjectPool connectionPool) {
         this.connectionPool = (JschSessionPool) connectionPool;
+    }
+
+    public void setMetricsCollector(MetricsCollector metricsCollector) {
+        this.metricsCollector = metricsCollector;
     }
 }

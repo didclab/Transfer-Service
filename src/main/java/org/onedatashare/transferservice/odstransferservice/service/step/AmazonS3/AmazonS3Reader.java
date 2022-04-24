@@ -81,7 +81,7 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
             totalBytes += bytesRead;
             //todo - adding tp here was slowing the transfer down
         }
-        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, (long) totalBytes);
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, totalBytes);
         stream.close();
         return ODSUtility.makeChunk(part.getSize(), dataSet, part.getStart(), Long.valueOf(part.getPartIdx()).intValue(), this.fileName);
     }

@@ -50,6 +50,7 @@ public class ODSConstants {
     public static final String RETRY="retry";
     public static final String BYTES_READ ="bytesRead";
     public static final String BYTES_WRITTEN="bytesWritten";
+    public static final String APP_NAME="appName";
 
 
     public interface PMeterConstants {

@@ -11,9 +11,11 @@ import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.pools.JschSessionPool;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
+import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.Step;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
@@ -37,6 +39,8 @@ public class SCPReader extends AbstractItemCountingItemStreamItemReader<DataChun
     private Channel channel;
     private final byte[] socketBuffer;
     private OutputStream outputStream;
+    private StepExecution stepExecution;
+    private MetricsCollector metricsCollector;
 
     public SCPReader(EntityInfo fileInfo){
         this.partitioner = new FilePartitioner(fileInfo.getChunkSize());
@@ -46,7 +50,11 @@ public class SCPReader extends AbstractItemCountingItemStreamItemReader<DataChun
     }
 
     @BeforeStep
-    public void beforeStep(StepExecution stepExecution){ this.baseBath = stepExecution.getJobParameters().getString(SOURCE_BASE_PATH); }
+    public void beforeStep(StepExecution stepExecution){
+        this.baseBath = stepExecution.getJobParameters().getString(SOURCE_BASE_PATH);
+        this.stepExecution = stepExecution;
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, 0L);
+    }
 
     /**
      * This prepares everything for the actual "transfer handshake" to take place.
@@ -96,6 +104,7 @@ public class SCPReader extends AbstractItemCountingItemStreamItemReader<DataChun
         }
         DataChunk chunk = ODSUtility.makeChunk(filePart.getSize(), buffer, filePart.getStart(), (int) filePart.getPartIdx(), filePart.getFileName());
         logger.info(chunk.toString());
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, (long) filePart.getSize());
         return chunk;
     }
 
@@ -117,5 +126,9 @@ public class SCPReader extends AbstractItemCountingItemStreamItemReader<DataChun
 
     public void setName(String name) {
         this.setExecutionContextName(name);
+    }
+
+    public void setMetricsCollector(MetricsCollector metricsCollector) {
+        this.metricsCollector = metricsCollector;
     }
 }

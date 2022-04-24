@@ -81,6 +81,7 @@ public class MetricsCollector {
         jobMetric.setConcurrency(jobParameters.getLong(CONCURRENCY));
         jobMetric.setParallelism(jobParameters.getLong(PARALLELISM));
         jobMetric.setPipelining(jobParameters.getLong(PIPELINING));
+        jobMetric.setOwnerId(jobParameters.getString(APP_NAME));
         if(stepExecution==null) {
             long jobCompletionTime = Duration.between(jobExecution.getStartTime().toInstant(), jobExecution.getEndTime().toInstant()).toMillis();
             long size =  jobParameters.getLong(JOB_SIZE, Long.valueOf(0));

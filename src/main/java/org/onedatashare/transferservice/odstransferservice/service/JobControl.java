@@ -53,6 +53,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
+import javax.swing.*;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -156,28 +157,38 @@ public class JobControl extends DefaultBatchConfigurer {
             case http:
                 HttpReader hr = new HttpReader(fileInfo, request.getSource().getVfsSourceCredential());
                 hr.setPool(connectionBag.getHttpReaderPool());
+                hr.setMetricsCollector(metricsCollector);
                 return hr;
             case vfs:
-                return new VfsReader(request.getSource().getVfsSourceCredential(), fileInfo);
+                VfsReader vfsReader = new VfsReader(request.getSource().getVfsSourceCredential(), fileInfo);
+                vfsReader.setMetricsCollector(metricsCollector);
+                return vfsReader;
             case sftp:
                 SFTPReader sftpReader =new SFTPReader(request.getSource().getVfsSourceCredential(), fileInfo, request.getOptions().getPipeSize());
                 sftpReader.setPool(connectionBag.getSftpReaderPool());
+                sftpReader.setMetricsCollector(metricsCollector);
                 return sftpReader;
             case ftp:
                 FTPReader ftpReader = new FTPReader(request.getSource().getVfsSourceCredential(), fileInfo);
                 ftpReader.setPool(connectionBag.getFtpReaderPool());
+                ftpReader.setMetricsCollector(metricsCollector);
                 return ftpReader;
             case s3:
                 AmazonS3Reader amazonS3Reader = new AmazonS3Reader(request.getSource().getVfsSourceCredential(), fileInfo);
                 amazonS3Reader.setMetricsCollector(metricsCollector);
                 return amazonS3Reader;
             case box:
-                return new BoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
+                BoxReader boxReader = new BoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
+                boxReader.setMetricsCollector(metricsCollector);
+                return boxReader;
             case dropbox:
-                return new DropBoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
+                DropBoxReader dropBoxReader = new DropBoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
+                dropBoxReader.setMetricsCollector(metricsCollector);
+                return dropBoxReader;
             case scp:
                 SCPReader reader = new SCPReader(fileInfo);
                 reader.setPool(connectionBag.getSftpReaderPool());
+                reader.setMetricsCollector(metricsCollector);
                 return reader;
         }
         return null;
@@ -192,24 +203,35 @@ public class JobControl extends DefaultBatchConfigurer {
             case sftp:
                 SFTPWriter sftpWriter = new SFTPWriter(request.getDestination().getVfsDestCredential(), request.getOptions().getPipeSize());
                 sftpWriter.setPool(connectionBag.getSftpWriterPool());
+                sftpWriter.setMetricsCollector(metricsCollector);
                 return sftpWriter;
             case ftp:
                 FTPWriter ftpWriter = new FTPWriter(request.getDestination().getVfsDestCredential());
                 ftpWriter.setPool(connectionBag.getFtpWriterPool());
+                ftpWriter.setMetricsCollector(metricsCollector);
                 return ftpWriter;
             case s3:
-                return new AmazonS3Writer(request.getDestination().getVfsDestCredential(), fileInfo);
+                AmazonS3Writer amazonS3Writer = new AmazonS3Writer(request.getDestination().getVfsDestCredential(), fileInfo);
+                amazonS3Writer.setMetricsCollector(metricsCollector);
+                return amazonS3Writer;
             case box:
                 if(fileInfo.getSize() < TWENTY_MB){
-                    return new BoxWriterSmallFile(request.getDestination().getOauthDestCredential(), fileInfo);
+                    BoxWriterSmallFile boxWriterSmallFile = new BoxWriterSmallFile(request.getDestination().getOauthDestCredential(), fileInfo);
+                    boxWriterSmallFile.setMetricsCollector(metricsCollector);
+                    return boxWriterSmallFile;
                 }else{
-                    return new BoxWriterLargeFile(request.getDestination().getOauthDestCredential(), fileInfo);
+                    BoxWriterLargeFile boxWriterLargeFile = new BoxWriterLargeFile(request.getDestination().getOauthDestCredential(), fileInfo);
+                    boxWriterLargeFile.setMetricsCollector(metricsCollector);
+                    return boxWriterLargeFile;
                 }
             case dropbox:
-                return new DropBoxWriter(request.getDestination().getOauthDestCredential());
+                DropBoxWriter dropBoxWriter = new DropBoxWriter(request.getDestination().getOauthDestCredential());
+                dropBoxWriter.setMetricsCollector(metricsCollector);
+                return dropBoxWriter;
             case scp:
                 SCPWriter scpWriter = new SCPWriter(fileInfo);
                 scpWriter.setPool(connectionBag.getSftpWriterPool());
+                scpWriter.setMetricsCollector(metricsCollector);
                 return scpWriter;
         }
         return null;

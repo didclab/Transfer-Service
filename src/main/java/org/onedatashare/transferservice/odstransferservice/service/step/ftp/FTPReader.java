@@ -15,6 +15,7 @@ import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.pools.FtpConnectionPool;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
+import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +41,8 @@ public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChun
     EntityInfo fileInfo;
     private FtpConnectionPool connectionPool;
     private FTPClient client;
+    private StepExecution stepExecution;
+    private MetricsCollector metricsCollector;
 
     public FTPReader(AccountEndpointCredential credential, EntityInfo file) {
         this.sourceCred = credential;
@@ -56,6 +59,8 @@ public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChun
         sBasePath += fileInfo.getPath();
         fileIdx = 0L;
         this.partitioner.createParts(this.fileInfo.getSize(), fileInfo.getId());
+        this.stepExecution = stepExecution;
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, 0L);
     }
 
     @AfterStep
@@ -84,6 +89,7 @@ public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChun
         this.client.setRestartOffset(filePart.getStart());
         this.fileIdx += totalBytes;
         logger.info(chunk.toString());
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, (long) filePart.getSize());
         return chunk;
     }
 
@@ -114,5 +120,9 @@ public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChun
     @Override
     public void setPool(ObjectPool connectionPool) {
         this.connectionPool = (FtpConnectionPool) connectionPool;
+    }
+
+    public void setMetricsCollector(MetricsCollector metricsCollector) {
+        this.metricsCollector = metricsCollector;
     }
 }
