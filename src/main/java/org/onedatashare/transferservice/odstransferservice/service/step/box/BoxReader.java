@@ -7,6 +7,7 @@ import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
+import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +18,7 @@ import org.springframework.util.ClassUtils;
 
 import java.io.ByteArrayOutputStream;
 
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.BYTES_READ;
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SIXTYFOUR_KB;
 
 public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChunk> {
@@ -27,6 +29,8 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
     private BoxFile currentFile;
     EntityInfo fileInfo;
     Logger logger = LoggerFactory.getLogger(BoxReader.class);
+    StepExecution stepExecution;
+    MetricsCollector metricsCollector;
 
     public BoxReader(OAuthEndpointCredential credential, EntityInfo fileInfo){
         this.credential = credential;
@@ -42,6 +46,9 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
         filePartitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
+        this.stepExecution = stepExecution;
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, 0L);
+
     }
 
     /**
@@ -56,6 +63,7 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
         this.currentFile.downloadRange(byteArray, filePart.getStart(), filePart.getEnd());
         DataChunk chunk = ODSUtility.makeChunk(filePart.getSize(), byteArray.toByteArray(), filePart.getStart(), Math.toIntExact(filePart.getPartIdx()), currentFile.getInfo().getName());
         logger.info(chunk.toString());
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, (long) filePart.getSize());
         return chunk;
     }
 
@@ -76,5 +84,9 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
     @Override
     protected void doClose() {
         this.boxAPIConnection = null;
+    }
+
+    public void setMetricsCollector(MetricsCollector metricsCollector) {
+        this.metricsCollector = metricsCollector;
     }
 }

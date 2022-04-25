@@ -7,6 +7,7 @@ import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.pools.JschSessionPool;
+import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
@@ -41,6 +42,8 @@ public class SCPWriter implements ItemWriter<DataChunk>, SetPool {
     private OutputStream outputStream;
     private InputStream inputStream;
     private byte[] socketBuffer;
+    private StepExecution stepExecution;
+    private MetricsCollector metricsCollector;
 
     public SCPWriter(EntityInfo fileInfo){
         this.socketBuffer = new byte[1024];
@@ -51,6 +54,8 @@ public class SCPWriter implements ItemWriter<DataChunk>, SetPool {
     public void beforeStep(StepExecution stepExecution) throws InterruptedException, JSchException, IOException {
         logger.info("Before Step in SCPWriter");
         this.dBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
+        this.stepExecution = stepExecution;
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, 0L);
     }
 
     @BeforeWrite
@@ -78,6 +83,7 @@ public class SCPWriter implements ItemWriter<DataChunk>, SetPool {
         for (DataChunk b : items) {
             outputStream.write(b.getData());
             logger.info("Wrote {}", b);
+            metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, b.getSize());
         }
         outputStream.flush();
         items = null;
@@ -103,4 +109,7 @@ public class SCPWriter implements ItemWriter<DataChunk>, SetPool {
         if(checkAck(inputStream, logger) != 0) throw new IOException("ACK for SCPReader failed file: " + fileName);
     }
 
+    public void setMetricsCollector(MetricsCollector metricsCollector) {
+        this.metricsCollector = metricsCollector;
+    }
 }

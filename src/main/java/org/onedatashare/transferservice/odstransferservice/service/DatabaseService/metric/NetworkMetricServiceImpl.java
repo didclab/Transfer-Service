@@ -8,6 +8,7 @@ import org.apache.commons.exec.PumpStreamHandler;
 import org.onedatashare.transferservice.odstransferservice.DataRepository.NetworkMetricRepository;
 import org.onedatashare.transferservice.odstransferservice.config.CommandLineOptions;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
+import org.onedatashare.transferservice.odstransferservice.model.JobMetric;
 import org.onedatashare.transferservice.odstransferservice.model.NetworkMetric;
 import org.onedatashare.transferservice.odstransferservice.model.metrics.DataInflux;
 import org.onedatashare.transferservice.odstransferservice.utility.DataUtil;
@@ -118,7 +119,7 @@ public class NetworkMetricServiceImpl implements NetworkMetricService {
 
     @Override
     public void executeScript() throws Exception {
-        //python3 src/pmeter/pmeter_cli.py measure en0 --user jgoldverg@gmail.com --length -1s --measure 10 -KNS
+        //python3 src/pmeter/pmeter_cli.py measure en0 --user jgoldverg@gmail.com --length 1s --measure 10 -KNS
         CommandLine cmdLine = CommandLine.parse(
                 String.format("python3 %s " + MEASURE +" %s --user %s --length %s %s",
                         SCRIPT_PATH, cmdLineOptions.getNetworkInterface(), cmdLineOptions.getUser(),
@@ -144,21 +145,26 @@ public class NetworkMetricServiceImpl implements NetworkMetricService {
             //gsonBuilder.setLongSerializationPolicy(LongSerializationPolicy.STRING);
 
             DataInflux[] dataArr = gsonBuilder.create().fromJson(networkMetric.getData(), DataInflux[].class);
-
             dataInflux = dataArr[dataArr.length-1];
             float[] l = dataInflux.getLatencyArr();
             dataInflux.setLatencyVal(l[0]);
             getDeltaValueByMetric();
             mapCpuFrequency();
         }
+        if(networkMetric.getJobData()==null){
+            networkMetric.setJobData(new JobMetric());
+        }
+        setJobData(networkMetric, dataInflux);
 
         return dataInflux;
     }
 
     private void mapCpuFrequency() {
-        dataInflux.setCurrCpuFrequency(dataInflux.getCpuFrequency()[0]);
-        dataInflux.setMinCpuFrequency(dataInflux.getCpuFrequency()[1]);
-        dataInflux.setMaxCpuFrequency(dataInflux.getCpuFrequency()[2]);
+        if(dataInflux.getCpuFrequency()!=null && dataInflux.getCpuFrequency().length!=0) {
+            dataInflux.setCurrCpuFrequency(dataInflux.getCpuFrequency()[0]);
+            dataInflux.setMinCpuFrequency(dataInflux.getCpuFrequency()[1]);
+            dataInflux.setMaxCpuFrequency(dataInflux.getCpuFrequency()[2]);
+        }
     }
 
     private void getDeltaValueByMetric() {
@@ -183,5 +189,14 @@ public class NetworkMetricServiceImpl implements NetworkMetricService {
                 : packetsReceivedOld);
         packetsReceivedOld=dataInflux.getPacketReceived();
 
+    }
+
+    private void setJobData(NetworkMetric networkMetric, DataInflux dataInflux){
+        JobMetric jobMetric = networkMetric.getJobData();
+        dataInflux.setConcurrency(jobMetric.getConcurrency());
+        dataInflux.setParallelism(jobMetric.getParallelism());
+        dataInflux.setPipelining(jobMetric.getPipelining());
+        dataInflux.setThroughput(jobMetric.getThroughput());
+        dataInflux.setJobId(jobMetric.getJobId());
     }
 }

@@ -33,5 +33,8 @@ public class NetworkMetric {
 
     @Column
     private Date endTime;
+
+    @Transient
+    private JobMetric jobData;
     
 }

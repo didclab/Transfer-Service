@@ -10,6 +10,7 @@ import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
+import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +28,7 @@ import java.net.http.HttpResponse;
 import java.nio.file.Paths;
 
 
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.BYTES_READ;
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SOURCE_BASE_PATH;
 import org.onedatashare.transferservice.odstransferservice.pools.HttpConnectionPool;
 
@@ -42,6 +44,8 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
     Boolean range;
     AccountEndpointCredential sourceCred;
     private String uri;
+    private StepExecution stepExecution;
+    private MetricsCollector metricsCollector;
 
 
     public HttpReader(EntityInfo fileInfo, AccountEndpointCredential credential) {
@@ -58,6 +62,8 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
         this.filePartitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
         this.fileName = fileInfo.getId();
         this.uri = sourceCred.getUri() + Paths.get(fileInfo.getPath()).toString();
+        this.stepExecution = stepExecution;
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, 0L);
     }
 
     @Override
@@ -85,6 +91,7 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
         }
         DataChunk chunk = ODSUtility.makeChunk(bodyArray.length, bodyArray, filePart.getStart(), Long.valueOf(filePart.getPartIdx()).intValue(), this.fileName);
         logger.info(chunk.toString());
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, (long) filePart.getSize());
         return chunk;
     }
 
@@ -112,5 +119,9 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
     @Override
     public void setPool(ObjectPool connectionPool) {
         this.httpConnectionPool = (HttpConnectionPool) connectionPool;
+    }
+
+    public void setMetricsCollector(MetricsCollector metricsCollector) {
+        this.metricsCollector = metricsCollector;
     }
 }

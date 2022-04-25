@@ -7,6 +7,7 @@ import com.box.sdk.BoxFolder;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
@@ -21,7 +22,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
 /**
  * This class is responsible for writing to Box using the chunked upload approach & small file upload
@@ -37,6 +38,8 @@ public class BoxWriterLargeFile implements ItemWriter<DataChunk> {
     String destinationBasePath;
     BoxFolder boxFolder;
     Logger logger = LoggerFactory.getLogger(BoxWriterLargeFile.class);
+    StepExecution stepExecution;
+    MetricsCollector metricsCollector;
 
     public BoxWriterLargeFile(OAuthEndpointCredential oAuthDestCredential, EntityInfo fileInfo) {
         this.boxAPIConnection = new BoxAPIConnection(oAuthDestCredential.getToken());
@@ -50,6 +53,8 @@ public class BoxWriterLargeFile implements ItemWriter<DataChunk> {
     public void beforeStep(StepExecution stepExecution) {
         this.destinationBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH); //path to place the files
         this.boxFolder = new BoxFolder(this.boxAPIConnection, this.destinationBasePath);
+        this.stepExecution = stepExecution;
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, 0L);
     }
 
     /**
@@ -111,7 +116,12 @@ public class BoxWriterLargeFile implements ItemWriter<DataChunk> {
             this.parts.add(part);
             digest.update(dataChunk.getData());
             logger.info("Current chunk in BoxLargeFile Writer " + dataChunk.toString());
+            metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, dataChunk.getSize());
         }
         this.digestMap.put(fileName, digest);
+    }
+
+    public void setMetricsCollector(MetricsCollector metricsCollector) {
+        this.metricsCollector = metricsCollector;
     }
 }

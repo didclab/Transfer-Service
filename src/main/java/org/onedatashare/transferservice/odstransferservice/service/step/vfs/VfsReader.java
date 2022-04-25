@@ -5,6 +5,7 @@ import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
+import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,8 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
     EntityInfo fileInfo;
     AccountEndpointCredential credential;
     ByteBuffer buffer;
+    private StepExecution stepExecution;
+    private MetricsCollector metricsCollector;
 
 
     public VfsReader(AccountEndpointCredential credential, EntityInfo fInfo) {
@@ -56,6 +59,8 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
         this.fileName = this.fileInfo.getId();
         this.fsize = this.fileInfo.getSize();
         this.filePartitioner.createParts(fsize, fileName);
+        this.stepExecution = stepExecution;
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, 0L);
     }
 
     @Override
@@ -82,6 +87,7 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
         byte[] data = new byte[chunkParameters.getSize()];
         buffer.get(data, 0, totalBytes);
         buffer.clear();
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, (long) totalBytes);
         return ODSUtility.makeChunk(totalBytes, data, chunkParameters.getStart(), Long.valueOf(chunkParameters.getPartIdx()).intValue(), this.fileName);
     }
 
@@ -106,5 +112,9 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
             logger.error("Not able to close the input Stream");
             ex.printStackTrace();
         }
+    }
+
+    public void setMetricsCollector(MetricsCollector metricsCollector) {
+        this.metricsCollector = metricsCollector;
     }
 }

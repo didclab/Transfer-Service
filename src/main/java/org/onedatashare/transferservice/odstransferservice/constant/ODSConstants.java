@@ -42,16 +42,21 @@ public class ODSConstants {
     public static final String SCP_COMMAND_LOCAL_TO_REMOTE = "scp -t ";
     public static final String SCP_MKDIR_CMD = "mkdir -p ";
     public static final String EXEC = "exec";
+    public static final String JOB_SIZE="jobSize";
+    public static final String COMPRESS="compress";
+    public static final String CONCURRENCY="concurrency";
+    public static final String PARALLELISM="parallelism";
+    public static final String PIPELINING="pipelining";
+    public static final String RETRY="retry";
+    public static final String BYTES_READ ="bytesRead";
+    public static final String BYTES_WRITTEN="bytesWritten";
+    public static final String APP_NAME="appName";
+
 
     public interface PMeterConstants {
         String PMETER_SCRIPT_PATH = System.getenv("PMETER_HOME") + "src/pmeter/pmeter_cli.py";
         String PMETER_REPORT_PATH = System.getenv("HOME") + "/.pmeter/pmeter_measure.txt";
         String PMETER_TEMP_REPORT = "pmeter_measure_temp.txt";
     }
-    public static final String COMPRESS="compress";
-    public static final String CONCURRENCY="concurrency";
-    public static final String PARALLELISM="parallelism";
-    public static final String PIPELINING="pipelining";
-    public static final String RETRY="retry";
 
 }

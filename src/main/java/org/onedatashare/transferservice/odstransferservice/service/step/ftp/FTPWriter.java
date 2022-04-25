@@ -11,6 +11,7 @@ import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.pools.FtpConnectionPool;
+import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
@@ -36,6 +37,8 @@ public class FTPWriter implements ItemWriter<DataChunk>, SetPool {
     FileObject foDest;
     private FtpConnectionPool connectionPool;
     private FTPClient client;
+    private StepExecution stepExecution;
+    private MetricsCollector metricsCollector;
 
     public FTPWriter(AccountEndpointCredential destCred) {
         this.destCred = destCred;
@@ -52,6 +55,8 @@ public class FTPWriter implements ItemWriter<DataChunk>, SetPool {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        this.stepExecution = stepExecution;
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, 0L);
     }
 
     @AfterStep
@@ -109,6 +114,7 @@ public class FTPWriter implements ItemWriter<DataChunk>, SetPool {
             for (DataChunk b : list) {
                 destination.write(b.getData());
                 this.client.setRestartOffset(b.getStartPosition());
+                metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, b.getSize());
             }
         } catch (IOException e) {
             logger.error("Error during writing chunks...exiting");
@@ -124,5 +130,9 @@ public class FTPWriter implements ItemWriter<DataChunk>, SetPool {
     @Override
     public void setPool(ObjectPool connectionPool) {
         this.connectionPool = (FtpConnectionPool) connectionPool;
+    }
+
+    public void setMetricsCollector(MetricsCollector metricsCollector) {
+        this.metricsCollector = metricsCollector;
     }
 }

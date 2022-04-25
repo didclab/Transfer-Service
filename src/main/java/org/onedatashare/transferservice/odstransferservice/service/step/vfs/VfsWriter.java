@@ -2,6 +2,7 @@ package org.onedatashare.transferservice.odstransferservice.service.step.vfs;
 
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
@@ -16,7 +17,7 @@ import java.nio.file.*;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
 public class VfsWriter implements ItemWriter<DataChunk> {
     Logger logger = LoggerFactory.getLogger(VfsWriter.class);
@@ -25,6 +26,8 @@ public class VfsWriter implements ItemWriter<DataChunk> {
     String fileName;
     String destinationPath;
     Path filePath;
+    StepExecution stepExecution;
+    MetricsCollector metricsCollector;
 
     public VfsWriter(AccountEndpointCredential credential) {
         stepDrain = new HashMap<>();
@@ -36,6 +39,8 @@ public class VfsWriter implements ItemWriter<DataChunk> {
         this.destinationPath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
         assert this.destinationPath != null;
         this.filePath = Paths.get(this.destinationPath);
+        this.stepExecution = stepExecution;
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, 0L);
         prepareFile();
     }
 
@@ -88,6 +93,11 @@ public class VfsWriter implements ItemWriter<DataChunk> {
             logger.info("Wrote the amount of bytes: " + String.valueOf(bytesWritten));
             if (chunk.getSize() != bytesWritten)
                 logger.info("Wrote " + bytesWritten + " but we should have written " + chunk.getSize());
+            metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, (long) bytesWritten);
         }
+    }
+
+    public void setMetricsCollector(MetricsCollector metricsCollector) {
+        this.metricsCollector = metricsCollector;
     }
 }

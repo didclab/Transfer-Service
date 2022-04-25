@@ -15,6 +15,7 @@ import org.onedatashare.transferservice.odstransferservice.model.AWSSinglePutReq
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.onedatashare.transferservice.odstransferservice.utility.S3Utility;
 import org.slf4j.Logger;
@@ -26,8 +27,7 @@ import org.springframework.batch.item.ItemWriter;
 
 import java.util.List;
 
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.FIVE_MB;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
 
 public class AmazonS3Writer implements ItemWriter<DataChunk> {
@@ -44,6 +44,8 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
     private AmazonS3 client;
     private String destBasepath;
     private boolean firstPass;
+    StepExecution stepExecution;
+    MetricsCollector metricsCollector;
 
     public AmazonS3Writer(AccountEndpointCredential destCredential, EntityInfo fileInfo) {
         this.fileName = "";
@@ -61,6 +63,8 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
         this.fileName = stepExecution.getStepName();
         this.s3URI = new AmazonS3URI(S3Utility.constructS3URI(this.destCredential.getUri(), this.fileName, destBasepath));//for aws the step name will be the file key.
         logger.info(this.s3URI.toString());
+        this.stepExecution = stepExecution;
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, 0L);
     }
 
     public void prepareS3Transfer(String fileName) {
@@ -88,6 +92,8 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
             if (lastChunk.getStartPosition() + lastChunk.getSize() == this.currentFileSize) {
                 PutObjectRequest putObjectRequest = new PutObjectRequest(this.s3URI.getBucket(), this.s3URI.getKey(), this.singlePutRequestMetaData.condenseListToOneStream(this.currentFileSize), makeMetaDataForSinglePutRequest(this.currentFileSize));
                 client.putObject(putObjectRequest);
+                metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, this.currentFileSize);
+
             }
         } else {
             //Does multipart upload to s3 bucket
@@ -103,6 +109,7 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
                     UploadPartResult uploadPartResult = client.uploadPart(uploadPartRequest);
                     this.metaData.addUploadPart(uploadPartResult);
                 }
+                metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, currentChunk.getSize());
             }
         }
     }
@@ -115,6 +122,7 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
         }else{
             this.singlePutRequestMetaData.clear();
         }
+        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, currentFileSize);
     }
 
     public AmazonS3 createClientWithCreds() {
@@ -132,6 +140,10 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setContentLength(size);
         return objectMetadata;
+    }
+
+    public void setMetricsCollector(MetricsCollector metricsCollector) {
+        this.metricsCollector = metricsCollector;
     }
 }
 
