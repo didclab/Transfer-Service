@@ -108,7 +108,7 @@ public class MetricsCollector {
     public void setBytes(StepExecution stepExecution, String key, Long bytesToAdd){
         AtomicLong currentTp = (AtomicLong) stepExecution.getExecutionContext().get(key);
         if(currentTp == null) currentTp = new AtomicLong(0l);
-        else currentTp = new AtomicLong(currentTp.addAndGet(bytesToAdd));
+        else currentTp.addAndGet(bytesToAdd);
         log.info("setting " + key + " : " + currentTp);
         stepExecution.getExecutionContext().put(key, currentTp);
     }
