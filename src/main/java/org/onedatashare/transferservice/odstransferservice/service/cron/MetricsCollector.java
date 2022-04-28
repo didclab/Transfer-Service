@@ -16,6 +16,8 @@ import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -41,6 +43,12 @@ public class MetricsCollector {
     @Autowired
     private NetworkMetricsInfluxRepository repo;
 
+    @Value("${pmeter.cron.run}")
+    private boolean isCronEnabled;
+
+    @Value("${job.metrics.save}")
+    private boolean isJobMetricCollectionEnabled;
+
     /**
      *  Job controller which executes the cli script based on the configured cron expression,
      *  maps and pushes the data in influx
@@ -53,6 +61,9 @@ public class MetricsCollector {
     @Scheduled(cron = "${pmeter.cron.expression}")
     @SneakyThrows
     public void collectAndSave() {
+        if(!isCronEnabled) return;
+
+        log.info("Collecting network metrics");
         networkMetricService.executeScript();
         NetworkMetric networkMetric = networkMetricService.readFile();
         if(networkMetric==null){
@@ -114,6 +125,7 @@ public class MetricsCollector {
     }
 
     public void calculateThroughputAndSave(StepExecution stepExecution, String key, Long bytes){
+        if(!isJobMetricCollectionEnabled) return;
         setBytes(stepExecution, key, Long.valueOf(bytes));
         JobMetric jobMetric = populateJobMetric(stepExecution.getJobExecution(), stepExecution);
         collectJobMetrics(jobMetric);
