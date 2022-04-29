@@ -11,7 +11,7 @@ import java.util.List;
  */
 public interface NetworkMetricService {
     NetworkMetric saveOrUpdate(NetworkMetric networkMetric);
-    NetworkMetric readFile();
+    List<NetworkMetric> readFile();
     void executeScript() throws Exception;
-    DataInflux mapData(NetworkMetric networkMetric);
+    List<DataInflux> mapData(List<NetworkMetric> networkMetric);
 }

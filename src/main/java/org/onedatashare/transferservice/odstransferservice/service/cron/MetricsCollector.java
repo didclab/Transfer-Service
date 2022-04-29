@@ -20,9 +20,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
@@ -62,28 +65,40 @@ public class MetricsCollector {
     @SneakyThrows
     public void collectAndSave() {
         if(!isCronEnabled) return;
-
         log.info("Collecting network metrics");
         networkMetricService.executeScript();
-        NetworkMetric networkMetric = networkMetricService.readFile();
-        if(networkMetric==null){
-            throw new Exception("networkMetric must not be null");
+    }
+
+    @Scheduled(cron = "${influx.cron.expression}")
+    @SneakyThrows
+    public void save() {
+        if(!isCronEnabled) return;
+        log.info("Saving network metrics");
+        List<NetworkMetric> networkMetrics = networkMetricService.readFile();
+        if(CollectionUtils.isEmpty(networkMetrics)){
+            //we don't want metric collection to break job execution, just returning without an exception
+            return;
         }
-        DataInflux dataInflux = networkMetricService.mapData(networkMetric);
+        List<DataInflux> dataInflux = networkMetricService.mapData(networkMetrics);
         repo.insertDataPoints(dataInflux);
     }
 
     @SneakyThrows
     public void collectJobMetrics(JobMetric jobMetric){
-        networkMetricService.executeScript();
-        NetworkMetric networkMetric = networkMetricService.readFile();
-        if(networkMetric==null){
-            throw new Exception("networkMetric must not be null");
-        }
-        networkMetric.setJobData(jobMetric);
-        DataInflux dataInflux = networkMetricService.mapData(networkMetric);
+//        networkMetricService.executeScript();
+//        List<NetworkMetric> networkMetrics = networkMetricService.readFile();
+//        if(CollectionUtils.isEmpty(networkMetrics)){
+//            return;
+//        }
+        List<NetworkMetric> networkMetricList = new ArrayList<>();
+        NetworkMetric networkMetric = new NetworkMetric();
+        networkMetricList.add(networkMetric);
+        networkMetricList.get(networkMetricList.size()-1).setJobData(jobMetric);
+        List<DataInflux> dataInflux = networkMetricService.mapData(networkMetricList);
         repo.insertDataPoints(dataInflux);
     }
+
+
 
     public JobMetric populateJobMetric(JobExecution jobExecution, StepExecution stepExecution){
         JobParameters jobParameters = jobExecution.getJobParameters();

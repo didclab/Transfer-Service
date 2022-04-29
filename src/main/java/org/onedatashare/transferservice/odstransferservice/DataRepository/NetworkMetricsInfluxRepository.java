@@ -13,6 +13,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 public class NetworkMetricsInfluxRepository {
     @Autowired
@@ -39,15 +41,15 @@ public class NetworkMetricsInfluxRepository {
         }
     }
 
-    public void insertDataPoints(DataInflux data){
+    public void insertDataPoints(List<DataInflux> data){
         if(influxDBClient== null){
             instantiateInfluxClient();
         }
 
         try{
             WriteApiBlocking writeApi = influxDBClient.getWriteApiBlocking();
-            writeApi.writeMeasurement(WritePrecision.MS, data);
-            LOG.info("Successfully pushed measurement to influx at " + data.getEndTime());
+            writeApi.writeMeasurements(WritePrecision.MS, data);
+            LOG.info("Successfully pushed measurement to influx at " + data.get(data.size()-1).getEndTime());
         }
         catch (InfluxException exception){
             LOG.error("Exception occurred while pushing measurement to influx: " + exception.getMessage());
