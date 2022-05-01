@@ -26,6 +26,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
@@ -89,7 +90,7 @@ public class MetricsCollector {
 
     @SneakyThrows
     public void collectJobMetrics(JobMetric jobMetric){
-        String outputFile = getOutputFile() + System.currentTimeMillis() + ".txt";
+        String outputFile = getOutputFile() + UUID.randomUUID() + ".txt";
         networkMetricService.executeScript(outputFile);
         List<NetworkMetric> networkMetrics = networkMetricService.readFile(outputFile);
         if(CollectionUtils.isEmpty(networkMetrics)){

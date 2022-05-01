@@ -1,5 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service.DatabaseService.metric;
 
+import com.amazonaws.util.StringUtils;
 import com.google.gson.*;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
@@ -95,38 +96,46 @@ public class NetworkMetricServiceImpl implements NetworkMetricService {
             inputFile = new File(pmeterOutputFile);
         }
 
-        LOG.info("Reading file: " + inputFile);
         File tempFile = new File(ODSConstants.PMeterConstants.PMETER_TEMP_REPORT);
 
         List<NetworkMetric> networkMetricList = new ArrayList<>();
-
+        LOG.info("Reading file: " + inputFile);
         try(Reader r = new InputStreamReader(new FileInputStream(inputFile))
         ) {
             if(replaceWithEmptyFile) tempFile.createNewFile();
             JsonStreamParser p = new JsonStreamParser(r);
             List<Map<?, ?>> metricList = new ArrayList<>();
-            try {
-                while (p.hasNext()) {
-                    JsonElement metric = p.next();
-                    NetworkMetric networkMetric = new NetworkMetric();
-                    if (metric.isJsonObject()) {
-                        Map<?, ?> map = new Gson().fromJson(metric, Map.class);
-                        startTime = DataUtil.getDate((String) map.get("start_time"));
-                        endTime = DataUtil.getDate((String) map.get("end_time"));
-                        metricList.add(map);
+            while (p.hasNext()) {
+                JsonElement metric = p.next();
+                NetworkMetric networkMetric = new NetworkMetric();
+                if (metric.isJsonObject()) {
+                    Map<?, ?> map = new Gson().fromJson(metric, Map.class);
+                    try {
+                        String start = (String) map.get("start_time");
+                        String end = (String) map.get("end_time");
+                        if(!StringUtils.isNullOrEmpty(start))
+                            startTime = DataUtil.getDate(start);
+                        if(!StringUtils.isNullOrEmpty(end))
+                            endTime = DataUtil.getDate(end);
+                    }catch (Exception e){
+                        LOG.info("Exception while reading file: " + inputFile);
+                        LOG.info(metric.toString());
+                        LOG.info((String) map.get("start_time"));
+                        LOG.info((String) map.get("end_time"));
+                        LOG.info(map.toString());
+                        e.printStackTrace();
                     }
-                    networkMetric.setData(new Gson().toJson(metricList));
-                    networkMetric.setStartTime(startTime);
-                    networkMetric.setEndTime(endTime);
-                    networkMetricList.add(networkMetric);
+                    metricList.add(map);
                 }
-            }catch (JsonIOException e){
-                LOG.error("hasNext() error");
+                networkMetric.setData(new Gson().toJson(metricList));
+                networkMetric.setStartTime(startTime);
+                networkMetric.setEndTime(endTime);
+                networkMetricList.add(networkMetric);
             }
 
         }catch (EOFException e){
             LOG.error("Reached end of file",e);
-        } catch (IOException | ParseException e){
+        } catch (IOException e){
             LOG.error("Exception occurred while reading file",e);
         }
         inputFile.delete();
