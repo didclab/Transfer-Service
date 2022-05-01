@@ -56,6 +56,7 @@ public class ODSConstants {
     public interface PMeterConstants {
         String PMETER_SCRIPT_PATH = System.getenv("PMETER_HOME") + "src/pmeter/pmeter_cli.py";
         String PMETER_REPORT_PATH = System.getenv("HOME") + "/.pmeter/pmeter_measure.txt";
+        String PMETER_REPORT_FOLDER = System.getenv("HOME") + "/.pmeter/";
         String PMETER_TEMP_REPORT = "pmeter_measure_temp.txt";
     }
 

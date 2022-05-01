@@ -52,6 +52,8 @@ public class MetricsCollector {
     @Value("${job.metrics.save}")
     private boolean isJobMetricCollectionEnabled;
 
+    private String outputFile = PMeterConstants.PMETER_REPORT_FOLDER + "pmeter-";
+
     /**
      *  Job controller which executes the cli script based on the configured cron expression,
      *  maps and pushes the data in influx
@@ -66,7 +68,9 @@ public class MetricsCollector {
     public void collectAndSave() {
         if(!isCronEnabled) return;
         log.info("Collecting network metrics");
-        networkMetricService.executeScript();
+        networkMetricService.executeScript(null);
+        //if we wish to save in synch uncomment following
+        //save();
     }
 
     @Scheduled(cron = "${influx.cron.expression}")
@@ -74,7 +78,7 @@ public class MetricsCollector {
     public void save() {
         if(!isCronEnabled) return;
         log.info("Saving network metrics");
-        List<NetworkMetric> networkMetrics = networkMetricService.readFile();
+        List<NetworkMetric> networkMetrics = networkMetricService.readFile(null);
         if(CollectionUtils.isEmpty(networkMetrics)){
             //we don't want metric collection to break job execution, just returning without an exception
             return;
@@ -85,11 +89,12 @@ public class MetricsCollector {
 
     @SneakyThrows
     public void collectJobMetrics(JobMetric jobMetric){
-//        networkMetricService.executeScript();
-//        List<NetworkMetric> networkMetrics = networkMetricService.readFile();
-//        if(CollectionUtils.isEmpty(networkMetrics)){
-//            return;
-//        }
+        String outputFile = getOutputFile() + System.currentTimeMillis() + ".txt";
+        networkMetricService.executeScript(outputFile);
+        List<NetworkMetric> networkMetrics = networkMetricService.readFile(outputFile);
+        if(CollectionUtils.isEmpty(networkMetrics)){
+            return;
+        }
         List<NetworkMetric> networkMetricList = new ArrayList<>();
         NetworkMetric networkMetric = new NetworkMetric();
         networkMetricList.add(networkMetric);

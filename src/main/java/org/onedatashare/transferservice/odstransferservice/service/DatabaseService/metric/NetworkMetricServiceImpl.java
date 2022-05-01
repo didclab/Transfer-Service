@@ -81,29 +81,36 @@ public class NetworkMetricServiceImpl implements NetworkMetricService {
     }
 
     @Override
-    public List<NetworkMetric> readFile() {
+    public List<NetworkMetric> readFile(String pmeterOutputFile) {
+
+        boolean replaceWithEmptyFile = false;
         Date startTime = null;
         Date endTime = null;
 
-        File inputFile = new File(ODSConstants.PMeterConstants.PMETER_REPORT_PATH);
+        File inputFile = null;
+        if(pmeterOutputFile == null){
+            inputFile = new File(ODSConstants.PMeterConstants.PMETER_REPORT_PATH);
+            replaceWithEmptyFile = true;
+        }else{
+            inputFile = new File(pmeterOutputFile);
+        }
+
+        LOG.info("Reading file: " + inputFile);
         File tempFile = new File(ODSConstants.PMeterConstants.PMETER_TEMP_REPORT);
 
         List<NetworkMetric> networkMetricList = new ArrayList<>();
 
         try(Reader r = new InputStreamReader(new FileInputStream(inputFile))
         ) {
-            tempFile.createNewFile();
+            if(replaceWithEmptyFile) tempFile.createNewFile();
             JsonStreamParser p = new JsonStreamParser(r);
             List<Map<?, ?>> metricList = new ArrayList<>();
             try {
                 while (p.hasNext()) {
                     JsonElement metric = p.next();
-                    LOG.info("metric:" + metric.toString());
                     NetworkMetric networkMetric = new NetworkMetric();
                     if (metric.isJsonObject()) {
                         Map<?, ?> map = new Gson().fromJson(metric, Map.class);
-                        LOG.info("metric: " +metric);
-                        LOG.info("Start time: " +map.get("start_time"));
                         startTime = DataUtil.getDate((String) map.get("start_time"));
                         endTime = DataUtil.getDate((String) map.get("end_time"));
                         metricList.add(map);
@@ -123,19 +130,23 @@ public class NetworkMetricServiceImpl implements NetworkMetricService {
             LOG.error("Exception occurred while reading file",e);
         }
         inputFile.delete();
-        tempFile.renameTo(inputFile);
+        if(replaceWithEmptyFile) tempFile.renameTo(inputFile);
 
         return networkMetricList;
     }
 
     @Override
-    public void executeScript() throws Exception {
+    public void executeScript(String outputFile) throws Exception {
+        if(outputFile == null){
+            outputFile = ODSConstants.PMeterConstants.PMETER_REPORT_PATH;
+        }
         //python3 src/pmeter/pmeter_cli.py measure en0 --user jgoldverg@gmail.com --length 1s --measure 10 -KNS
         CommandLine cmdLine = CommandLine.parse(
-                String.format("python3 %s " + MEASURE +" %s --user %s --length %s %s",
+                String.format("python3 %s " + MEASURE +" %s --user %s --measure %s %s --file_name %s",
                         SCRIPT_PATH, cmdLineOptions.getNetworkInterface(), cmdLineOptions.getUser(),
-                        cmdLineOptions.getLength(), cmdLineOptions.getOptions()));
+                        cmdLineOptions.getMeasure(), cmdLineOptions.getOptions(), outputFile));
 
+        LOG.info(cmdLine.toString());
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         PumpStreamHandler streamHandler = new PumpStreamHandler(outputStream);
 
@@ -161,7 +172,7 @@ public class NetworkMetricServiceImpl implements NetworkMetricService {
                 DataInflux[] dataArr = gsonBuilder.create().fromJson(networkMetric.getData(), DataInflux[].class);
                 dataInflux = dataArr[dataArr.length - 1];
                 float[] l = dataInflux.getLatencyArr();
-                dataInflux.setLatencyVal(l[0]);
+                if(l.length>0) dataInflux.setLatencyVal(l[0]);
                 getDeltaValueByMetric();
                 mapCpuFrequency();
             }
@@ -171,8 +182,6 @@ public class NetworkMetricServiceImpl implements NetworkMetricService {
             setJobData(networkMetric, dataInflux);
             dataInfluxList.add(dataInflux);
         }
-
-        //todo - check dataInflux
         return dataInfluxList;
     }
 
