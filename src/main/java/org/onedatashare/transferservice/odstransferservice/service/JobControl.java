@@ -1,6 +1,10 @@
 package org.onedatashare.transferservice.odstransferservice.service;
 
-import lombok.*;
+import com.amazonaws.AmazonServiceException;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.SneakyThrows;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.config.ApplicationThreadPoolConfig;
 import org.onedatashare.transferservice.odstransferservice.config.DataSourceConfig;
@@ -175,7 +179,9 @@ public class JobControl extends DefaultBatchConfigurer {
                 ftpReader.setPool(connectionBag.getFtpReaderPool());
                 return ftpReader;
             case s3:
-                return new AmazonS3Reader(request.getSource().getVfsSourceCredential(), fileInfo);
+                AmazonS3Reader s3Reader = new AmazonS3Reader(request.getSource().getVfsSourceCredential(), fileInfo);
+                s3Reader.setRetryTemplate(retryTemplateForReaderAndWriter);
+                return s3Reader;
             case box:
                 BoxReader boxReader = new BoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
                 boxReader.setMaxRetry(ofNullable(this.request.getOptions().getRetry()).orElse(1));
@@ -205,7 +211,9 @@ public class JobControl extends DefaultBatchConfigurer {
                 ftpWriter.setRetryTemplate(retryTemplateForReaderAndWriter);
                 return ftpWriter;
             case s3:
-                return new AmazonS3Writer(request.getDestination().getVfsDestCredential(), fileInfo);
+                AmazonS3Writer s3Writer = new AmazonS3Writer(request.getDestination().getVfsDestCredential(), fileInfo);
+                s3Writer.setRetryTemplate(retryTemplateForReaderAndWriter);
+                return s3Writer;
             case box:
                 if(fileInfo.getSize() < TWENTY_MB){
                     return new BoxWriterSmallFile(request.getDestination().getOauthDestCredential(), fileInfo);
@@ -237,6 +245,7 @@ public class JobControl extends DefaultBatchConfigurer {
     private void setRetryPolicy() {
         Map<Class<? extends Throwable>, Boolean> retryFor = new HashMap<>();
         retryFor.put(IOException.class, true);
+        retryFor.put(AmazonServiceException.class, true);
         //add other exceptions to retry for in the map above.
         int retryAttempts = ofNullable(this.request.getOptions().getRetry()).orElse(1);
         SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy(retryAttempts, retryFor);

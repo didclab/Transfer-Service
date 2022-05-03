@@ -17,6 +17,7 @@ import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.ClassUtils;
 
 
@@ -36,6 +37,7 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
     private final int chunkSize;
     ObjectMetadata currentFileMetaData;
     GetObjectRequest getSkeleton;
+    private RetryTemplate retryTemplate;
 
     public AmazonS3Reader(AccountEndpointCredential sourceCredential, EntityInfo fileInfo) {
         this.sourceCredential = sourceCredential;
@@ -65,30 +67,42 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
     protected DataChunk doRead() throws Exception {
         FilePart part = partitioner.nextPart();
         if (part == null || part.getStart() == part.getEnd()) return null;
-        logger.info("Current Part:-"+part.toString());
-        S3Object partOfFile = this.s3Client.getObject(this.getSkeleton.withRange(part.getStart(), part.getEnd()));//this is inclusive or on both start and end so take one off so there is no colision
-        byte[] dataSet = new byte[part.getSize()];
-        long totalBytes = 0;
-        S3ObjectInputStream stream = partOfFile.getObjectContent();
-        while (totalBytes < part.getSize()) {
-            int bytesRead = 0;
-            bytesRead += stream.read(dataSet, Long.valueOf(totalBytes).intValue(), Long.valueOf(part.getSize()).intValue());
-            if (bytesRead == -1) return null;
-            totalBytes += bytesRead;
-        }
-        stream.close();
-        return ODSUtility.makeChunk(part.getSize(), dataSet, part.getStart(), Long.valueOf(part.getPartIdx()).intValue(), this.fileName);
+        return this.retryTemplate.execute(c -> {
+            logger.info("Current Part:-" + part);
+
+            S3Object partOfFile = this.s3Client.getObject(this.getSkeleton.withRange(part.getStart(), part.getEnd()));//this is inclusive or on both start and end so take one off so there is no colision
+            byte[] dataSet = new byte[part.getSize()];
+            long totalBytes = 0;
+            S3ObjectInputStream stream = partOfFile.getObjectContent();
+            while (totalBytes < part.getSize()) {
+                int bytesRead = 0;
+                bytesRead += stream.read(dataSet, Long.valueOf(totalBytes).intValue(), Long.valueOf(part.getSize()).intValue());
+                if (bytesRead == -1) return null;
+                totalBytes += bytesRead;
+            }
+            stream.close();
+            return ODSUtility.makeChunk(part.getSize(), dataSet, part.getStart(), Long.valueOf(part.getPartIdx()).intValue(), this.fileName);
+
+        });
     }
 
     @Override
     protected void doOpen() {
         logger.info(this.amazonS3URI.toString());
-        this.currentFileMetaData = this.s3Client.getObjectMetadata(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey());
-        partitioner.createParts(this.currentFileMetaData.getContentLength(), this.fileName);
+        this.retryTemplate.execute(c -> {
+            this.currentFileMetaData = this.s3Client.getObjectMetadata(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey());
+            partitioner.createParts(this.currentFileMetaData.getContentLength(), this.fileName);
+            return null;
+        });
+
     }
 
     @Override
     protected void doClose() throws Exception {
         this.s3Client = null;
+    }
+
+    public void setRetryTemplate(RetryTemplate retryTemplate) {
+        this.retryTemplate = retryTemplate;
     }
 }

@@ -23,6 +23,7 @@ import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.retry.support.RetryTemplate;
 
 import java.util.List;
 
@@ -44,6 +45,7 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
     private AmazonS3 client;
     private String destBasepath;
     private boolean firstPass;
+    private RetryTemplate retryTemplate;
 
     public AmazonS3Writer(AccountEndpointCredential destCredential, EntityInfo fileInfo) {
         this.fileName = "";
@@ -81,36 +83,39 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
 
     @Override
     public void write(List<? extends DataChunk> items) {
-        prepareS3Transfer(items.get(0).getFileName());
-        if (!this.multipartUpload) {
-            this.singlePutRequestMetaData.addAllChunks(items);
-            DataChunk lastChunk = items.get(items.size() - 1);
-            if (lastChunk.getStartPosition() + lastChunk.getSize() == this.currentFileSize) {
-                PutObjectRequest putObjectRequest = new PutObjectRequest(this.s3URI.getBucket(), this.s3URI.getKey(), this.singlePutRequestMetaData.condenseListToOneStream(this.currentFileSize), makeMetaDataForSinglePutRequest(this.currentFileSize));
-                client.putObject(putObjectRequest);
-            }
-        } else {
-            //Does multipart upload to s3 bucket
-            for (DataChunk currentChunk : items) {
-                logger.info(currentChunk.toString());
-                if (currentChunk.getStartPosition() + currentChunk.getSize() == this.currentFileSize) {
-                    logger.info("At the last chunk of the transfer {}", currentChunk.getChunkIdx());
-                    UploadPartRequest lastPart = ODSUtility.makePartRequest(currentChunk, this.s3URI.getBucket(), this.metaData.getInitiateMultipartUploadResult().getUploadId(), this.s3URI.getKey(), true);
-                    UploadPartResult uploadPartResult = client.uploadPart(lastPart);
-                    this.metaData.addUploadPart(uploadPartResult);
-                } else {
-                    UploadPartRequest uploadPartRequest = ODSUtility.makePartRequest(currentChunk, this.s3URI.getBucket(), this.metaData.getInitiateMultipartUploadResult().getUploadId(), this.s3URI.getKey(), false);
-                    UploadPartResult uploadPartResult = client.uploadPart(uploadPartRequest);
-                    this.metaData.addUploadPart(uploadPartResult);
+        this.retryTemplate.execute(c -> {
+            prepareS3Transfer(items.get(0).getFileName());
+            if (!this.multipartUpload) {
+                this.singlePutRequestMetaData.addAllChunks(items);
+                DataChunk lastChunk = items.get(items.size() - 1);
+                if (lastChunk.getStartPosition() + lastChunk.getSize() == this.currentFileSize) {
+                    PutObjectRequest putObjectRequest = new PutObjectRequest(this.s3URI.getBucket(), this.s3URI.getKey(), this.singlePutRequestMetaData.condenseListToOneStream(this.currentFileSize), makeMetaDataForSinglePutRequest(this.currentFileSize));
+                    client.putObject(putObjectRequest);
+                }
+            } else {
+                //Does multipart upload to s3 bucket
+                for (DataChunk currentChunk : items) {
+                    logger.info(currentChunk.toString());
+                    if (currentChunk.getStartPosition() + currentChunk.getSize() == this.currentFileSize) {
+                        logger.info("At the last chunk of the transfer {}", currentChunk.getChunkIdx());
+                        UploadPartRequest lastPart = ODSUtility.makePartRequest(currentChunk, this.s3URI.getBucket(), this.metaData.getInitiateMultipartUploadResult().getUploadId(), this.s3URI.getKey(), true);
+                        UploadPartResult uploadPartResult = client.uploadPart(lastPart);
+                        this.metaData.addUploadPart(uploadPartResult);
+                    } else {
+                        UploadPartRequest uploadPartRequest = ODSUtility.makePartRequest(currentChunk, this.s3URI.getBucket(), this.metaData.getInitiateMultipartUploadResult().getUploadId(), this.s3URI.getKey(), false);
+                        UploadPartResult uploadPartResult = client.uploadPart(uploadPartRequest);
+                        this.metaData.addUploadPart(uploadPartResult);
+                    }
                 }
             }
-        }
+            return null;
+        });
     }
 
     @AfterStep
     public void afterStep() {
         if (this.multipartUpload) {
-            this.metaData.completeMultipartUpload(client);
+            this.retryTemplate.execute(c -> this.metaData.completeMultipartUpload(client));
             this.metaData.reset();
         }else{
             this.singlePutRequestMetaData.clear();
@@ -132,6 +137,10 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setContentLength(size);
         return objectMetadata;
+    }
+
+    public void setRetryTemplate(RetryTemplate retryTemplate) {
+        this.retryTemplate = retryTemplate;
     }
 }
 
