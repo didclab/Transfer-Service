@@ -71,10 +71,10 @@ public class MetricsCollector {
         log.info("Collecting network metrics");
         networkMetricService.executeScript(null);
         //if we wish to save in synch uncomment following
-        //save();
+        save();
     }
 
-    @Scheduled(cron = "${influx.cron.expression}")
+//    @Scheduled(cron = "${influx.cron.expression}")
     @SneakyThrows
     public void save() {
         if(!isCronEnabled) return;
