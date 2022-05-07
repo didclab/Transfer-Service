@@ -10,11 +10,14 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.UploadPartRequest;
 import com.amazonaws.services.s3.model.UploadPartResult;
+import lombok.Getter;
+import lombok.Setter;
 import org.onedatashare.transferservice.odstransferservice.model.AWSMultiPartMetaData;
 import org.onedatashare.transferservice.odstransferservice.model.AWSSinglePutRequestMetaData;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.onedatashare.transferservice.odstransferservice.utility.S3Utility;
@@ -22,9 +25,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
+import org.springframework.batch.core.annotation.AfterWrite;
 import org.springframework.batch.core.annotation.BeforeStep;
+import org.springframework.batch.core.annotation.BeforeWrite;
 import org.springframework.batch.item.ItemWriter;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
@@ -46,6 +53,11 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
     private boolean firstPass;
     StepExecution stepExecution;
     MetricsCollector metricsCollector;
+    private LocalDateTime writeStartTime;
+    private LocalDateTime writeEndTime;
+    @Getter
+    @Setter
+    private MetricCache metricCache;
 
     public AmazonS3Writer(AccountEndpointCredential destCredential, EntityInfo fileInfo) {
         this.fileName = "";
@@ -68,7 +80,7 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
     }
 
     public void prepareS3Transfer(String fileName) {
-        if(!this.firstPass){
+        if (!this.firstPass) {
             this.client = createClientWithCreds();
             this.s3URI = new AmazonS3URI(S3Utility.constructS3URI(this.destCredential.getUri(), fileName, destBasepath));//for aws the step name will be the file key.
             if (this.currentFileSize < FIVE_MB) {
@@ -81,6 +93,12 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
             }
             this.firstPass = true;
         }
+    }
+
+    @BeforeWrite
+    public void beforeWrite(List<? extends DataChunk> items) {
+        this.writeStartTime = LocalDateTime.now();
+        logger.info("Before write start time {}", this.writeStartTime);
     }
 
     @Override
@@ -114,12 +132,23 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
         }
     }
 
+    @AfterWrite
+    public void afterWrite(List<? extends DataChunk> items) {
+        this.writeEndTime = LocalDateTime.now();
+        long totalBytes = items.stream().mapToLong(DataChunk::getSize).sum();
+        logger.info("{} {}", this.writeStartTime, this.writeEndTime);
+        long timeItTookForThisList = Duration.between(this.writeStartTime, this.writeEndTime).getSeconds();
+        double throughput = (double) totalBytes / timeItTookForThisList;
+        logger.info("Thread name {} Total bytes {} with total time {}s gives throughput {} and pipelining {}", Thread.currentThread(),totalBytes, timeItTookForThisList, throughput, stepExecution.getCommitCount());
+        metricCache.addMetric(Thread.currentThread().getName(), throughput, stepExecution);
+    }
+
     @AfterStep
     public void afterStep() {
         if (this.multipartUpload) {
             this.metaData.completeMultipartUpload(client);
             this.metaData.reset();
-        }else{
+        } else {
             this.singlePutRequestMetaData.clear();
         }
         metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, currentFileSize);

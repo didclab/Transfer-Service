@@ -51,6 +51,9 @@ public class ODSConstants {
     public static final String BYTES_READ ="bytesRead";
     public static final String BYTES_WRITTEN="bytesWritten";
     public static final String APP_NAME="appName";
+    public static final String STEP_POOL_PREFIX = "step";
+    public static final String PARALLEL_POOL_PREFIX = "parallel";
+    public static final String SEQUENTIAL_POOL_PREFIX = "sequential";
 
 
     public interface PMeterConstants {

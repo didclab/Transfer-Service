@@ -1,19 +1,26 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.vfs;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
+import org.springframework.batch.core.annotation.AfterWrite;
 import org.springframework.batch.core.annotation.BeforeStep;
+import org.springframework.batch.core.annotation.BeforeWrite;
 import org.springframework.batch.item.ItemWriter;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.*;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 
@@ -28,6 +35,12 @@ public class VfsWriter implements ItemWriter<DataChunk> {
     Path filePath;
     StepExecution stepExecution;
     MetricsCollector metricsCollector;
+    private LocalDateTime writeStartTime;
+    private LocalDateTime writeEndTime;
+    @Getter
+    @Setter
+    private MetricCache metricCache;
+
 
     public VfsWriter(AccountEndpointCredential credential) {
         stepDrain = new HashMap<>();
@@ -55,7 +68,7 @@ public class VfsWriter implements ItemWriter<DataChunk> {
         }
     }
 
-    public FileChannel getChannel(String fileName) throws IOException {
+    public FileChannel getChannel(String fileName) {
         if (this.stepDrain.containsKey(fileName)) {
             return this.stepDrain.get(fileName);
         } else {
@@ -82,6 +95,13 @@ public class VfsWriter implements ItemWriter<DataChunk> {
         }
     }
 
+    @BeforeWrite
+    public void beforeWrite(List<? extends DataChunk> items) {
+        this.writeStartTime = LocalDateTime.now();
+        logger.info("Before write start time {}", this.writeStartTime);
+    }
+
+
     @Override
     public void write(List<? extends DataChunk> items) throws Exception {
         this.fileName = items.get(0).getFileName();
@@ -95,6 +115,16 @@ public class VfsWriter implements ItemWriter<DataChunk> {
                 logger.info("Wrote " + bytesWritten + " but we should have written " + chunk.getSize());
             metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, (long) bytesWritten);
         }
+    }
+
+    @AfterWrite
+    public void afterWrite(List<? extends DataChunk> items) {
+        this.writeEndTime = LocalDateTime.now();
+        long totalBytes = items.stream().mapToLong(DataChunk::getSize).sum();
+        long timeItTookForThisList = Duration.between(this.writeStartTime, this.writeEndTime).getSeconds();
+        double throughput = (double) totalBytes / timeItTookForThisList;
+        logger.info("Thread name {} Total bytes {} with total time {} gives throughput {} and pipelining {}", Thread.currentThread(),totalBytes, timeItTookForThisList, throughput, stepExecution.getCommitCount());
+        metricCache.addMetric(Thread.currentThread().getName(), throughput, stepExecution);
     }
 
     public void setMetricsCollector(MetricsCollector metricsCollector) {
