@@ -1,5 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service.DatabaseService.metric;
 
+import com.amazonaws.util.StringUtils;
 import com.google.gson.*;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
@@ -81,50 +82,79 @@ public class NetworkMetricServiceImpl implements NetworkMetricService {
     }
 
     @Override
-    public NetworkMetric readFile() {
+    public List<NetworkMetric> readFile(String pmeterOutputFile) {
+
+        boolean replaceWithEmptyFile = false;
         Date startTime = null;
         Date endTime = null;
 
-        File inputFile = new File(ODSConstants.PMeterConstants.PMETER_REPORT_PATH);
+        File inputFile = null;
+        if(pmeterOutputFile == null){
+            inputFile = new File(ODSConstants.PMeterConstants.PMETER_REPORT_PATH);
+            replaceWithEmptyFile = true;
+        }else{
+            inputFile = new File(pmeterOutputFile);
+        }
+
         File tempFile = new File(ODSConstants.PMeterConstants.PMETER_TEMP_REPORT);
-
-        NetworkMetric networkMetric = new NetworkMetric();
-
+        List<NetworkMetric> networkMetricList = new ArrayList<>();
+        LOG.info("Reading file: " + inputFile);
         try(Reader r = new InputStreamReader(new FileInputStream(inputFile))
         ) {
-            tempFile.createNewFile();
+            if(replaceWithEmptyFile) tempFile.createNewFile();
             JsonStreamParser p = new JsonStreamParser(r);
             List<Map<?, ?>> metricList = new ArrayList<>();
             while (p.hasNext()) {
                 JsonElement metric = p.next();
+                NetworkMetric networkMetric = new NetworkMetric();
                 if (metric.isJsonObject()) {
                     Map<?, ?> map = new Gson().fromJson(metric, Map.class);
-                    startTime = DataUtil.getDate((String)map.get("start_time"));
-                    endTime = DataUtil.getDate((String)map.get("end_time"));
+                    try {
+                        String start = (String) map.get("start_time");
+                        String end = (String) map.get("end_time");
+                        if(!StringUtils.isNullOrEmpty(start))
+                            startTime = DataUtil.getDate(start);
+                        if(!StringUtils.isNullOrEmpty(end))
+                            endTime = DataUtil.getDate(end);
+                    }catch (Exception e){
+                        LOG.info("Exception while reading file: " + inputFile);
+                        LOG.info(metric.toString());
+                        LOG.info((String) map.get("start_time"));
+                        LOG.info((String) map.get("end_time"));
+                        LOG.info(map.toString());
+                        e.printStackTrace();
+                    }
                     metricList.add(map);
                 }
+                networkMetric.setData(new Gson().toJson(metricList));
+                networkMetric.setStartTime(startTime);
+                networkMetric.setEndTime(endTime);
+                networkMetricList.add(networkMetric);
             }
-            networkMetric.setData(new Gson().toJson(metricList));
-            networkMetric.setStartTime(startTime);
-            networkMetric.setEndTime(endTime);
 
-        }catch (IOException | ParseException e){
+        }catch (EOFException e){
+            LOG.error("Reached end of file",e);
+        } catch (IOException e){
             LOG.error("Exception occurred while reading file",e);
         }
         inputFile.delete();
-        tempFile.renameTo(inputFile);
+        if(replaceWithEmptyFile) tempFile.renameTo(inputFile);
 
-        return networkMetric;
+        return networkMetricList;
     }
 
     @Override
-    public void executeScript() throws Exception {
+    public void executeScript(String outputFile) throws Exception {
+        if(outputFile == null){
+            outputFile = ODSConstants.PMeterConstants.PMETER_REPORT_PATH;
+        }
         //python3 src/pmeter/pmeter_cli.py measure en0 --user jgoldverg@gmail.com --length 1s --measure 10 -KNS
         CommandLine cmdLine = CommandLine.parse(
-                String.format("python3 %s " + MEASURE +" %s --user %s --length %s %s",
+                String.format("python3 %s " + MEASURE +" %s --user %s --measure %s %s --file_name %s",
                         SCRIPT_PATH, cmdLineOptions.getNetworkInterface(), cmdLineOptions.getUser(),
-                        cmdLineOptions.getLength(), cmdLineOptions.getOptions()));
+                        cmdLineOptions.getMeasure(), cmdLineOptions.getOptions(), outputFile));
 
+        LOG.info(cmdLine.toString());
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         PumpStreamHandler streamHandler = new PumpStreamHandler(outputStream);
 
@@ -134,29 +164,33 @@ public class NetworkMetricServiceImpl implements NetworkMetricService {
         executor.setWatchdog(watchDog);
         executor.setStreamHandler(streamHandler);
         executor.execute(cmdLine);
+        LOG.info("Script executed");
     }
 
     @Override
-    public DataInflux mapData(NetworkMetric networkMetric) {
-        if(networkMetric.getData()!=null) {
+    public List<DataInflux> mapData(List<NetworkMetric> networkMetrics) {
+        List<DataInflux> dataInfluxList = new ArrayList<>();
+        for(NetworkMetric networkMetric : networkMetrics) {
+            if (networkMetric.getData() != null) {
 
-            GsonBuilder gsonBuilder = new GsonBuilder();
-            gsonBuilder.setDateFormat(TIMESTAMP_FORMAT);
-            //gsonBuilder.setLongSerializationPolicy(LongSerializationPolicy.STRING);
+                GsonBuilder gsonBuilder = new GsonBuilder();
+                gsonBuilder.setDateFormat(TIMESTAMP_FORMAT);
+                //gsonBuilder.setLongSerializationPolicy(LongSerializationPolicy.STRING);
 
-            DataInflux[] dataArr = gsonBuilder.create().fromJson(networkMetric.getData(), DataInflux[].class);
-            dataInflux = dataArr[dataArr.length-1];
-            float[] l = dataInflux.getLatencyArr();
-            dataInflux.setLatencyVal(l[0]);
-            getDeltaValueByMetric();
-            mapCpuFrequency();
+                DataInflux[] dataArr = gsonBuilder.create().fromJson(networkMetric.getData(), DataInflux[].class);
+                dataInflux = dataArr[dataArr.length - 1];
+                float[] l = dataInflux.getLatencyArr();
+                if(l.length>0) dataInflux.setLatencyVal(l[0]);
+                getDeltaValueByMetric();
+                mapCpuFrequency();
+            }
+            if (networkMetric.getJobData() == null) {
+                networkMetric.setJobData(new JobMetric());
+            }
+            setJobData(networkMetric, dataInflux);
+            dataInfluxList.add(dataInflux);
         }
-        if(networkMetric.getJobData()==null){
-            networkMetric.setJobData(new JobMetric());
-        }
-        setJobData(networkMetric, dataInflux);
-
-        return dataInflux;
+        return dataInfluxList;
     }
 
     private void mapCpuFrequency() {
@@ -192,11 +226,14 @@ public class NetworkMetricServiceImpl implements NetworkMetricService {
     }
 
     private void setJobData(NetworkMetric networkMetric, DataInflux dataInflux){
+        if(dataInflux == null) dataInflux = new DataInflux();
         JobMetric jobMetric = networkMetric.getJobData();
         dataInflux.setConcurrency(jobMetric.getConcurrency());
         dataInflux.setParallelism(jobMetric.getParallelism());
         dataInflux.setPipelining(jobMetric.getPipelining());
         dataInflux.setThroughput(jobMetric.getThroughput());
         dataInflux.setJobId(jobMetric.getJobId());
+        dataInflux.setCpus(jobMetric.getCpus());
+        dataInflux.setMemory(jobMetric.getMemory());
     }
 }

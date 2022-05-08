@@ -3,11 +3,6 @@ package org.onedatashare.transferservice.odstransferservice.service.step.ftp;
 import lombok.SneakyThrows;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.pool2.ObjectPool;
-import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSystemOptions;
-import org.apache.commons.vfs2.VFS;
-import org.apache.commons.vfs2.auth.StaticUserAuthenticator;
-import org.apache.commons.vfs2.impl.DefaultFileSystemConfigBuilder;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
@@ -15,7 +10,6 @@ import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.pools.FtpConnectionPool;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
-import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +22,7 @@ import org.springframework.util.ClassUtils;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SOURCE_BASE_PATH;
 
 public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChunk> implements SetPool {
 
@@ -41,8 +35,6 @@ public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChun
     EntityInfo fileInfo;
     private FtpConnectionPool connectionPool;
     private FTPClient client;
-    private StepExecution stepExecution;
-    private MetricsCollector metricsCollector;
 
     public FTPReader(AccountEndpointCredential credential, EntityInfo file) {
         this.sourceCred = credential;
@@ -59,12 +51,10 @@ public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChun
         sBasePath += fileInfo.getPath();
         fileIdx = 0L;
         this.partitioner.createParts(this.fileInfo.getSize(), fileInfo.getId());
-        this.stepExecution = stepExecution;
-        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, 0L);
     }
 
     @AfterStep
-    public void afterStep(){
+    public void afterStep() {
         this.fileIdx = 0;
     }
 
@@ -77,11 +67,11 @@ public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChun
     @Override
     protected DataChunk doRead() {
         FilePart filePart = this.partitioner.nextPart();
-        if(filePart == null) return null;
+        if (filePart == null) return null;
         byte[] data = new byte[filePart.getSize()];
         int totalBytes = 0;
-        while(totalBytes < filePart.getSize()){
-            int byteRead = this.inputStream.read(data, totalBytes, filePart.getSize()-totalBytes);
+        while (totalBytes < filePart.getSize()) {
+            int byteRead = this.inputStream.read(data, totalBytes, filePart.getSize() - totalBytes);
             if (byteRead == -1) return null;
             totalBytes += byteRead;
         }
@@ -89,7 +79,6 @@ public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChun
         this.client.setRestartOffset(filePart.getStart());
         this.fileIdx += totalBytes;
         logger.info(chunk.toString());
-        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, (long) filePart.getSize());
         return chunk;
     }
 
@@ -98,7 +87,7 @@ public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChun
     protected void doOpen() throws InterruptedException, IOException {
         this.client = this.connectionPool.borrowObject();
         this.inputStream = this.client.retrieveFileStream(this.fileInfo.getPath());
-        if(this.inputStream == null){
+        if (this.inputStream == null) {
             String status = this.client.getStatus();
             logger.info("We have NULL inputstream why??, {}", status);
         }
@@ -122,7 +111,4 @@ public class FTPReader extends AbstractItemCountingItemStreamItemReader<DataChun
         this.connectionPool = (FtpConnectionPool) connectionPool;
     }
 
-    public void setMetricsCollector(MetricsCollector metricsCollector) {
-        this.metricsCollector = metricsCollector;
-    }
 }

@@ -10,7 +10,6 @@ import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.pools.JschSessionPool;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
-import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPReader;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
@@ -23,7 +22,7 @@ import org.springframework.util.ClassUtils;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SOURCE_BASE_PATH;
 
 public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChunk> implements SetPool {
 
@@ -34,15 +33,12 @@ public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChu
     String sBasePath;
     AccountEndpointCredential sourceCred;
     EntityInfo fileInfo;
-    int chunckSize;
     int chunksCreated;
     long fileIdx;
     FilePartitioner filePartitioner;
     private JschSessionPool connectionPool;
     private Session session;
     private ChannelSftp channelSftp;
-    private StepExecution stepExecution;
-    private MetricsCollector metricsCollector;
 
     public SFTPReader(AccountEndpointCredential credential, EntityInfo file, int pipeSize) {
         this.fileInfo = file;
@@ -60,8 +56,6 @@ public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChu
         chunksCreated = 0;
         fileIdx = 0L;
         this.filePartitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
-        this.stepExecution = stepExecution;
-        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, 0L);
     }
 
     @Override
@@ -77,7 +71,6 @@ public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChu
             totalRead += bytesRead;
         }
         DataChunk chunk = ODSUtility.makeChunk(thisChunk.getSize(), data, this.fileIdx, this.chunksCreated, this.fileInfo.getId());
-        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, (long) thisChunk.getSize());
         this.fileIdx += totalRead;
         this.chunksCreated++;
         logger.info(chunk.toString());
@@ -113,7 +106,7 @@ public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChu
         if (this.channelSftp == null || !this.channelSftp.isConnected() || this.channelSftp.isClosed()) {
             channelSftp = (ChannelSftp) session.openChannel("sftp");
             channelSftp.connect();
-            if(!sBasePath.isEmpty()){
+            if (!sBasePath.isEmpty()) {
                 channelSftp.cd(sBasePath);
                 logger.info("after cd into base path" + channelSftp.pwd());
             }
@@ -126,9 +119,9 @@ public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChu
         logger.info("Inside clientCreateSourceStream for : " + this.fileInfo.getId());
         JSch jsch = new JSch();
         try {
-            ChannelSftp channelSftp = SftpUtility.createConnection(jsch,sourceCred);
+            ChannelSftp channelSftp = SftpUtility.createConnection(jsch, sourceCred);
             logger.info("before pwd: ----" + channelSftp.pwd());
-            if(!sBasePath.isEmpty()){
+            if (!sBasePath.isEmpty()) {
                 channelSftp.cd(sBasePath);
                 logger.info("after cd into base path" + channelSftp.pwd());
             }
@@ -146,7 +139,4 @@ public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChu
         this.connectionPool = (JschSessionPool) connectionPool;
     }
 
-    public void setMetricsCollector(MetricsCollector metricsCollector) {
-        this.metricsCollector = metricsCollector;
-    }
 }

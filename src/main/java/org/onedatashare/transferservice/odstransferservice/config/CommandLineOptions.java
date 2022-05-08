@@ -20,4 +20,7 @@ public class CommandLineOptions {
     @Value("${cmdLine.options}")
     private String options;
 
+    @Value("${cmdLine.measure}")
+    private String measure;
+
 }

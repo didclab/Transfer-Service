@@ -1,12 +1,18 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.vfs;
 
+import lombok.Getter;
+import lombok.Setter;
+import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
+import org.springframework.batch.core.annotation.AfterWrite;
+import org.springframework.batch.core.annotation.BeforeRead;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemWriter;
 
@@ -14,10 +20,11 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.*;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
 
 public class VfsWriter implements ItemWriter<DataChunk> {
     Logger logger = LoggerFactory.getLogger(VfsWriter.class);
@@ -27,7 +34,14 @@ public class VfsWriter implements ItemWriter<DataChunk> {
     String destinationPath;
     Path filePath;
     StepExecution stepExecution;
+
+    @Setter
     MetricsCollector metricsCollector;
+    private LocalDateTime readStartTime;
+    @Getter
+    @Setter
+    private MetricCache metricCache;
+
 
     public VfsWriter(AccountEndpointCredential credential) {
         stepDrain = new HashMap<>();
@@ -40,14 +54,13 @@ public class VfsWriter implements ItemWriter<DataChunk> {
         assert this.destinationPath != null;
         this.filePath = Paths.get(this.destinationPath);
         this.stepExecution = stepExecution;
-        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, 0L);
         prepareFile();
     }
 
     @AfterStep
     public void afterStep() {
         try {
-            if(this.stepDrain.containsKey(this.fileName)){
+            if (this.stepDrain.containsKey(this.fileName)) {
                 this.stepDrain.get(this.fileName).close();
             }
         } catch (IOException exception) {
@@ -55,7 +68,7 @@ public class VfsWriter implements ItemWriter<DataChunk> {
         }
     }
 
-    public FileChannel getChannel(String fileName) throws IOException {
+    public FileChannel getChannel(String fileName) {
         if (this.stepDrain.containsKey(fileName)) {
             return this.stepDrain.get(fileName);
         } else {
@@ -75,12 +88,19 @@ public class VfsWriter implements ItemWriter<DataChunk> {
     public void prepareFile() {
         try {
             Files.createDirectories(this.filePath);
-        }catch (FileAlreadyExistsException fileAlreadyExistsException){
+        } catch (FileAlreadyExistsException fileAlreadyExistsException) {
             logger.warn("Already have the file with this path \t" + this.filePath.toString());
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
+    @BeforeRead
+    public void beforeRead() {
+        this.readStartTime = LocalDateTime.now();
+        logger.info("Before write start time {}", this.readStartTime);
+    }
+
 
     @Override
     public void write(List<? extends DataChunk> items) throws Exception {
@@ -93,11 +113,11 @@ public class VfsWriter implements ItemWriter<DataChunk> {
             logger.info("Wrote the amount of bytes: " + String.valueOf(bytesWritten));
             if (chunk.getSize() != bytesWritten)
                 logger.info("Wrote " + bytesWritten + " but we should have written " + chunk.getSize());
-            metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, (long) bytesWritten);
         }
     }
 
-    public void setMetricsCollector(MetricsCollector metricsCollector) {
-        this.metricsCollector = metricsCollector;
+    @AfterWrite
+    public void afterWrite(List<? extends DataChunk> items) {
+        ODSConstants.metricsForOptimizerAndInflux(items, this.readStartTime, logger, stepExecution, metricCache, metricsCollector);
     }
 }

@@ -4,25 +4,32 @@ import com.box.sdk.BoxAPIConnection;
 import com.box.sdk.BoxFileUploadSession;
 import com.box.sdk.BoxFileUploadSessionPart;
 import com.box.sdk.BoxFolder;
+import lombok.Getter;
+import lombok.Setter;
+import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
+import org.springframework.batch.core.annotation.AfterWrite;
+import org.springframework.batch.core.annotation.BeforeRead;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemWriter;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
 
 /**
  * This class is responsible for writing to Box using the chunked upload approach & small file upload
@@ -39,7 +46,13 @@ public class BoxWriterLargeFile implements ItemWriter<DataChunk> {
     BoxFolder boxFolder;
     Logger logger = LoggerFactory.getLogger(BoxWriterLargeFile.class);
     StepExecution stepExecution;
-    MetricsCollector metricsCollector;
+    @Setter
+    private MetricsCollector metricsCollector;
+    @Getter
+    @Setter
+    private MetricCache metricCache;
+
+    private LocalDateTime readStartTime;
 
     public BoxWriterLargeFile(OAuthEndpointCredential oAuthDestCredential, EntityInfo fileInfo) {
         this.boxAPIConnection = new BoxAPIConnection(oAuthDestCredential.getToken());
@@ -54,7 +67,6 @@ public class BoxWriterLargeFile implements ItemWriter<DataChunk> {
         this.destinationBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH); //path to place the files
         this.boxFolder = new BoxFolder(this.boxAPIConnection, this.destinationBasePath);
         this.stepExecution = stepExecution;
-        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, 0L);
     }
 
     /**
@@ -116,12 +128,19 @@ public class BoxWriterLargeFile implements ItemWriter<DataChunk> {
             this.parts.add(part);
             digest.update(dataChunk.getData());
             logger.info("Current chunk in BoxLargeFile Writer " + dataChunk.toString());
-            metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, dataChunk.getSize());
         }
         this.digestMap.put(fileName, digest);
     }
 
-    public void setMetricsCollector(MetricsCollector metricsCollector) {
-        this.metricsCollector = metricsCollector;
+    @BeforeRead
+    public void beforeRead() {
+        this.readStartTime = LocalDateTime.now();
+        logger.info("Before write start time {}", this.readStartTime);
     }
+
+    @AfterWrite
+    public void afterWrite(List<? extends DataChunk> items) {
+        ODSConstants.metricsForOptimizerAndInflux(items, this.readStartTime, logger, stepExecution, metricCache, metricsCollector);
+    }
+
 }
