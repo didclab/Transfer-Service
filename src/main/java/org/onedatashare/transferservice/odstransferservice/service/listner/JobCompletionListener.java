@@ -5,6 +5,7 @@ import org.onedatashare.transferservice.odstransferservice.model.optimizer.Optim
 import org.onedatashare.transferservice.odstransferservice.model.optimizer.OptimizerDeleteRequest;
 import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManager;
 import org.onedatashare.transferservice.odstransferservice.service.ConnectionBag;
+import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.OptimizerCron;
 import org.onedatashare.transferservice.odstransferservice.service.OptimizerService;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
@@ -49,6 +50,9 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
     @Value("${optimizer.interval}")
     Integer interval;
 
+    @Autowired
+    MetricCache metricCache;
+
     private ScheduledFuture<?> future;
 
 
@@ -61,11 +65,10 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
     @Override
     public void afterJob(JobExecution jobExecution) {
         logger.info("After JOB------------------present time--" + System.currentTimeMillis());
-        JobMetric jobMetric = metricsCollector.populateJobMetric(jobExecution, null);
-        metricsCollector.collectJobMetrics(jobMetric);
         connectionBag.closePools();
         threadPoolManager.clearJobPool();
         this.future.cancel(false);
+        metricCache.clearCache();
         optimizerService.deleteOptimizerBlocking(new OptimizerDeleteRequest(appName));
     }
 }

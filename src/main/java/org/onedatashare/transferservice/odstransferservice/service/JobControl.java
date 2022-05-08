@@ -163,38 +163,30 @@ public class JobControl extends DefaultBatchConfigurer {
             case http:
                 HttpReader hr = new HttpReader(fileInfo, request.getSource().getVfsSourceCredential());
                 hr.setPool(connectionBag.getHttpReaderPool());
-                hr.setMetricsCollector(metricsCollector);
                 return hr;
             case vfs:
                 VfsReader vfsReader = new VfsReader(request.getSource().getVfsSourceCredential(), fileInfo);
-                vfsReader.setMetricsCollector(metricsCollector);
                 return vfsReader;
             case sftp:
                 SFTPReader sftpReader = new SFTPReader(request.getSource().getVfsSourceCredential(), fileInfo, request.getOptions().getPipeSize());
                 sftpReader.setPool(connectionBag.getSftpReaderPool());
-                sftpReader.setMetricsCollector(metricsCollector);
                 return sftpReader;
             case ftp:
                 FTPReader ftpReader = new FTPReader(request.getSource().getVfsSourceCredential(), fileInfo);
                 ftpReader.setPool(connectionBag.getFtpReaderPool());
-                ftpReader.setMetricsCollector(metricsCollector);
                 return ftpReader;
             case s3:
                 AmazonS3Reader amazonS3Reader = new AmazonS3Reader(request.getSource().getVfsSourceCredential(), fileInfo);
-                amazonS3Reader.setMetricsCollector(metricsCollector);
                 return amazonS3Reader;
             case box:
                 BoxReader boxReader = new BoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
-                boxReader.setMetricsCollector(metricsCollector);
                 return boxReader;
             case dropbox:
                 DropBoxReader dropBoxReader = new DropBoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
-                dropBoxReader.setMetricsCollector(metricsCollector);
                 return dropBoxReader;
             case scp:
                 SCPReader reader = new SCPReader(fileInfo);
                 reader.setPool(connectionBag.getSftpReaderPool());
-                reader.setMetricsCollector(metricsCollector);
                 return reader;
         }
         return null;
@@ -250,7 +242,7 @@ public class JobControl extends DefaultBatchConfigurer {
         Flow[] fl = new Flow[flows.size()];
         Flow f = new FlowBuilder<SimpleFlow>("splitFlow").split(this.threadPoolManager.stepTaskExecutor(this.request.getOptions().getConcurrencyThreadCount())).add(flows.toArray(fl))
                 .build();
-        optimizerService.createOptimizerBlocking(new OptimizerCreateRequest(appName, flows.size(), 32, 100));
+        optimizerService.createOptimizerBlocking(new OptimizerCreateRequest(appName, flows.size(), 32, 32));
         return jobBuilderFactory.get(request.getOwnerId()).listener(jobCompletionListener)
                 .incrementer(new RunIdIncrementer()).start(f).build().build();
     }

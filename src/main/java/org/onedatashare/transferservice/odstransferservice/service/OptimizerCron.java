@@ -8,6 +8,7 @@ import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManag
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
@@ -27,10 +28,14 @@ public class OptimizerCron implements Runnable {
     @Autowired
     ThreadPoolManager threadPoolManager;
 
+    @Value("${optimizer.enable}")
+    boolean enableOptimizer;
+
     Logger logger = LoggerFactory.getLogger(OptimizerCron.class);
 
     @Override
     public void run() {
+        if(!enableOptimizer) return;
         ConcurrentHashMap<String, Metric> cache = metricCache.threadCache;
         //running active job so we want to push and ask optimizer
         HashMap<String, ThreadPoolTaskExecutor> threadPoolMap = threadPoolManager.getExecutorHashmap();
@@ -56,22 +61,18 @@ public class OptimizerCron implements Runnable {
             OptimizerInputRequest inputRequest = new OptimizerInputRequest();
             inputRequest.setParallelism(parallelism);
             inputRequest.setConcurrency(concurrency);
-
             for (String key : cache.keySet()) {
                 Metric metric = cache.get(key);
-                inputRequest.setPipelining(metric.getPipelining());
+                inputRequest.setPipelining(Integer.parseInt(metric.getStepExecution().getJobParameters().getString(ODSConstants.PIPELINING)));
                 stats.accept(metric.getThroughput());
                 break;
             }
             inputRequest.setThroughput(stats.getAverage());
             Optimizer optimizer = this.optimizerService.inputToOptimizerBlocking(inputRequest);
             logger.info("Optimizer gave us {}", optimizer);
+            cache.clear();
             this.threadPoolManager.applyOptimizer(optimizer.getConcurrency(), optimizer.getParallelism());
-            for (String key : cache.keySet()) {
-                Metric metric = cache.remove(key);
-                metric.getStepExecution().setCommitCount(optimizer.getPipelining());
-                logger.info("Step {} commitCount {}",metric.getStepExecution(), metric.getStepExecution().getCommitCount());
-            }
+            //we need to add pipelining to protocols that support it.
         }
     }
 }

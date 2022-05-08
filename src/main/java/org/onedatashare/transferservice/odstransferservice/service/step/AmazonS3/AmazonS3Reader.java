@@ -2,14 +2,16 @@ package org.onedatashare.transferservice.odstransferservice.service.step.AmazonS
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3URI;
-import com.amazonaws.services.s3.model.*;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
-import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.onedatashare.transferservice.odstransferservice.utility.S3Utility;
 import org.slf4j.Logger;
@@ -18,9 +20,6 @@ import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 import org.springframework.util.ClassUtils;
-
-
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.BYTES_READ;
 
 public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<DataChunk> {
 
@@ -36,8 +35,6 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
     private final int chunkSize;
     ObjectMetadata currentFileMetaData;
     GetObjectRequest getSkeleton;
-    StepExecution stepExecution;
-    MetricsCollector metricsCollector;
 
     public AmazonS3Reader(AccountEndpointCredential sourceCredential, EntityInfo fileInfo) {
         this.sourceCredential = sourceCredential;
@@ -55,9 +52,7 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
         this.sourcePath = stepExecution.getJobExecution().getJobParameters().getString(ODSConstants.SOURCE_BASE_PATH);
         this.amazonS3URI = new AmazonS3URI(S3Utility.constructS3URI(this.sourceCredential.getUri(), this.fileName, this.sourcePath));
         this.getSkeleton = new GetObjectRequest(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey());
-        logger.info("Starting the job for this file: " + this.fileName);
-        this.stepExecution = stepExecution;
-        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, 0L);
+        logger.info("Starting S3 job for file {} with uri {}", this.fileName, this.amazonS3URI);
     }
 
     public void setName(String name) {
@@ -69,7 +64,7 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
     protected DataChunk doRead() throws Exception {
         FilePart part = partitioner.nextPart();
         if (part == null || part.getStart() == part.getEnd()) return null;
-        logger.info("Current Part:-"+part.toString());
+        logger.info("Current Part:-" + part.toString());
         S3Object partOfFile = this.s3Client.getObject(this.getSkeleton.withRange(part.getStart(), part.getEnd()));//this is inclusive or on both start and end so take one off so there is no colision
         byte[] dataSet = new byte[part.getSize()];
         long totalBytes = 0;
@@ -79,9 +74,7 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
             bytesRead += stream.read(dataSet, Long.valueOf(totalBytes).intValue(), Long.valueOf(part.getSize()).intValue());
             if (bytesRead == -1) return null;
             totalBytes += bytesRead;
-            //todo - adding tp here was slowing the transfer down
         }
-        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, totalBytes);
         stream.close();
         return ODSUtility.makeChunk(part.getSize(), dataSet, part.getStart(), Long.valueOf(part.getPartIdx()).intValue(), this.fileName);
     }
@@ -94,11 +87,7 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
     }
 
     @Override
-    protected void doClose() throws Exception {
+    protected void doClose() {
         this.s3Client = null;
-    }
-
-    public void setMetricsCollector(MetricsCollector metricsCollector) {
-        this.metricsCollector = metricsCollector;
     }
 }

@@ -5,7 +5,6 @@ import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
-import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +13,6 @@ import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.file.ResourceAwareItemReaderItemStream;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.io.Resource;
 import org.springframework.util.ClassUtils;
 
@@ -25,7 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
 
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SOURCE_BASE_PATH;
 
 public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChunk> implements ResourceAwareItemReaderItemStream<DataChunk> {
 
@@ -39,8 +37,6 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
     EntityInfo fileInfo;
     AccountEndpointCredential credential;
     ByteBuffer buffer;
-    private StepExecution stepExecution;
-    private MetricsCollector metricsCollector;
 
 
     public VfsReader(AccountEndpointCredential credential, EntityInfo fInfo) {
@@ -59,12 +55,11 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
         this.fileName = this.fileInfo.getId();
         this.fsize = this.fileInfo.getSize();
         this.filePartitioner.createParts(fsize, fileName);
-        this.stepExecution = stepExecution;
-        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, 0L);
     }
 
     @Override
-    public void setResource(Resource resource){}
+    public void setResource(Resource resource) {
+    }
 
     @Override
     protected DataChunk doRead() {
@@ -75,7 +70,7 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
         while (totalBytes < chunkParameters.getSize()) {
             int bytesRead = 0;
             try {
-                bytesRead = this.sink.read(buffer, chunkParameters.getStart()+totalBytes);
+                bytesRead = this.sink.read(buffer, chunkParameters.getStart() + totalBytes);
             } catch (IOException ex) {
                 logger.error("Unable to read from source");
                 ex.printStackTrace();
@@ -87,7 +82,6 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
         byte[] data = new byte[chunkParameters.getSize()];
         buffer.get(data, 0, totalBytes);
         buffer.clear();
-        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, (long) totalBytes);
         return ODSUtility.makeChunk(totalBytes, data, chunkParameters.getStart(), Long.valueOf(chunkParameters.getPartIdx()).intValue(), this.fileName);
     }
 
@@ -107,14 +101,11 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
     protected void doClose() {
         try {
             if (inputStream != null) inputStream.close();
-            if(sink.isOpen()) sink.close();
+            if (sink.isOpen()) sink.close();
         } catch (Exception ex) {
             logger.error("Not able to close the input Stream");
             ex.printStackTrace();
         }
-    }
-
-    public void setMetricsCollector(MetricsCollector metricsCollector) {
-        this.metricsCollector = metricsCollector;
+        this.buffer = null;
     }
 }

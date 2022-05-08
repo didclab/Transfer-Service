@@ -1,6 +1,5 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.http;
 
-import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.commons.pool2.ObjectPool;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
@@ -9,8 +8,8 @@ import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.pools.HttpConnectionPool;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
-import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,16 +20,13 @@ import org.springframework.batch.item.support.AbstractItemCountingItemStreamItem
 import org.springframework.util.ClassUtils;
 
 import java.io.IOException;
-import java.net.*;
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Paths;
 
-
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.BYTES_READ;
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SOURCE_BASE_PATH;
-import org.onedatashare.transferservice.odstransferservice.pools.HttpConnectionPool;
 
 public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChunk> implements SetPool {
 
@@ -44,8 +40,6 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
     Boolean range;
     AccountEndpointCredential sourceCred;
     private String uri;
-    private StepExecution stepExecution;
-    private MetricsCollector metricsCollector;
 
 
     public HttpReader(EntityInfo fileInfo, AccountEndpointCredential credential) {
@@ -62,25 +56,22 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
         this.filePartitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
         this.fileName = fileInfo.getId();
         this.uri = sourceCred.getUri() + Paths.get(fileInfo.getPath()).toString();
-        this.stepExecution = stepExecution;
-        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, 0L);
     }
 
     @Override
     protected DataChunk doRead() throws IOException, InterruptedException {
         FilePart filePart = this.filePartitioner.nextPart();
-        if(filePart == null) return null;
+        if (filePart == null) return null;
         byte[] bodyArray;
-        if(range){
+        if (range) {
             HttpRequest request = HttpRequest.newBuilder()
                     .GET()
                     .uri(URI.create(uri))
-                    .setHeader(ODSConstants.RANGE, String.format(ODSConstants.byteRange,filePart.getStart(), filePart.getEnd()))
+                    .setHeader(ODSConstants.RANGE, String.format(ODSConstants.byteRange, filePart.getStart(), filePart.getEnd()))
                     .build();
             HttpResponse<byte[]> response = this.client.send(request, HttpResponse.BodyHandlers.ofByteArray());
             bodyArray = response.body();
-        }
-        else{
+        } else {
             HttpRequest fullRequest = HttpRequest.newBuilder()
                     .GET()
                     .uri(URI.create(uri))
@@ -91,7 +82,6 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
         }
         DataChunk chunk = ODSUtility.makeChunk(bodyArray.length, bodyArray, filePart.getStart(), Long.valueOf(filePart.getPartIdx()).intValue(), this.fileName);
         logger.info(chunk.toString());
-        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, (long) filePart.getSize());
         return chunk;
     }
 
@@ -104,10 +94,10 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
         HttpRequest request = HttpRequest.newBuilder()
                 .GET()
                 .uri(URI.create(uri)) //make http a string constant as well
-                .setHeader("Range", String.format(ODSConstants.byteRange,0, 1)) //make Range into a string constant as well as bytes
+                .setHeader("Range", String.format(ODSConstants.byteRange, 0, 1)) //make Range into a string constant as well as bytes
                 .build();
         HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
-        if(response.statusCode() == 206) this.range = true;
+        if (response.statusCode() == 206) this.range = true;
         else this.range = false;
     }
 
@@ -121,7 +111,4 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
         this.httpConnectionPool = (HttpConnectionPool) connectionPool;
     }
 
-    public void setMetricsCollector(MetricsCollector metricsCollector) {
-        this.metricsCollector = metricsCollector;
-    }
 }
