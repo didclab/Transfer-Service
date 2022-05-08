@@ -30,7 +30,6 @@ public class ThreadPoolManager {
         executor.setCorePoolSize(corePoolSize);
         executor.setMaxPoolSize(corePoolSize);
         executor.setThreadNamePrefix(prefix);
-        executor.setKeepAliveSeconds(60);
         executor.setAllowCoreThreadTimeOut(true);
         executor.setKeepAliveSeconds(5);
         executor.initialize();
@@ -48,22 +47,24 @@ public class ThreadPoolManager {
     public void applyOptimizer(int concurrency, int parallel) {
         for (String key : this.executorHashmap.keySet()) {
             ThreadPoolTaskExecutor pool = this.executorHashmap.get(key);
-            if (key.contains(STEP_POOL_PREFIX)) {
-                logger.info("Changing {} pool size from {} to {}", pool.getThreadNamePrefix(), pool.getPoolSize(), concurrency);
-                if (concurrency > 0) {
-                    pool.setCorePoolSize(concurrency);
-                    pool.setMaxPoolSize(concurrency);
-                    logger.info("Set {} pool size to {}", pool.getThreadNamePrefix(), concurrency);
+            try{
+                if (key.contains(STEP_POOL_PREFIX)) {
+                    logger.info("Changing {} pool size from {} to {}", pool.getThreadNamePrefix(), pool.getPoolSize(), concurrency);
+                    if (concurrency > 0) {
+                        pool.setCorePoolSize(concurrency);
+                        pool.setMaxPoolSize(concurrency);
+                        logger.info("Set {} pool size to {}", pool.getThreadNamePrefix(), concurrency);
+                    }
                 }
-            }
-            if (key.contains(PARALLEL_POOL_PREFIX)) {
-                logger.info("Changing {} pool size from {} to {}", pool.getThreadNamePrefix(), pool.getPoolSize(), parallel);
-                if (parallel > 0) {
-                    pool.setMaxPoolSize(parallel);
-                    pool.setCorePoolSize(parallel);
-                    logger.info("Set {} pool size to {}", pool.getThreadNamePrefix(), parallel);
+                if (key.contains(PARALLEL_POOL_PREFIX)) {
+                    logger.info("Changing {} pool size from {} to {}", pool.getThreadNamePrefix(), pool.getPoolSize(), parallel);
+                    if (parallel > 0) {
+                        pool.setMaxPoolSize(parallel);
+                        pool.setCorePoolSize(parallel);
+                        logger.info("Set {} pool size to {}", pool.getThreadNamePrefix(), parallel);
+                    }
                 }
-            }
+            }catch(Exception ignore){}
         }
     }
 
@@ -71,7 +72,9 @@ public class ThreadPoolManager {
         for (String key : this.executorHashmap.keySet()) {
             if (key.contains(STEP_POOL_PREFIX) || key.contains(PARALLEL_POOL_PREFIX)) {
                 ThreadPoolTaskExecutor executor = this.executorHashmap.remove(key);
-                executor.shutdown();
+                if(executor != null){
+                    executor.shutdown();
+                }
             }
         }
     }
@@ -86,6 +89,21 @@ public class ThreadPoolManager {
 
     public ThreadPoolTaskExecutor parallelThreadPool(int threadCount, String fileName) {
         return this.createThreadPool(threadCount, new StringBuilder().append(fileName).append("-").append(PARALLEL_POOL_PREFIX).toString());
+    }
+
+    public Integer concurrencyCount(){
+        return this.executorHashmap.get(STEP_POOL_PREFIX).getCorePoolSize();
+    }
+
+    public Integer parallelismCount(){
+        int parallelism = 0;
+        for(String key: this.executorHashmap.keySet()){
+            if(key.contains(PARALLEL_POOL_PREFIX)){
+                parallelism = this.executorHashmap.get(key).getCorePoolSize();
+                break;
+            }
+        }
+        return parallelism;
     }
 
 }

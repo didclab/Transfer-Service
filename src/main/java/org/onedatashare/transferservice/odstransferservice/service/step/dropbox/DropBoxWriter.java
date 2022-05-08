@@ -4,21 +4,28 @@ import com.dropbox.core.DbxException;
 import com.dropbox.core.v2.DbxClientV2;
 import com.dropbox.core.v2.files.CommitInfo;
 import com.dropbox.core.v2.files.UploadSessionCursor;
+import lombok.Getter;
+import lombok.Setter;
+import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
+import org.springframework.batch.core.annotation.AfterWrite;
+import org.springframework.batch.core.annotation.BeforeRead;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemWriter;
 
 import java.io.ByteArrayInputStream;
+import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
 
 public class DropBoxWriter implements ItemWriter<DataChunk> {
 
@@ -29,9 +36,16 @@ public class DropBoxWriter implements ItemWriter<DataChunk> {
     private UploadSessionCursor cursor;
     Logger logger = LoggerFactory.getLogger(DropBoxWriter.class);
     private StepExecution stepExecution;
+    @Setter
     private MetricsCollector metricsCollector;
+    @Getter
+    @Setter
+    private MetricCache metricCache;
 
-    public DropBoxWriter(OAuthEndpointCredential credential){
+    private LocalDateTime readStartTime;
+
+
+    public DropBoxWriter(OAuthEndpointCredential credential) {
         this.credential = credential;
     }
 
@@ -42,7 +56,6 @@ public class DropBoxWriter implements ItemWriter<DataChunk> {
         this.client = new DbxClientV2(ODSUtility.dbxRequestConfig, this.credential.getToken());
         sessionId = this.client.files().uploadSessionStart().finish().getSessionId();
         this.stepExecution = stepExecution;
-        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, 0L);
     }
 
     @AfterStep
@@ -54,14 +67,21 @@ public class DropBoxWriter implements ItemWriter<DataChunk> {
     @Override
     public void write(List<? extends DataChunk> items) throws Exception {
         this.cursor = new UploadSessionCursor(sessionId, items.get(0).getSize());
-        for(DataChunk chunk : items){
+        for (DataChunk chunk : items) {
             this.client.files().uploadSessionAppendV2(cursor).uploadAndFinish(new ByteArrayInputStream(chunk.getData()));
             logger.info("Current chunk in DropBox Writer " + chunk.toString());
-            metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, chunk.getSize());
         }
     }
 
-    public void setMetricsCollector(MetricsCollector metricsCollector) {
-        this.metricsCollector = metricsCollector;
+    @BeforeRead
+    public void beforeRead() {
+        this.readStartTime = LocalDateTime.now();
+        logger.info("Before write start time {}", this.readStartTime);
     }
+
+    @AfterWrite
+    public void afterWrite(List<? extends DataChunk> items) {
+        ODSConstants.metricsForOptimizerAndInflux(items, this.readStartTime, logger, stepExecution, metricCache, metricsCollector);
+    }
+
 }

@@ -1,17 +1,12 @@
 package org.onedatashare.transferservice.odstransferservice.model.metrics;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.annotations.SerializedName;
 import com.influxdb.annotations.Column;
 import com.influxdb.annotations.Measurement;
 import lombok.Data;
-import org.json.JSONPropertyName;
-import org.onedatashare.transferservice.odstransferservice.model.StepMetric;
 import org.springframework.stereotype.Component;
 
 import java.sql.Timestamp;
-import java.util.Date;
-import java.util.List;
 
 @Data
 @Measurement(name= "data")
@@ -136,24 +131,25 @@ public class DataInflux {
     @Column(name= "errout")
     private float errout;
 
-    @SerializedName(value="jobId")
     @Column(name= "jobId")
     private String jobId;
 
-    @SerializedName(value="throughput")
     @Column(name= "throughput")
-    private Double throughput;
+    private double throughput;
 
-    @SerializedName(value="concurrency")
     @Column(name= "concurrency")
-    private Long concurrency;
+    private int concurrency;
 
-    @SerializedName(value="parallelism")
     @Column(name= "parallelism")
-    private Long parallelism;
+    private int parallelism;
 
-    @SerializedName(value="pipelining")
     @Column(name= "pipelining")
-    private Long pipelining;
+    private int pipelining;
+
+    @Column(name= "cpus")
+    private int cpus;
+
+    @Column(name= "memory")
+    private long memory;
 
 }

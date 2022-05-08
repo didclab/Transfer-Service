@@ -11,17 +11,17 @@ import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.pools.JschSessionPool;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
-import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.batch.core.Step;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 import org.springframework.util.ClassUtils;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Paths;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
@@ -39,10 +39,8 @@ public class SCPReader extends AbstractItemCountingItemStreamItemReader<DataChun
     private Channel channel;
     private final byte[] socketBuffer;
     private OutputStream outputStream;
-    private StepExecution stepExecution;
-    private MetricsCollector metricsCollector;
 
-    public SCPReader(EntityInfo fileInfo){
+    public SCPReader(EntityInfo fileInfo) {
         this.partitioner = new FilePartitioner(fileInfo.getChunkSize());
         this.fileInfo = fileInfo;
         this.socketBuffer = new byte[1024];
@@ -50,14 +48,13 @@ public class SCPReader extends AbstractItemCountingItemStreamItemReader<DataChun
     }
 
     @BeforeStep
-    public void beforeStep(StepExecution stepExecution){
+    public void beforeStep(StepExecution stepExecution) {
         this.baseBath = stepExecution.getJobParameters().getString(SOURCE_BASE_PATH);
-        this.stepExecution = stepExecution;
-        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, 0L);
     }
 
     /**
      * This prepares everything for the actual "transfer handshake" to take place.
+     *
      * @throws JSchException
      * @throws IOException
      * @throws InterruptedException
@@ -66,14 +63,13 @@ public class SCPReader extends AbstractItemCountingItemStreamItemReader<DataChun
         this.partitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
         this.session = this.connectionPool.borrowObject();
         String path = Paths.get(this.baseBath, this.fileInfo.getPath()).toString();
-        logger.info("The command to be used is scp: \t{}",SCP_COMMAND_REMOTE_TO_LOCAL+path);
+        logger.info("The command to be used is scp: \t{}", SCP_COMMAND_REMOTE_TO_LOCAL + path);
         this.channel = this.session.openChannel(EXEC);
-        ((ChannelExec)channel).setCommand(SCP_COMMAND_REMOTE_TO_LOCAL + path);
+        ((ChannelExec) channel).setCommand(SCP_COMMAND_REMOTE_TO_LOCAL + path);
         this.inputStream = channel.getInputStream();
         this.outputStream = channel.getOutputStream();
         this.channel.connect();
     }
-
 
 
     @Override
@@ -81,7 +77,8 @@ public class SCPReader extends AbstractItemCountingItemStreamItemReader<DataChun
         logger.info("Inside doOpen SCPReader");
         prepare();
         okAck(this.outputStream, this.socketBuffer);
-        if (checkAck(inputStream, logger) != 'C') throw new IOException("ACK for SCPReader failed file: " + this.fileInfo.toString());
+        if (checkAck(inputStream, logger) != 'C')
+            throw new IOException("ACK for SCPReader failed file: " + this.fileInfo.toString());
         someAck(this.inputStream, this.socketBuffer, logger);
         readFileSize(this.inputStream, this.socketBuffer, logger);
         readFileName(this.inputStream, this.socketBuffer, logger);
@@ -93,24 +90,23 @@ public class SCPReader extends AbstractItemCountingItemStreamItemReader<DataChun
     protected DataChunk doRead() throws Exception {
         logger.info("Inside doRead SCPReader");
         FilePart filePart = this.partitioner.nextPart();
-        if(filePart == null) return null;
+        if (filePart == null) return null;
         logger.info(filePart.toString());
         byte[] buffer = new byte[filePart.getSize()];
         int totalBytes = 0;
-        while(totalBytes < filePart.getSize()){
-            int byteRead = this.inputStream.read(buffer, totalBytes, filePart.getSize()-totalBytes);
+        while (totalBytes < filePart.getSize()) {
+            int byteRead = this.inputStream.read(buffer, totalBytes, filePart.getSize() - totalBytes);
             if (byteRead == -1) throw new IOException();
             totalBytes += byteRead;
         }
         DataChunk chunk = ODSUtility.makeChunk(filePart.getSize(), buffer, filePart.getStart(), (int) filePart.getPartIdx(), filePart.getFileName());
         logger.info(chunk.toString());
-        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, (long) filePart.getSize());
         return chunk;
     }
 
     @Override
     protected void doClose() throws Exception {
-        if(checkAck(this.inputStream, logger) != 0) throw new IOException("Failed a check ACK in doClose SCPReader");
+        if (checkAck(this.inputStream, logger) != 0) throw new IOException("Failed a check ACK in doClose SCPReader");
         okAck(this.outputStream, this.socketBuffer);
         this.inputStream.close();
         this.outputStream.close();
@@ -128,7 +124,4 @@ public class SCPReader extends AbstractItemCountingItemStreamItemReader<DataChun
         this.setExecutionContextName(name);
     }
 
-    public void setMetricsCollector(MetricsCollector metricsCollector) {
-        this.metricsCollector = metricsCollector;
-    }
 }

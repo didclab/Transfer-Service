@@ -1,34 +1,38 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.scp;
 
-import com.jcraft.jsch.*;
+import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.SneakyThrows;
 import org.apache.commons.pool2.ObjectPool;
+import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.pools.JschSessionPool;
+import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
-import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.AfterWrite;
+import org.springframework.batch.core.annotation.BeforeRead;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.core.annotation.BeforeWrite;
-import org.springframework.batch.item.ExecutionContext;
-import org.springframework.batch.item.ItemStreamException;
-import org.springframework.batch.item.ItemStreamWriter;
 import org.springframework.batch.item.ItemWriter;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SCP_COMMAND_LOCAL_TO_REMOTE;
 import static org.onedatashare.transferservice.odstransferservice.service.step.sftp.SftpUtility.*;
-import static org.onedatashare.transferservice.odstransferservice.service.step.sftp.SftpUtility.okAck;
 
 public class SCPWriter implements ItemWriter<DataChunk>, SetPool {
 
@@ -43,10 +47,15 @@ public class SCPWriter implements ItemWriter<DataChunk>, SetPool {
     private InputStream inputStream;
     private byte[] socketBuffer;
     private StepExecution stepExecution;
+    @Setter
     private MetricsCollector metricsCollector;
+    @Getter
+    @Setter
+    private MetricCache metricCache;
 
-    public SCPWriter(EntityInfo fileInfo){
-        this.socketBuffer = new byte[1024];
+    private LocalDateTime readStartTime;
+
+    public SCPWriter(EntityInfo fileInfo) {
         this.fileInfo = fileInfo;
     }
 
@@ -55,26 +64,11 @@ public class SCPWriter implements ItemWriter<DataChunk>, SetPool {
         logger.info("Before Step in SCPWriter");
         this.dBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
         this.stepExecution = stepExecution;
-        metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_READ, 0L);
     }
 
     @BeforeWrite
-    public void beforeWrite(List<DataChunk> items){
+    public void beforeWrite(List<DataChunk> items) {
         this.open(items.get(0).getFileName(), this.fileInfo.getSize());
-    }
-
-    @AfterWrite
-    public void afterWrite(List<DataChunk> items) throws IOException {
-        okAck(this.outputStream, this.socketBuffer);
-        if(this.outputStream != null){
-            this.outputStream.close();
-        }
-        if(this.inputStream != null){
-            this.inputStream.close();
-        }
-        this.scpChannel.disconnect();
-        this.connectionPool.returnObject(this.session);
-        logger.info("Shut Down SCPWriter ");
     }
 
     @Override
@@ -83,11 +77,33 @@ public class SCPWriter implements ItemWriter<DataChunk>, SetPool {
         for (DataChunk b : items) {
             outputStream.write(b.getData());
             logger.info("Wrote {}", b);
-            metricsCollector.calculateThroughputAndSave(stepExecution, BYTES_WRITTEN, b.getSize());
         }
         outputStream.flush();
         items = null;
     }
+
+    @BeforeRead
+    public void beforeRead() {
+        this.readStartTime = LocalDateTime.now();
+        logger.info("Before write start time {}", this.readStartTime);
+    }
+
+    @AfterWrite
+    public void afterWrite(List<? extends DataChunk> items) throws IOException {
+        socketBuffer = new byte[1024];
+        okAck(this.outputStream, this.socketBuffer);
+        if (this.outputStream != null) {
+            this.outputStream.close();
+        }
+        if (this.inputStream != null) {
+            this.inputStream.close();
+        }
+        this.scpChannel.disconnect();
+        this.connectionPool.returnObject(this.session);
+        logger.info("Shut Down SCPWriter ");
+        ODSConstants.metricsForOptimizerAndInflux(items, this.readStartTime, logger, stepExecution, metricCache, metricsCollector);
+    }
+
 
     @Override
     public void setPool(ObjectPool connectionPool) {
@@ -96,7 +112,7 @@ public class SCPWriter implements ItemWriter<DataChunk>, SetPool {
 
     @SneakyThrows
     public void open(String fileName, long fileSize) {
-        String fullPath = Paths.get(this.dBasePath,fileName).toString();
+        String fullPath = Paths.get(this.dBasePath, fileName).toString();
         this.session = this.connectionPool.borrowObject();
         mkdirSCP(session, this.dBasePath, logger);
         this.scpChannel = (ChannelExec) this.session.openChannel("exec");
@@ -104,12 +120,10 @@ public class SCPWriter implements ItemWriter<DataChunk>, SetPool {
         this.outputStream = scpChannel.getOutputStream();
         this.inputStream = scpChannel.getInputStream();
         this.scpChannel.connect();
-        if(checkAck(this.inputStream,logger) != 0) throw new IOException("ACK for SCPReader failed file: " + fileName);
+        if (checkAck(this.inputStream, logger) != 0)
+            throw new IOException("ACK for SCPReader failed file: " + fileName);
         sendFileSize(this.outputStream, fileName, fileSize);
-        if(checkAck(inputStream, logger) != 0) throw new IOException("ACK for SCPReader failed file: " + fileName);
+        if (checkAck(inputStream, logger) != 0) throw new IOException("ACK for SCPReader failed file: " + fileName);
     }
 
-    public void setMetricsCollector(MetricsCollector metricsCollector) {
-        this.metricsCollector = metricsCollector;
-    }
 }

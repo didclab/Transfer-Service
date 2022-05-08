@@ -1,5 +1,15 @@
 package org.onedatashare.transferservice.odstransferservice.constant;
 
+import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
+import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
+import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
+import org.slf4j.Logger;
+import org.springframework.batch.core.StepExecution;
+
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.List;
+
 public class ODSConstants {
     public static final String DROPBOX_URI_SCHEME = "dropbox://";
     public static final String DRIVE_URI_SCHEME = "gdrive://";
@@ -61,6 +71,17 @@ public class ODSConstants {
         String PMETER_REPORT_PATH = System.getenv("HOME") + "/.pmeter/pmeter_measure.txt";
         String PMETER_REPORT_FOLDER = System.getenv("HOME") + "/.pmeter/";
         String PMETER_TEMP_REPORT = "pmeter_measure_temp.txt";
+    }
+
+    public static void metricsForOptimizerAndInflux(List<? extends DataChunk> items, LocalDateTime readStartTime, Logger logger, StepExecution stepExecution, MetricCache cache, MetricsCollector metricsCollector) {
+        LocalDateTime writeEndTime = LocalDateTime.now();
+        long totalBytes = items.stream().mapToLong(DataChunk::getSize).sum();
+        long timeItTookForThisList = Duration.between(readStartTime, writeEndTime).toMillis();
+        double throughput = (double) totalBytes / timeItTookForThisList;
+        throughput = throughput * 1000;
+        logger.info("Thread name {} Total bytes {} with total time {} gives throughput {} and pipelining {}", Thread.currentThread(), totalBytes, timeItTookForThisList, throughput, stepExecution.getCommitCount());
+        cache.addMetric(Thread.currentThread().getName(), throughput, stepExecution, items.size());
+        metricsCollector.calculateThroughputAndSave(stepExecution, throughput, items.size());
     }
 
 }

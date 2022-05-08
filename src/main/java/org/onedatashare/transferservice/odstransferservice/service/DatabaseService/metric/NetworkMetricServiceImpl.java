@@ -97,7 +97,6 @@ public class NetworkMetricServiceImpl implements NetworkMetricService {
         }
 
         File tempFile = new File(ODSConstants.PMeterConstants.PMETER_TEMP_REPORT);
-
         List<NetworkMetric> networkMetricList = new ArrayList<>();
         LOG.info("Reading file: " + inputFile);
         try(Reader r = new InputStreamReader(new FileInputStream(inputFile))
@@ -234,5 +233,7 @@ public class NetworkMetricServiceImpl implements NetworkMetricService {
         dataInflux.setPipelining(jobMetric.getPipelining());
         dataInflux.setThroughput(jobMetric.getThroughput());
         dataInflux.setJobId(jobMetric.getJobId());
+        dataInflux.setCpus(jobMetric.getCpus());
+        dataInflux.setMemory(jobMetric.getMemory());
     }
 }

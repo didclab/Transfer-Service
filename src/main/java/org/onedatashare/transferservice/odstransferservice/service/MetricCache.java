@@ -15,7 +15,13 @@ public class MetricCache {
         this.threadCache = new ConcurrentHashMap<>();
     }
 
-    public void addMetric(String threadId, double throughput, StepExecution stepExecution) {
-        this.threadCache.put(threadId, new Metric(throughput, stepExecution));
+    public void addMetric(String threadId, double throughput, StepExecution stepExecution, int pipeSize) {
+        this.threadCache.put(threadId, new Metric(throughput, stepExecution, pipeSize));
+    }
+
+    public void clearCache(){
+        if(this.threadCache != null){
+            this.threadCache.clear();
+        }
     }
 }

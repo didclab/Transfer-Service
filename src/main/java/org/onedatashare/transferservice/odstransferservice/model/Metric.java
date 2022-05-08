@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.DoubleSummaryStatistics;
 import java.util.List;
 
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.PIPELINING;
+
 @Data
 public class Metric {
     double throughput;
@@ -16,29 +18,16 @@ public class Metric {
     LocalDate date;
     StepExecution stepExecution;
     DoubleSummaryStatistics throughputStat;
-    List<Double> throughputList;
     int pipelining;
 
-    public Metric(double throughput, StepExecution stepExecution) {
+    public Metric(double throughput, StepExecution stepExecution, int pipeSize) {
         this.cpus = Runtime.getRuntime().availableProcessors();
         this.memory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
         date = LocalDate.now();
         this.throughput = throughput;
         throughputStat = new DoubleSummaryStatistics();
-        throughputList = new ArrayList<>();
-        pipelining = stepExecution.getCommitCount();
+        pipelining = pipeSize;
         this.stepExecution = stepExecution;
     }
 
-    public void addBytesAndTime(long chunkStartTime, long bytesSent) {
-        double chunkThroughput = (double) bytesSent / (System.nanoTime() - chunkStartTime);
-        this.throughputList.add(chunkThroughput);
-        this.throughputStat.accept(chunkThroughput);
-    }
-
-    public void addThroughput(double throughput) {
-        this.throughputStat.accept(throughput);
-        this.throughputList.add(throughput);
-        this.date = LocalDate.now();
-    }
 }
