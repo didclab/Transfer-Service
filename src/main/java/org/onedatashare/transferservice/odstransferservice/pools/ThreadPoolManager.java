@@ -71,10 +71,11 @@ public class ThreadPoolManager {
     public void clearJobPool() {
         for (String key : this.executorHashmap.keySet()) {
             if (key.contains(STEP_POOL_PREFIX) || key.contains(PARALLEL_POOL_PREFIX)) {
-                ThreadPoolTaskExecutor executor = this.executorHashmap.remove(key);
+                ThreadPoolTaskExecutor executor = this.executorHashmap.get(key);
                 if(executor != null){
                     executor.shutdown();
                 }
+                this.executorHashmap.remove(key);
             }
         }
     }

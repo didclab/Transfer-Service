@@ -197,16 +197,19 @@ public class JobControl extends DefaultBatchConfigurer {
             case vfs:
                 VfsWriter vfsWriter = new VfsWriter(request.getDestination().getVfsDestCredential());
                 vfsWriter.setMetricsCollector(metricsCollector);
+                vfsWriter.setMetricCache(metricCache);
                 return vfsWriter;
             case sftp:
                 SFTPWriter sftpWriter = new SFTPWriter(request.getDestination().getVfsDestCredential(), request.getOptions().getPipeSize());
                 sftpWriter.setPool(connectionBag.getSftpWriterPool());
                 sftpWriter.setMetricsCollector(metricsCollector);
+                sftpWriter.setMetricCache(metricCache);
                 return sftpWriter;
             case ftp:
                 FTPWriter ftpWriter = new FTPWriter(request.getDestination().getVfsDestCredential());
                 ftpWriter.setPool(connectionBag.getFtpWriterPool());
                 ftpWriter.setMetricsCollector(metricsCollector);
+                ftpWriter.setMetricCache(metricCache);
                 return ftpWriter;
             case s3:
                 AmazonS3Writer amazonS3Writer = new AmazonS3Writer(request.getDestination().getVfsDestCredential(), fileInfo);
@@ -217,20 +220,24 @@ public class JobControl extends DefaultBatchConfigurer {
                 if (fileInfo.getSize() < TWENTY_MB) {
                     BoxWriterSmallFile boxWriterSmallFile = new BoxWriterSmallFile(request.getDestination().getOauthDestCredential(), fileInfo);
                     boxWriterSmallFile.setMetricsCollector(metricsCollector);
+                    boxWriterSmallFile.setMetricCache(metricCache);
                     return boxWriterSmallFile;
                 } else {
                     BoxWriterLargeFile boxWriterLargeFile = new BoxWriterLargeFile(request.getDestination().getOauthDestCredential(), fileInfo);
                     boxWriterLargeFile.setMetricsCollector(metricsCollector);
+                    boxWriterLargeFile.setMetricCache(metricCache);
                     return boxWriterLargeFile;
                 }
             case dropbox:
                 DropBoxWriter dropBoxWriter = new DropBoxWriter(request.getDestination().getOauthDestCredential());
                 dropBoxWriter.setMetricsCollector(metricsCollector);
+                dropBoxWriter.setMetricCache(metricCache);
                 return dropBoxWriter;
             case scp:
                 SCPWriter scpWriter = new SCPWriter(fileInfo);
                 scpWriter.setPool(connectionBag.getSftpWriterPool());
                 scpWriter.setMetricsCollector(metricsCollector);
+                scpWriter.setMetricCache(metricCache);
                 return scpWriter;
         }
         return null;
