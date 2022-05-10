@@ -6,6 +6,7 @@ import lombok.Setter;
 import lombok.SneakyThrows;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.config.DataSourceConfig;
+import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
@@ -56,6 +57,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
+import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -145,10 +149,8 @@ public class JobControl extends DefaultBatchConfigurer {
                 idForStep = file.getPath();
             }
             SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(idForStep).<DataChunk, DataChunk>chunk(this.request.getOptions().getPipeSize());
-            if (ODSUtility.fullyOptimizableProtocols.contains(this.request.getSource().getType()) && ODSUtility.fullyOptimizableProtocols.contains(this.request.getDestination().getType()) && this.request.getOptions().getParallelThreadCount() > 1) {
-                if (this.request.getOptions().getParallelThreadCount() > 1) {
-                    child.taskExecutor(this.threadPoolManager.parallelThreadPool(request.getOptions().getParallelThreadCount(), idForStep));
-                }
+            if (ODSUtility.fullyOptimizableProtocols.contains(this.request.getSource().getType()) && ODSUtility.fullyOptimizableProtocols.contains(this.request.getDestination().getType())) {
+                child.taskExecutor(this.threadPoolManager.parallelThreadPool(request.getOptions().getParallelThreadCount(), idForStep));
             }
             child.reader(getRightReader(request.getSource().getType(), file))
                     .writer(getRightWriter(request.getDestination().getType(), file));
@@ -165,6 +167,19 @@ public class JobControl extends DefaultBatchConfigurer {
                 hr.setPool(connectionBag.getHttpReaderPool());
                 return hr;
             case vfs:
+                if(fileInfo.getChunkSize() < 1){
+                    fileInfo.setChunkSize(ODSConstants.FIVE_MB);
+                }
+                Path path = Paths.get(fileInfo.getPath());
+                if(fileInfo.getSize() < 1){
+                    File file = path.toFile();
+                    if(file.exists()){
+                        fileInfo.setSize(file.length());
+                    }
+                    if(fileInfo.getId() == null || fileInfo.getId().isEmpty()){
+                        fileInfo.setId(file.getName());
+                    }
+                }
                 VfsReader vfsReader = new VfsReader(request.getSource().getVfsSourceCredential(), fileInfo);
                 return vfsReader;
             case sftp:

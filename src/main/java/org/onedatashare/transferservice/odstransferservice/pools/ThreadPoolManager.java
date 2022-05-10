@@ -28,10 +28,8 @@ public class ThreadPoolManager {
     public ThreadPoolTaskExecutor createThreadPool(int corePoolSize, String prefix) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(corePoolSize);
-        executor.setMaxPoolSize(corePoolSize);
         executor.setThreadNamePrefix(prefix);
         executor.setAllowCoreThreadTimeOut(true);
-        executor.setKeepAliveSeconds(5);
         executor.initialize();
         if (this.executorHashmap == null) {
             this.executorHashmap = new HashMap<>();
@@ -47,24 +45,32 @@ public class ThreadPoolManager {
     public void applyOptimizer(int concurrency, int parallel) {
         for (String key : this.executorHashmap.keySet()) {
             ThreadPoolTaskExecutor pool = this.executorHashmap.get(key);
-            try{
+            try {
                 if (key.contains(STEP_POOL_PREFIX)) {
                     logger.info("Changing {} pool size from {} to {}", pool.getThreadNamePrefix(), pool.getPoolSize(), concurrency);
                     if (concurrency > 0) {
                         pool.setCorePoolSize(concurrency);
-                        pool.setMaxPoolSize(concurrency);
+//                        pool.setMaxPoolSize(concurrency);
                         logger.info("Set {} pool size to {}", pool.getThreadNamePrefix(), concurrency);
                     }
                 }
+            }catch (Exception exception) {
+                logger.warn("Tried to change thread pool {} og pool size {} to new pool size {}", pool.getThreadNamePrefix(), pool.getCorePoolSize(), concurrency);
+                exception.printStackTrace();
+            }
+            try{
                 if (key.contains(PARALLEL_POOL_PREFIX)) {
                     logger.info("Changing {} pool size from {} to {}", pool.getThreadNamePrefix(), pool.getPoolSize(), parallel);
                     if (parallel > 0) {
-                        pool.setMaxPoolSize(parallel);
+//                        pool.setMaxPoolSize(parallel);
                         pool.setCorePoolSize(parallel);
                         logger.info("Set {} pool size to {}", pool.getThreadNamePrefix(), parallel);
                     }
                 }
-            }catch(Exception ignore){}
+            }catch(Exception exception){
+                logger.warn("Tried to change thread pool {} og pool size {} to new pool size {}", pool.getThreadNamePrefix(), pool.getCorePoolSize(), parallel);
+                exception.printStackTrace();
+            }
         }
     }
 

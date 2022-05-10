@@ -89,9 +89,9 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
     protected void doOpen() {
         logger.info("Starting Open in VFS");
         try {
-            this.inputStream = new FileInputStream(Paths.get(this.sBasePath, this.fileInfo.getPath()).toString());
+            this.inputStream = new FileInputStream(Paths.get(this.fileInfo.getPath()).toString());
         } catch (FileNotFoundException e) {
-            logger.error("Path not found : " + this.sBasePath + this.fileName);
+            logger.error("Path not found : " + this.fileInfo.getPath());
             e.printStackTrace();
         }
         this.sink = this.inputStream.getChannel();
