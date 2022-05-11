@@ -8,8 +8,6 @@ import org.springframework.batch.core.StepExecution;
  */
 @Data
 public class JobMetric {
-    private int cpus;
-    private long memory;
     private String jobId;
     private Double throughput;
     private String ownerId;
@@ -19,8 +17,6 @@ public class JobMetric {
     private StepExecution stepExecution;
 
     public JobMetric() {
-        this.cpus = Runtime.getRuntime().availableProcessors();
-        this.memory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
         this.jobId = "-1";
         this.throughput = 0.0;
         this.ownerId = "";

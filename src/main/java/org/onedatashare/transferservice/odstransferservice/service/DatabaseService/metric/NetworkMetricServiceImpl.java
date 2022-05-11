@@ -20,7 +20,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
-import java.text.ParseException;
 import java.util.*;
 
 /**
@@ -233,7 +232,9 @@ public class NetworkMetricServiceImpl implements NetworkMetricService {
         dataInflux.setPipelining(jobMetric.getPipelining());
         dataInflux.setThroughput(jobMetric.getThroughput());
         dataInflux.setJobId(jobMetric.getJobId());
-        dataInflux.setCpus(jobMetric.getCpus());
-        dataInflux.setMemory(jobMetric.getMemory());
+        dataInflux.setCpus(Runtime.getRuntime().availableProcessors());
+        dataInflux.setMaxMemory(Runtime.getRuntime().maxMemory());
+        dataInflux.setFreeMemory(Runtime.getRuntime().freeMemory());
+        dataInflux.setMemory(Runtime.getRuntime().totalMemory()- dataInflux.getFreeMemory());
     }
 }
