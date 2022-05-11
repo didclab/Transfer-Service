@@ -152,4 +152,9 @@ public class DataInflux {
     @Column(name= "memory")
     private long memory;
 
+    @Column(name="maxMemory")
+    private long maxMemory;
+
+    @Column(name="freeMemory")
+    private long freeMemory;
 }
