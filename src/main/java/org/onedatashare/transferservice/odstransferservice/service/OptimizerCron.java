@@ -63,7 +63,7 @@ public class OptimizerCron implements Runnable {
             inputRequest.setConcurrency(concurrency);
             for (String key : cache.keySet()) {
                 Metric metric = cache.get(key);
-                inputRequest.setPipelining(Integer.parseInt(metric.getStepExecution().getJobParameters().getString(ODSConstants.PIPELINING)));
+                inputRequest.setPipelining(metric.getPipelining());
                 stats.accept(metric.getThroughput());
                 break;
             }

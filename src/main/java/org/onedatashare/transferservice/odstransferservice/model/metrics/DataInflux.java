@@ -146,8 +146,8 @@ public class DataInflux {
     @Column(name= "pipelining")
     private int pipelining;
 
-    @Column(name= "cpus")
-    private int cpus;
+    @Column(name= "cores")
+    private int cores;
 
     @Column(name= "memory")
     private long memory;

@@ -232,7 +232,7 @@ public class NetworkMetricServiceImpl implements NetworkMetricService {
         dataInflux.setPipelining(jobMetric.getPipelining());
         dataInflux.setThroughput(jobMetric.getThroughput());
         dataInflux.setJobId(jobMetric.getJobId());
-        dataInflux.setCpus(Runtime.getRuntime().availableProcessors());
+        dataInflux.setCores(Runtime.getRuntime().availableProcessors());
         dataInflux.setMaxMemory(Runtime.getRuntime().maxMemory());
         dataInflux.setFreeMemory(Runtime.getRuntime().freeMemory());
         dataInflux.setMemory(Runtime.getRuntime().totalMemory()- dataInflux.getFreeMemory());

@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
@@ -75,6 +77,16 @@ public class ThreadPoolManager {
     }
 
     public void clearJobPool() {
+        Iterator<Map.Entry<String, ThreadPoolTaskExecutor>> iterator = this.executorHashmap.entrySet().iterator();
+        while(iterator.hasNext()){
+            Map.Entry<String,ThreadPoolTaskExecutor> cur = iterator.next();
+            ThreadPoolTaskExecutor pool = cur.getValue();
+            String key = cur.getKey();
+            if(key.contains(STEP_POOL_PREFIX) || key.contains(PARALLEL_POOL_PREFIX)){
+                pool.shutdown();
+                iterator.remove();
+            }
+        }
         for (String key : this.executorHashmap.keySet()) {
             if (key.contains(STEP_POOL_PREFIX) || key.contains(PARALLEL_POOL_PREFIX)) {
                 ThreadPoolTaskExecutor executor = this.executorHashmap.get(key);
