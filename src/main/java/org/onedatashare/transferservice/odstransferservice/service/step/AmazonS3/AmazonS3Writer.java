@@ -60,6 +60,7 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
     @Getter
     @Setter
     private MetricCache metricCache; //this is for the optimizer
+    private String uploadId;
 
     public AmazonS3Writer(AccountEndpointCredential destCredential, EntityInfo fileInfo) {
         this.fileName = "";
@@ -80,7 +81,7 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
         this.stepExecution = stepExecution;
     }
 
-    public void prepareS3Transfer(String fileName) {
+    public synchronized void prepareS3Transfer(String fileName) {
         if (!this.firstPass) {
             this.client = createClientWithCreds();
             this.s3URI = new AmazonS3URI(S3Utility.constructS3URI(this.destCredential.getUri(), fileName, destBasepath));//for aws the step name will be the file key.
@@ -91,6 +92,7 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
                 this.multipartUpload = true;
                 this.metaData = new AWSMultiPartMetaData();
                 this.metaData.prepareMetaData(client, this.s3URI.getBucket(), this.s3URI.getKey());
+                this.uploadId = this.metaData.getInitiateMultipartUploadResult().getUploadId();
             }
             this.firstPass = true;
         }
@@ -103,7 +105,9 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
 
     @Override
     public void write(List<? extends DataChunk> items) {
-        prepareS3Transfer(items.get(0).getFileName());
+        if(!this.firstPass){
+            prepareS3Transfer(items.get(0).getFileName());
+        }
         if (!this.multipartUpload) {
             this.singlePutRequestMetaData.addAllChunks(items);
             DataChunk lastChunk = items.get(items.size() - 1);
@@ -122,7 +126,7 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
                     UploadPartResult uploadPartResult = client.uploadPart(lastPart);
                     this.metaData.addUploadPart(uploadPartResult);
                 } else {
-                    UploadPartRequest uploadPartRequest = ODSUtility.makePartRequest(currentChunk, this.s3URI.getBucket(), this.metaData.getInitiateMultipartUploadResult().getUploadId(), this.s3URI.getKey(), false);
+                    UploadPartRequest uploadPartRequest = ODSUtility.makePartRequest(currentChunk, this.s3URI.getBucket(), this.uploadId, this.s3URI.getKey(), false);
                     UploadPartResult uploadPartResult = client.uploadPart(uploadPartRequest);
                     this.metaData.addUploadPart(uploadPartResult);
                 }
@@ -132,7 +136,6 @@ public class AmazonS3Writer implements ItemWriter<DataChunk> {
 
     @AfterWrite
     public void afterWrite(List<? extends DataChunk> items) {
-        logger.info("Inside AfterWrite S3 Writer");
         ODSConstants.metricsForOptimizerAndInflux(items, this.readStartTime, logger, stepExecution, metricCache, metricsCollector);
     }
 

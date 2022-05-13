@@ -67,7 +67,7 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
         logger.info("After JOB------------------present time--" + System.currentTimeMillis());
         connectionBag.closePools();
         threadPoolManager.clearJobPool();
-        this.future.cancel(false);
+        this.future.cancel(true);
         metricCache.clearCache();
         optimizerService.deleteOptimizerBlocking(new OptimizerDeleteRequest(appName));
     }

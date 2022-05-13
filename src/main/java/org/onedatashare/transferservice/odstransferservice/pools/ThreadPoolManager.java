@@ -84,6 +84,7 @@ public class ThreadPoolManager {
             String key = cur.getKey();
             if(key.contains(STEP_POOL_PREFIX) || key.contains(PARALLEL_POOL_PREFIX)){
                 pool.shutdown();
+                logger.info("Shut down poo {}", pool.getThreadNamePrefix());
                 iterator.remove();
             }
         }

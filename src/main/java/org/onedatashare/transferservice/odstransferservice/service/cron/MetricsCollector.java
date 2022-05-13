@@ -96,6 +96,17 @@ public class MetricsCollector {
             stats.accept(jobMetric.getThroughput());
         }
         parentJobMetric.setThroughput(stats.getAverage());
+        if(this.previousParentMetric.getStepExecution() != null){
+            if(!this.previousParentMetric.getStepExecution().getJobExecution().isRunning()){
+                this.previousParentMetric.setConcurrency(0);
+                this.previousParentMetric.setParallelism(0);
+                this.previousParentMetric.setPipelining(0);
+            }
+        }else{
+            this.previousParentMetric.setConcurrency(0);
+            this.previousParentMetric.setParallelism(0);
+            this.previousParentMetric.setPipelining(0);
+        }
         this.influxCache.clearCache();
         networkMetrics.get(networkMetrics.size() - 1).setJobData(parentJobMetric); //why do we not set it on all?
         List<DataInflux> dataInflux = networkMetricService.mapData(networkMetrics);

@@ -30,6 +30,7 @@ public class InfluxCache {
         jobMetric.setParallelism(threadPoolManager.parallelismCount());
         jobMetric.setJobId(stepExecution.getJobExecutionId().toString());
         jobMetric.setOwnerId(stepExecution.getJobExecution().getJobParameters().getString(OWNER_ID));
+        jobMetric.setJobId(String.valueOf(stepExecution.getJobExecutionId()));
         this.threadCache.add(jobMetric);
     }
 
