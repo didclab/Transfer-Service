@@ -98,11 +98,16 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
             //this implementation is specific for VFS to S3 transfer
             if (fileInfo.getSize() >= FIVE_MB) {
                 // 67108863 number of chunks can be handled at max
-                StringBuilder stringBuilder = new StringBuilder(fileHashValidator.getReaderHash());
-                String part = Hex.encodeHexString(fileHashValidator.getReaderMessageDigest().digest());
-                stringBuilder.append(part);
-                fileHashValidator.getReaderMessageDigest().reset();
-                fileHashValidator.setReaderHash(stringBuilder.toString());
+                //if(destination == S3){
+                //StringBuilder stringBuilder = new StringBuilder(fileHashValidator.getReaderHash());
+                //String part = Hex.encodeHexString(fileHashValidator.getReaderMessageDigest().digest());
+                //stringBuilder.append(part);
+                //fileHashValidator.getReaderMessageDigest().reset();
+                //fileHashValidator.setReaderHash(stringBuilder.toString());
+                //}else
+                if(chunkParameters.isLastChunk()){
+                    fileHashValidator.setReaderHash(Hex.encodeHexString(fileHashValidator.getReaderMessageDigest().digest()));
+                }
             } else {
                 if (chunkParameters.isLastChunk()) {
                     fileHashValidator.setReaderHash(Hex.encodeHexString(fileHashValidator.getReaderMessageDigest().digest()));
