@@ -1,9 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.model;
 
-import io.netty.buffer.ByteBuf;
-import javassist.bytecode.ByteArray;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.io.ByteArrayInputStream;

@@ -1,9 +1,5 @@
 package org.onedatashare.transferservice.odstransferservice.model.credential;
 
-import lombok.Data;
-import org.springframework.data.mongodb.core.mapping.Document;
-
-
 /**
  * Base class for storing one user credential
  */
