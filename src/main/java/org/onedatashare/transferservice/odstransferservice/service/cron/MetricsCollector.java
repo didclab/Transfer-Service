@@ -25,6 +25,7 @@ import org.springframework.util.CollectionUtils;
 import java.util.DoubleSummaryStatistics;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.PMeterConstants;
 
@@ -88,6 +89,7 @@ public class MetricsCollector {
         if(this.previousParentMetric == null){
             this.previousParentMetric = new JobMetric();
         }
+
         Iterator itr = this.influxCache.threadCache.iterator();
         JobMetric parentJobMetric = this.previousParentMetric;
         while (itr.hasNext()) {
@@ -95,6 +97,7 @@ public class MetricsCollector {
             parentJobMetric = jobMetric;
             stats.accept(jobMetric.getThroughput());
         }
+
         parentJobMetric.setThroughput(stats.getAverage());
         if(this.previousParentMetric.getStepExecution() != null){
             if(!this.previousParentMetric.getStepExecution().getJobExecution().isRunning()){
@@ -114,7 +117,6 @@ public class MetricsCollector {
         repo.insertDataPoints(dataInflux);
         this.previousParentMetric = parentJobMetric;
     }
-
 
     public void calculateThroughputAndSave(StepExecution stepExecution, double throughput, int size) {
         if (!isJobMetricCollectionEnabled) return;

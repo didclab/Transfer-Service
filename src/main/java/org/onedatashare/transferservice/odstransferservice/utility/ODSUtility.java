@@ -2,12 +2,12 @@ package org.onedatashare.transferservice.odstransferservice.utility;
 
 import com.amazonaws.services.s3.model.UploadPartRequest;
 import com.dropbox.core.DbxRequestConfig;
-import edu.emory.mathcs.backport.java.util.Arrays;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.io.ByteArrayInputStream;
+import java.util.Arrays;
 import java.util.HashSet;
 
 public class ODSUtility {
@@ -44,6 +44,7 @@ public class ODSUtility {
         uploadPartRequest.withLastPart(lastPart);
         uploadPartRequest.setUploadId(uploadId);
         uploadPartRequest.setKey(key);
+//        uploadPartRequest.setFileOffset(dataChunk.getStartPosition());
         uploadPartRequest.setPartNumber(dataChunk.getChunkIdx()+1); //by default we start from chunks 0-N but AWS SDK must have 1-10000 so we just add 1
         uploadPartRequest.setPartSize(dataChunk.getSize());
         return uploadPartRequest;

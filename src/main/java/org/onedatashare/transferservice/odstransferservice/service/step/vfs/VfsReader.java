@@ -11,9 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
-import org.springframework.batch.item.file.ResourceAwareItemReaderItemStream;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
-import org.springframework.core.io.Resource;
 import org.springframework.util.ClassUtils;
 
 import java.io.FileInputStream;
@@ -22,29 +20,28 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SOURCE_BASE_PATH;
 
-public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChunk> implements ResourceAwareItemReaderItemStream<DataChunk> {
+public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChunk> {
 
     FileChannel sink;
     Logger logger = LoggerFactory.getLogger(VfsReader.class);
-    long fsize;
     FileInputStream inputStream;
     String sBasePath;
     String fileName;
     FilePartitioner filePartitioner;
     EntityInfo fileInfo;
     AccountEndpointCredential credential;
-    ByteBuffer buffer;
-
+    ConcurrentHashMap<Long, ByteBuffer> bufferMap;
 
     public VfsReader(AccountEndpointCredential credential, EntityInfo fInfo) {
         this.setExecutionContextName(ClassUtils.getShortName(VfsReader.class));
         this.credential = credential;
         this.filePartitioner = new FilePartitioner(fInfo.getChunkSize());
         this.fileInfo = fInfo;
-        buffer = ByteBuffer.allocate(fInfo.getChunkSize());
+        bufferMap = new ConcurrentHashMap<>();
     }
 
     @BeforeStep
@@ -53,24 +50,24 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
         JobParameters params = stepExecution.getJobExecution().getJobParameters();
         this.sBasePath = params.getString(SOURCE_BASE_PATH);
         this.fileName = this.fileInfo.getId();
-        this.fsize = this.fileInfo.getSize();
-        this.filePartitioner.createParts(fsize, fileName);
-    }
-
-    @Override
-    public void setResource(Resource resource) {
+        this.filePartitioner.createParts(this.fileInfo.getSize(), fileName);
     }
 
     @Override
     protected DataChunk doRead() {
         FilePart chunkParameters = this.filePartitioner.nextPart();
         if (chunkParameters == null) return null;// done as there are no more FileParts in the queue
-        logger.info("currently reading {}", chunkParameters.getPartIdx());
+        logger.info("currently reading {}", chunkParameters);
         int totalBytes = 0;
+        ByteBuffer buffer = bufferMap.get(Thread.currentThread().getId());
+        if(buffer == null){
+            buffer = ByteBuffer.allocate(chunkParameters.getSize());
+            bufferMap.put(Thread.currentThread().getId(), buffer);
+        }
         while (totalBytes < chunkParameters.getSize()) {
             int bytesRead = 0;
             try {
-                bytesRead = this.sink.read(buffer, chunkParameters.getStart() + totalBytes);
+                bytesRead = this.sink.read(buffer, chunkParameters.getStart()+totalBytes);
             } catch (IOException ex) {
                 logger.error("Unable to read from source");
                 ex.printStackTrace();
@@ -79,6 +76,9 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
             totalBytes += bytesRead;
         }
         buffer.flip();
+        if(chunkParameters.getSize() != totalBytes){
+            logger.info("We read in {} bytes and expected to read in {} bytes", chunkParameters.getSize(), totalBytes);
+        }
         byte[] data = new byte[chunkParameters.getSize()];
         buffer.get(data, 0, totalBytes);
         buffer.clear();
@@ -106,6 +106,6 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
             logger.error("Not able to close the input Stream");
             ex.printStackTrace();
         }
-        this.buffer = null;
+        this.bufferMap.clear();
     }
 }

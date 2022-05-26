@@ -19,7 +19,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 
 @Component
@@ -50,6 +49,9 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
     @Value("${optimizer.interval}")
     Integer interval;
 
+    @Value("${optimizer.enable}")
+    private boolean optimizerEnable;
+
     @Autowired
     MetricCache metricCache;
 
@@ -59,7 +61,10 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
     @Override
     public void beforeJob(JobExecution jobExecution) {
         logger.info("BEFOR JOB-------------------present time--" + System.currentTimeMillis());
-        this.future = optimizerTaskScheduler.scheduleWithFixedDelay(optimizerCron, interval);
+        if(this.optimizerEnable){
+            optimizerService.createOptimizerBlocking(new OptimizerCreateRequest(appName, jobExecution.getStepExecutions().size(), 32, 32));
+            this.future = optimizerTaskScheduler.scheduleWithFixedDelay(optimizerCron, interval);
+        }
     }
 
     @Override
@@ -67,9 +72,11 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
         logger.info("After JOB------------------present time--" + System.currentTimeMillis());
         connectionBag.closePools();
         threadPoolManager.clearJobPool();
-        this.future.cancel(true);
-        metricCache.clearCache();
-        optimizerService.deleteOptimizerBlocking(new OptimizerDeleteRequest(appName));
+        if(this.optimizerEnable){
+            this.future.cancel(true);
+            metricCache.clearCache();
+            optimizerService.deleteOptimizerBlocking(new OptimizerDeleteRequest(appName));
+        }
     }
 }
 

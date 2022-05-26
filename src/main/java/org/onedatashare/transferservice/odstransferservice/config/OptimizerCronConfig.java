@@ -25,7 +25,6 @@ public class OptimizerCronConfig {
     @Bean
     public ThreadPoolTaskScheduler optimizerTaskScheduler() {
         ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
-        threadPoolTaskScheduler.setPoolSize(2);
         threadPoolTaskScheduler.setThreadNamePrefix("OptimizerTaskScheduler");
         return threadPoolTaskScheduler;
     }

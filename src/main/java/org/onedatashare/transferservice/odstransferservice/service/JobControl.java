@@ -10,12 +10,12 @@ import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
-import org.onedatashare.transferservice.odstransferservice.model.optimizer.OptimizerCreateRequest;
 import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManager;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
+import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3LargeFileWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3Reader;
-import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3Writer;
+import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3SmallFileWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxWriterLargeFile;
 import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxWriterSmallFile;
@@ -105,9 +105,6 @@ public class JobControl extends DefaultBatchConfigurer {
     @Autowired
     MetricCache metricCache;
 
-    @Autowired
-    private OptimizerService optimizerService;
-
     @Autowired(required = false)
     public void setDatasource(DataSource datasource) {
         this.dataSource = datasource;
@@ -139,7 +136,7 @@ public class JobControl extends DefaultBatchConfigurer {
         return factory.getObject();
     }
 
-    private List<Flow> createConcurrentFlow(List<EntityInfo> infoList, String basePath, String id) {
+    private List<Flow> createConcurrentFlow(List<EntityInfo> infoList, String basePath) {
         List<Flow> flows = new ArrayList<>();
         for (EntityInfo file : infoList) {
             String idForStep = "";
@@ -167,16 +164,16 @@ public class JobControl extends DefaultBatchConfigurer {
                 hr.setPool(connectionBag.getHttpReaderPool());
                 return hr;
             case vfs:
-                if(fileInfo.getChunkSize() < 1){
+                if (fileInfo.getChunkSize() < 1) {
                     fileInfo.setChunkSize(ODSConstants.FIVE_MB);
                 }
                 Path path = Paths.get(fileInfo.getPath());
-                if(fileInfo.getSize() < 1){
+                if (fileInfo.getSize() < 1) {
                     File file = path.toFile();
-                    if(file.exists()){
+                    if (file.exists()) {
                         fileInfo.setSize(file.length());
                     }
-                    if(fileInfo.getId() == null || fileInfo.getId().isEmpty()){
+                    if (fileInfo.getId() == null || fileInfo.getId().isEmpty()) {
                         fileInfo.setId(file.getName());
                     }
                 }
@@ -227,10 +224,17 @@ public class JobControl extends DefaultBatchConfigurer {
                 ftpWriter.setMetricCache(metricCache);
                 return ftpWriter;
             case s3:
-                AmazonS3Writer amazonS3Writer = new AmazonS3Writer(request.getDestination().getVfsDestCredential(), fileInfo);
-                amazonS3Writer.setMetricCache(this.metricCache);
-                amazonS3Writer.setMetricsCollector(metricsCollector);
-                return amazonS3Writer;
+                if (fileInfo.getSize() < TWENTY_MB) {
+                    AmazonS3SmallFileWriter amazonS3SmallFileWriter = new AmazonS3SmallFileWriter(request.getDestination().getVfsDestCredential(), fileInfo);
+                    amazonS3SmallFileWriter.setMetricCache(this.metricCache);
+                    amazonS3SmallFileWriter.setMetricsCollector(metricsCollector);
+                    return amazonS3SmallFileWriter;
+                } else {
+                    AmazonS3LargeFileWriter amazonS3LargeFileWriter = new AmazonS3LargeFileWriter(request.getDestination().getVfsDestCredential(), fileInfo);
+                    amazonS3LargeFileWriter.setMetricCache(this.metricCache);
+                    amazonS3LargeFileWriter.setMetricsCollector(metricsCollector);
+                    return amazonS3LargeFileWriter;
+                }
             case box:
                 if (fileInfo.getSize() < TWENTY_MB) {
                     BoxWriterSmallFile boxWriterSmallFile = new BoxWriterSmallFile(request.getDestination().getOauthDestCredential(), fileInfo);
@@ -260,11 +264,10 @@ public class JobControl extends DefaultBatchConfigurer {
 
     public Job concurrentJobDefinition() {
         connectionBag.preparePools(this.request);
-        List<Flow> flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getParentInfo().getPath(), request.getJobId());
+        List<Flow> flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getParentInfo().getPath());
         Flow[] fl = new Flow[flows.size()];
         Flow f = new FlowBuilder<SimpleFlow>("splitFlow").split(this.threadPoolManager.stepTaskExecutor(this.request.getOptions().getConcurrencyThreadCount())).add(flows.toArray(fl))
                 .build();
-        optimizerService.createOptimizerBlocking(new OptimizerCreateRequest(appName, flows.size(), 32, 32));
         return jobBuilderFactory.get(request.getOwnerId()).listener(jobCompletionListener)
                 .incrementer(new RunIdIncrementer()).start(f).build().build();
     }
