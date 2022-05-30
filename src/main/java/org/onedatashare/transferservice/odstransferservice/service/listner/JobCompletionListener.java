@@ -1,6 +1,5 @@
 package org.onedatashare.transferservice.odstransferservice.service.listner;
 
-import org.onedatashare.transferservice.odstransferservice.model.JobMetric;
 import org.onedatashare.transferservice.odstransferservice.model.optimizer.OptimizerCreateRequest;
 import org.onedatashare.transferservice.odstransferservice.model.optimizer.OptimizerDeleteRequest;
 import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManager;

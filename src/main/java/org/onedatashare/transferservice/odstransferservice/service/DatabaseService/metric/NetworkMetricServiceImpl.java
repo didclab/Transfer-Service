@@ -20,7 +20,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
 
 /**
  * @author deepika
@@ -41,10 +45,13 @@ public class NetworkMetricServiceImpl implements NetworkMetricService {
 
     @Autowired
     private NetworkMetricRepository repository;
+
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
     @Autowired
     private CommandLineOptions cmdLineOptions;
+
     @Autowired
     private DataInflux dataInflux;
 

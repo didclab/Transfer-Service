@@ -22,7 +22,7 @@ public class NetworkMetricsInfluxRepository {
 
     private InfluxDBClient influxDBClient;
 
-    private static final Logger LOG = LoggerFactory.getLogger(NetworkMetricRepository.class);
+    private static final Logger LOG = LoggerFactory.getLogger(NetworkMetricsInfluxRepository.class);
 
     public void instantiateInfluxClient(){
         try {

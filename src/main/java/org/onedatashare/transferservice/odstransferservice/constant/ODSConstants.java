@@ -53,6 +53,9 @@ public class ODSConstants {
     public static final String SCP_MKDIR_CMD = "mkdir -p ";
     public static final String EXEC = "exec";
     public static final String JOB_SIZE="jobSize";
+    public static final String ACCEPT_ENCODING = "accept-encoding";
+    public static final String GZIP = "gzip";
+    public static final String CONTENT_ENCODING = "content-encoding";
     public static final String COMPRESS="compress";
     public static final String CONCURRENCY="concurrency";
     public static final String PARALLELISM="parallelism";
@@ -83,5 +86,4 @@ public class ODSConstants {
         cache.addMetric(Thread.currentThread().getName(), throughput, stepExecution, items.size());
         metricsCollector.calculateThroughputAndSave(stepExecution, throughput, items.size());
     }
-
 }

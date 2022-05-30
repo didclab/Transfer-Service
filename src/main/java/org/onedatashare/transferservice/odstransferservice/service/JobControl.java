@@ -53,16 +53,22 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import static java.util.Optional.ofNullable;
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.TWENTY_MB;
 
 
@@ -104,6 +110,9 @@ public class JobControl extends DefaultBatchConfigurer {
 
     @Autowired
     MetricCache metricCache;
+
+    @Autowired
+    RetryTemplate retryTemplateForReaderAndWriter;
 
     @Autowired(required = false)
     public void setDatasource(DataSource datasource) {
@@ -182,6 +191,7 @@ public class JobControl extends DefaultBatchConfigurer {
             case sftp:
                 SFTPReader sftpReader = new SFTPReader(request.getSource().getVfsSourceCredential(), fileInfo, request.getOptions().getPipeSize());
                 sftpReader.setPool(connectionBag.getSftpReaderPool());
+                sftpReader.setRetryTemplate(retryTemplateForReaderAndWriter);
                 return sftpReader;
             case ftp:
                 FTPReader ftpReader = new FTPReader(request.getSource().getVfsSourceCredential(), fileInfo);
@@ -192,6 +202,7 @@ public class JobControl extends DefaultBatchConfigurer {
                 return amazonS3Reader;
             case box:
                 BoxReader boxReader = new BoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
+                boxReader.setMaxRetry(ofNullable(this.request.getOptions().getRetry()).orElse(1));
                 return boxReader;
             case dropbox:
                 DropBoxReader dropBoxReader = new DropBoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
@@ -216,12 +227,14 @@ public class JobControl extends DefaultBatchConfigurer {
                 sftpWriter.setPool(connectionBag.getSftpWriterPool());
                 sftpWriter.setMetricsCollector(metricsCollector);
                 sftpWriter.setMetricCache(metricCache);
+                sftpWriter.setRetryTemplate(retryTemplateForReaderAndWriter);
                 return sftpWriter;
             case ftp:
                 FTPWriter ftpWriter = new FTPWriter(request.getDestination().getVfsDestCredential());
                 ftpWriter.setPool(connectionBag.getFtpWriterPool());
                 ftpWriter.setMetricsCollector(metricsCollector);
                 ftpWriter.setMetricCache(metricCache);
+                ftpWriter.setRetryTemplate(retryTemplateForReaderAndWriter);
                 return ftpWriter;
             case s3:
                 if (fileInfo.getSize() < TWENTY_MB) {
@@ -265,10 +278,20 @@ public class JobControl extends DefaultBatchConfigurer {
     public Job concurrentJobDefinition() {
         connectionBag.preparePools(this.request);
         List<Flow> flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getParentInfo().getPath());
+        setRetryPolicy();
         Flow[] fl = new Flow[flows.size()];
         Flow f = new FlowBuilder<SimpleFlow>("splitFlow").split(this.threadPoolManager.stepTaskExecutor(this.request.getOptions().getConcurrencyThreadCount())).add(flows.toArray(fl))
                 .build();
         return jobBuilderFactory.get(request.getOwnerId()).listener(jobCompletionListener)
                 .incrementer(new RunIdIncrementer()).start(f).build().build();
+    }
+
+    private void setRetryPolicy() {
+        Map<Class<? extends Throwable>, Boolean> retryFor = new HashMap<>();
+        retryFor.put(IOException.class, true);
+        //add other exceptions to retry for in the map above.
+        int retryAttempts = ofNullable(this.request.getOptions().getRetry()).orElse(1);
+        SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy(retryAttempts, retryFor);
+        this.retryTemplateForReaderAndWriter.setRetryPolicy(retryPolicy);
     }
 }

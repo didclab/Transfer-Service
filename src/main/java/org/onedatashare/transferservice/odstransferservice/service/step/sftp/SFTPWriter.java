@@ -19,6 +19,7 @@ import org.springframework.batch.core.annotation.AfterWrite;
 import org.springframework.batch.core.annotation.BeforeRead;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.retry.support.RetryTemplate;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -41,6 +42,7 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
     private JschSessionPool connectionPool;
     private Session session;
     private OutputStream destination;
+
     private StepExecution stepExecution;
     @Setter
     private MetricsCollector metricsCollector;
@@ -49,6 +51,8 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
     private MetricCache metricCache;
 
     private LocalDateTime readStartTime;
+
+    private RetryTemplate retryTemplate;
 
     public SFTPWriter(AccountEndpointCredential destCred, int pipeSize) {
         fileToChannel = new HashMap<>();
@@ -74,7 +78,7 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
     @AfterStep
     public void afterStep() {
         for (ChannelSftp value : fileToChannel.values()) {
-            if (!value.isConnected()) {
+            if (value.isConnected()) {
                 value.disconnect();
             }
         }
@@ -108,7 +112,7 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
         return false;
     }
 
-    public OutputStream getStream(String fileName) {
+    public OutputStream getStream(String fileName) throws IOException {
         boolean appendMode = false;
         if (!fileToChannel.containsKey(fileName)) {
             establishChannel(fileName);
@@ -127,7 +131,7 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
             logger.warn("We failed getting the OuputStream to a file :(");
             sftpException.printStackTrace();
         }
-        return null;
+        throw new IOException();
     }
 
     @BeforeRead
@@ -137,18 +141,34 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
     }
 
     @Override
-    public void write(List<? extends DataChunk> items) throws IOException {
+    public void write(List<? extends DataChunk> items) throws Exception {
 //        String fileName = Paths.get(this.dBasePath, items.get(0).getFileName()).toString();
         String fileName = Paths.get(items.get(0).getFileName()).toString();
-        if (this.destination == null) {
-            this.destination = getStream(fileName);
+        List<? extends DataChunk> itemsToProcess = items;
+        this.retryTemplate.execute((c) -> {
+            try {
+                if (this.destination == null) {
+                    this.destination = getStream(fileName);
+                }
+                for (DataChunk b : itemsToProcess) {
+                    logger.info("Current chunk in SFTP Writer " + b.toString());
+                    destination.write(b.getData());
+                }
+                destination.flush();
+            } catch (IOException ex) {
+                this.destination = null;
+                createNewSession();
+                throw ex;
+            }
+            return null;
+        });
+    }
+
+    protected void createNewSession() throws InterruptedException {
+        if (!this.session.isConnected()) {
+            this.connectionPool.invalidateAndCreateNewSession(this.session);
+            this.session = this.connectionPool.borrowObject();
         }
-        for (DataChunk b : items) {
-            logger.info("Current chunk in SFTP Writer " + b.toString());
-            destination.write(b.getData());
-        }
-        destination.flush();
-        items = null;
     }
 
     @AfterWrite
@@ -156,10 +176,12 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
         ODSConstants.metricsForOptimizerAndInflux(items, this.readStartTime, logger, stepExecution, metricCache, metricsCollector);
     }
 
-
     @Override
     public void setPool(ObjectPool connectionPool) {
         this.connectionPool = (JschSessionPool) connectionPool;
     }
 
+    public void setRetryTemplate(RetryTemplate retryTemplate) {
+        this.retryTemplate = retryTemplate;
+    }
 }

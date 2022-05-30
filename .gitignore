@@ -101,4 +101,4 @@ output.log
 .idea/**/mongoSettings.xml
 
 boot.sh
-certs/*
+certs/
