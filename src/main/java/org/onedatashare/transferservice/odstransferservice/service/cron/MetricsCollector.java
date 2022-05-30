@@ -1,7 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service.cron;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import org.onedatashare.transferservice.odstransferservice.DataRepository.NetworkMetricsInfluxRepository;
@@ -14,7 +13,6 @@ import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
 import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.batch.core.Job;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,7 +23,6 @@ import org.springframework.util.CollectionUtils;
 import java.util.DoubleSummaryStatistics;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.PMeterConstants;
 
@@ -86,7 +83,7 @@ public class MetricsCollector {
             return;
         }
         DoubleSummaryStatistics stats = new DoubleSummaryStatistics();
-        if(this.previousParentMetric == null){
+        if (this.previousParentMetric == null) {
             this.previousParentMetric = new JobMetric();
         }
 
@@ -99,13 +96,13 @@ public class MetricsCollector {
         }
 
         parentJobMetric.setThroughput(stats.getAverage());
-        if(this.previousParentMetric.getStepExecution() != null){
-            if(!this.previousParentMetric.getStepExecution().getJobExecution().isRunning()){
+        if (this.previousParentMetric.getStepExecution() != null) {
+            if (!this.previousParentMetric.getStepExecution().getJobExecution().isRunning()) {
                 this.previousParentMetric.setConcurrency(0);
                 this.previousParentMetric.setParallelism(0);
                 this.previousParentMetric.setPipelining(0);
             }
-        }else{
+        } else {
             this.previousParentMetric.setConcurrency(0);
             this.previousParentMetric.setParallelism(0);
             this.previousParentMetric.setPipelining(0);
