@@ -7,7 +7,7 @@ The ODS Transfer Service
 - RabbitMQ <sub>(not required)</sub>
 - Pmeter <sub>(not required)</sub>
 - InfluxDB <sub>(not required)</sub>
-
+to enable or disable any of these look in the application.properties file.
 ## Architecture
 Let's begin with the understanding of what this service does. Strictly speaking the Transfer-Service moves data using many threads.
 Before we get into the internals lets look at an api example.
