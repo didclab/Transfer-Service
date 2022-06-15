@@ -3,7 +3,6 @@ package org.onedatashare.transferservice.odstransferservice.service;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.SneakyThrows;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.config.DataSourceConfig;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
@@ -44,7 +43,6 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
-import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
 import org.springframework.batch.core.step.builder.SimpleStepBuilder;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
@@ -52,7 +50,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
@@ -78,8 +75,6 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
 @Setter
 public class JobControl extends DefaultBatchConfigurer {
 
-    private DataSource dataSource;
-    private PlatformTransactionManager transactionManager;
     public TransferJobRequest request;
 
     Logger logger = LoggerFactory.getLogger(JobControl.class);
@@ -89,9 +84,6 @@ public class JobControl extends DefaultBatchConfigurer {
 
     @Autowired
     ThreadPoolManager threadPoolManager;
-
-    @Autowired
-    DataSourceConfig datasource;
 
     @Autowired
     JobBuilderFactory jobBuilderFactory;
@@ -114,36 +106,18 @@ public class JobControl extends DefaultBatchConfigurer {
     @Autowired
     RetryTemplate retryTemplateForReaderAndWriter;
 
-    @Autowired(required = false)
-    public void setDatasource(DataSource datasource) {
-        this.dataSource = datasource;
-        this.transactionManager = new DataSourceTransactionManager(dataSource);
-    }
-
-    @Override
-    public PlatformTransactionManager getTransactionManager() {
-        return transactionManager;
-    }
+    @Autowired
+    JobRepository roachRepository;
 
     @Lazy
     @Bean
     public JobLauncher asyncJobLauncher() {
         SimpleJobLauncher jobLauncher = new SimpleJobLauncher();
-        jobLauncher.setJobRepository(this.createJobRepository());
+        jobLauncher.setJobRepository(roachRepository);
         jobLauncher.setTaskExecutor(this.threadPoolManager.sequentialThreadPool());
         return jobLauncher;
     }
 
-    @SneakyThrows
-    protected JobRepository createJobRepository() {
-        JobRepositoryFactoryBean factory = new JobRepositoryFactoryBean();
-        factory.setDataSource(dataSource);
-        factory.setTransactionManager(transactionManager);
-        factory.setIsolationLevelForCreate("ISOLATION_SERIALIZABLE");
-        factory.setTablePrefix("BATCH_");
-        factory.setMaxVarCharLength(1000);
-        return factory.getObject();
-    }
 
     private List<Flow> createConcurrentFlow(List<EntityInfo> infoList, String basePath) {
         List<Flow> flows = new ArrayList<>();

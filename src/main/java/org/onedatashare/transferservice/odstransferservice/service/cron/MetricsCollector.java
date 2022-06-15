@@ -96,7 +96,8 @@ public class MetricsCollector {
         }
         long freeMemory = Runtime.getRuntime().freeMemory();
         long maxMemory = Runtime.getRuntime().maxMemory();
-        long memory = maxMemory - freeMemory;
+        long allocatedMemory = Runtime.getRuntime().totalMemory();
+        long memory = allocatedMemory - freeMemory;
         for (DataInflux dataInflux : pmeterMetrics) {
             dataInflux.setConcurrency(threadPoolManager.concurrencyCount());
             dataInflux.setParallelism(threadPoolManager.parallelismCount());
@@ -105,6 +106,7 @@ public class MetricsCollector {
             dataInflux.setDataBytesSent(this.previousParentMetric.getBytesSent());
             dataInflux.setFreeMemory(freeMemory);
             dataInflux.setMaxMemory(maxMemory);
+            dataInflux.setAllocatedMemory(allocatedMemory);
             dataInflux.setMemory(memory);
             dataInflux.setJobSize(jobSize);
             dataInflux.setAvgFileSize(avgFileSize);

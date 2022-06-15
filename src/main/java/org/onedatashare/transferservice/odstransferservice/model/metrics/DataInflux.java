@@ -172,4 +172,6 @@ public class DataInflux {
     @Column(name="compression")
     private Boolean compression;
 
+    @Column(name="allocatedMemory")
+    private Long allocatedMemory;
 }
