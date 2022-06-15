@@ -24,6 +24,10 @@ public class DataInflux {
     @Column(name = "ods_user")
     private String odsUser;
 
+    @JsonProperty(value = "transfer_node_name")
+    @Column(name = "transfer_node_name")
+    private String transferNodeName;
+
     @JsonProperty(value = "active_core_count")
     @Column(name = "active_core_count")
     private Double coreCount;
