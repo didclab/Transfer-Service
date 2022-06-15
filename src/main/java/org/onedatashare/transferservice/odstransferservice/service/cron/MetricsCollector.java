@@ -42,6 +42,12 @@ public class MetricsCollector {
     @Value("${job.metrics.save}")
     private boolean isJobMetricCollectionEnabled;
 
+    @Value("${spring.application.name}")
+    String appName;
+
+    @Value("${ods.user}")
+    String odsUser;
+
     @Autowired
     InfluxCache influxCache;
 
@@ -104,6 +110,8 @@ public class MetricsCollector {
             dataInflux.setAvgFileSize(avgFileSize);
             dataInflux.setCompression(connectionBag.isCompression());
             dataInflux.setJobId(previousParentMetric.getJobId());
+            dataInflux.setOdsUser(this.odsUser);
+            dataInflux.setTransferNodeName(this.appName);
             log.info("Pushing DataInflux {}", dataInflux.toString());
         }
         influxIOService.insertDataPoints(pmeterMetrics);
