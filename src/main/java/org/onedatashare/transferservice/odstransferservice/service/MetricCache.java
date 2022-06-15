@@ -20,13 +20,13 @@ public class MetricCache {
     }
 
     public void addMetric(String threadId, double throughput, StepExecution stepExecution, int pipeSize) {
-        if(this.optimizerEnable){
+        if (this.optimizerEnable) {
             this.threadCache.put(threadId, new Metric(throughput, stepExecution, pipeSize));
         }
     }
 
-    public void clearCache(){
-        if(this.threadCache != null && this.optimizerEnable){
+    public void clearCache() {
+        if (this.threadCache != null && this.optimizerEnable) {
             this.threadCache.clear();
         }
     }

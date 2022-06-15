@@ -98,7 +98,7 @@ public class VfsWriter implements ItemWriter<DataChunk> {
     @BeforeRead
     public void beforeRead() {
         this.readStartTime = LocalDateTime.now();
-        logger.info("Before write start time {}", this.readStartTime);
+        logger.info("Before read start time {}", this.readStartTime);
     }
 
 

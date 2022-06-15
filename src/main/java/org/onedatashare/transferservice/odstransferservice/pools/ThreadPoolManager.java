@@ -56,11 +56,11 @@ public class ThreadPoolManager {
                         logger.info("Set {} pool size to {}", pool.getThreadNamePrefix(), concurrency);
                     }
                 }
-            }catch (Exception exception) {
+            } catch (Exception exception) {
                 logger.warn("Tried to change thread pool {} og pool size {} to new pool size {}", pool.getThreadNamePrefix(), pool.getCorePoolSize(), concurrency);
                 exception.printStackTrace();
             }
-            try{
+            try {
                 if (key.contains(PARALLEL_POOL_PREFIX)) {
                     logger.info("Changing {} pool size from {} to {}", pool.getThreadNamePrefix(), pool.getPoolSize(), parallel);
                     if (parallel > 0) {
@@ -69,7 +69,7 @@ public class ThreadPoolManager {
                         logger.info("Set {} pool size to {}", pool.getThreadNamePrefix(), parallel);
                     }
                 }
-            }catch(Exception exception){
+            } catch (Exception exception) {
                 logger.warn("Tried to change thread pool {} og pool size {} to new pool size {}", pool.getThreadNamePrefix(), pool.getCorePoolSize(), parallel);
                 exception.printStackTrace();
             }
@@ -78,24 +78,15 @@ public class ThreadPoolManager {
 
     public void clearJobPool() {
         Iterator<Map.Entry<String, ThreadPoolTaskExecutor>> iterator = this.executorHashmap.entrySet().iterator();
-        while(iterator.hasNext()){
-            Map.Entry<String,ThreadPoolTaskExecutor> cur = iterator.next();
+        while (iterator.hasNext()) {
+            Map.Entry<String, ThreadPoolTaskExecutor> cur = iterator.next();
             ThreadPoolTaskExecutor pool = cur.getValue();
             String key = cur.getKey();
-            if(key.contains(STEP_POOL_PREFIX) || key.contains(PARALLEL_POOL_PREFIX)){
+            if (key.contains(STEP_POOL_PREFIX) || key.contains(PARALLEL_POOL_PREFIX)) {
                 pool.shutdown();
                 iterator.remove();
             }
         }
-//        for (String key : this.executorHashmap.keySet()) {
-//            if (key.contains(STEP_POOL_PREFIX) || key.contains(PARALLEL_POOL_PREFIX)) {
-//                ThreadPoolTaskExecutor executor = this.executorHashmap.get(key);
-//                if(executor != null){
-//                    executor.shutdown();
-//                }
-//                this.executorHashmap.remove(key);
-//            }
-//        }
     }
 
     public ThreadPoolTaskExecutor sequentialThreadPool() {
@@ -110,14 +101,18 @@ public class ThreadPoolManager {
         return this.createThreadPool(threadCount, new StringBuilder().append(fileName).append("-").append(PARALLEL_POOL_PREFIX).toString());
     }
 
-    public Integer concurrencyCount(){
-        return this.executorHashmap.get(STEP_POOL_PREFIX).getCorePoolSize();
+    public Integer concurrencyCount() {
+        ThreadPoolTaskExecutor threadPoolManager = this.executorHashmap.get(STEP_POOL_PREFIX);
+        if (threadPoolManager == null) {
+            return 0;
+        }
+        return threadPoolManager.getCorePoolSize();
     }
 
-    public Integer parallelismCount(){
+    public Integer parallelismCount() {
         int parallelism = 0;
-        for(String key: this.executorHashmap.keySet()){
-            if(key.contains(PARALLEL_POOL_PREFIX)){
+        for (String key : this.executorHashmap.keySet()) {
+            if (key.contains(PARALLEL_POOL_PREFIX)) {
                 parallelism = this.executorHashmap.get(key).getCorePoolSize();
                 break;
             }

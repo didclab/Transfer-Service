@@ -3,42 +3,47 @@ package org.onedatashare.transferservice.odstransferservice.service;
 import lombok.Getter;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
+import org.onedatashare.transferservice.odstransferservice.model.TransferOptions;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.pools.FtpConnectionPool;
-import org.onedatashare.transferservice.odstransferservice.pools.JschSessionPool;
 import org.onedatashare.transferservice.odstransferservice.pools.HttpConnectionPool;
-import org.onedatashare.transferservice.odstransferservice.service.step.http.HttpReader;
+import org.onedatashare.transferservice.odstransferservice.pools.JschSessionPool;
+import org.onedatashare.transferservice.odstransferservice.pools.S3ConnectionPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
- * This class is responsible for preparing the SFTP & FTP conneciton pool for readers and writers
+ * This class is responsible for preparing the SFTP, FTP, S3, Http connection Pool.
  */
 @Getter
 @Component
 public class ConnectionBag {
-    Logger logger = LoggerFactory.getLogger(ConnectionBag.class);
+    private Logger logger = LoggerFactory.getLogger(ConnectionBag.class);
+
     private JschSessionPool sftpReaderPool;
     private JschSessionPool sftpWriterPool;
     private FtpConnectionPool ftpReaderPool;
     private FtpConnectionPool ftpWriterPool;
     private HttpConnectionPool httpReaderPool;
-
+    private S3ConnectionPool s3ReaderPool;
+    private S3ConnectionPool s3WriterPool;
 
     EndpointType readerType;
     EndpointType writerType;
     boolean readerMade;
     boolean writerMade;
     boolean compression;
+    private TransferOptions transferOptions;
 
     public ConnectionBag() {
         readerMade = false;
         writerMade = false;
+        compression = false;
     }
 
     public void preparePools(TransferJobRequest request) {
-        compression = request.getOptions().getCompress();
+        this.transferOptions = request.getOptions();
         if (request.getSource().getType().equals(EndpointType.sftp)) {
             readerMade = true;
             readerType = EndpointType.sftp;
@@ -49,12 +54,12 @@ public class ConnectionBag {
             writerType = EndpointType.sftp;
             this.createSftpWriterPool(request.getDestination().getVfsDestCredential(), request.getOptions().getConcurrencyThreadCount(), request.getChunkSize());
         }
-        if(request.getSource().getType().equals(EndpointType.scp)){
+        if (request.getSource().getType().equals(EndpointType.scp)) {
             readerMade = true;
             readerType = EndpointType.scp;
             this.createSftpReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount(), request.getChunkSize());
         }
-        if(request.getDestination().getType().equals(EndpointType.scp)){
+        if (request.getDestination().getType().equals(EndpointType.scp)) {
             writerMade = true;
             writerType = EndpointType.scp;
             this.createSftpWriterPool(request.getDestination().getVfsDestCredential(), request.getOptions().getConcurrencyThreadCount(), request.getChunkSize());
@@ -74,6 +79,16 @@ public class ConnectionBag {
             readerType = EndpointType.http;
             this.createHttpReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount(), request.getChunkSize());
         }
+        if (request.getSource().getType().equals(EndpointType.s3)) {
+            readerMade = true;
+            readerType = EndpointType.s3;
+            this.createS3ReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions());
+        }
+        if (request.getDestination().getType().equals(EndpointType.s3)) {
+            writerMade = true;
+            writerType = EndpointType.s3;
+            this.createS3WriterPool(request.getDestination().getVfsDestCredential(), request.getOptions());
+        }
     }
 
     public void closePools() {
@@ -87,6 +102,10 @@ public class ConnectionBag {
                     break;
                 case sftp:
                     sftpReaderPool.close();
+                    break;
+                case s3:
+                    s3ReaderPool.close();
+                    break;
             }
         }
         if (writerType != null) {
@@ -96,6 +115,9 @@ public class ConnectionBag {
                     break;
                 case sftp:
                     sftpWriterPool.close();
+                    break;
+                case s3:
+                    s3WriterPool.close();
                     break;
             }
         }
@@ -135,7 +157,26 @@ public class ConnectionBag {
 
     public void createHttpReaderPool(AccountEndpointCredential credential, int connectionCount, int chunkSize) {
         this.httpReaderPool = new HttpConnectionPool(credential, chunkSize);
-        this.httpReaderPool.setCompress(compression);
+        this.httpReaderPool.setCompress(false);
         this.httpReaderPool.addObjects(connectionCount);
+        this.compression = false;
+    }
+
+    public void createS3ReaderPool(AccountEndpointCredential credential, TransferOptions transferOptions) {
+        this.s3ReaderPool = new S3ConnectionPool(credential, transferOptions);
+        try {
+            this.s3ReaderPool.addObjects(transferOptions.getConcurrencyThreadCount());
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+    }
+
+    public void createS3WriterPool(AccountEndpointCredential credential, TransferOptions transferOptions) {
+        this.s3WriterPool = new S3ConnectionPool(credential, transferOptions);
+        try {
+            this.s3WriterPool.addObjects(transferOptions.getConcurrencyThreadCount());
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
     }
 }

@@ -1,15 +1,14 @@
 package org.onedatashare.transferservice.odstransferservice.service;
 
+import io.micrometer.core.instrument.Gauge;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
-import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
-import org.onedatashare.transferservice.odstransferservice.model.credential.CredentialGroup;
-import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.stereotype.Service;
+
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
@@ -18,6 +17,7 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
 public class JobParamService {
 
     Logger logger = LoggerFactory.getLogger(JobParamService.class);
+
 
     public JobParameters translate(JobParametersBuilder builder, TransferJobRequest request) {
         logger.info("Setting job Parameters");
@@ -35,12 +35,14 @@ public class JobParamService {
         builder.addLong(PIPELINING, (long) request.getOptions().getPipeSize());
         builder.addLong(RETRY, (long) request.getOptions().getRetry());
         builder.addString(APP_NAME, System.getenv("APP_NAME"));
-        long totalSize = 0l;
+        builder.addLong(PIPELINING, (long) request.getOptions().getPipeSize());
+        long totalSize = 0L;
         for(EntityInfo fileInfo : request.getSource().getInfoList()){
             builder.addString(fileInfo.getId(), fileInfo.toString());
             totalSize+=fileInfo.getSize();
         }
         builder.addLong(JOB_SIZE, totalSize);
+        builder.addLong(FILE_SIZE_AVG, totalSize/request.getSource().getInfoList().size());
         return builder.toJobParameters();
     }
 }

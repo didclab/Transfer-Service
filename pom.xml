@@ -40,6 +40,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.influxdb</groupId>
             <artifactId>influxdb-client-java</artifactId>
             <version>3.1.0</version>
@@ -121,6 +125,16 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-s3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
+            <version>1.9.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-influx</artifactId>
+            <version>1.9.0</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

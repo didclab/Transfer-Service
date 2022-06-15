@@ -6,11 +6,13 @@ import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import lombok.Setter;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.pools.S3ConnectionPool;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.onedatashare.transferservice.odstransferservice.utility.S3Utility;
@@ -28,19 +30,18 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
     private AmazonS3 s3Client;
     private AmazonS3URI amazonS3URI;
     private final FilePartitioner partitioner;
-    private String sourcePath;
     String fileName;
     String[] regionAndBucket;
     private final AccountEndpointCredential sourceCredential;
-    private final int chunkSize;
     ObjectMetadata currentFileMetaData;
     GetObjectRequest getSkeleton;
+    @Setter
+    S3ConnectionPool pool;
 
     public AmazonS3Reader(AccountEndpointCredential sourceCredential, EntityInfo fileInfo) {
         this.sourceCredential = sourceCredential;
         this.regionAndBucket = this.sourceCredential.getUri().split(":::");
-        this.chunkSize = fileInfo.getChunkSize();
-        this.partitioner = new FilePartitioner(this.chunkSize);
+        this.partitioner = new FilePartitioner(fileInfo.getChunkSize());
         this.s3Client = S3Utility.constructClient(this.sourceCredential, regionAndBucket[0]);
         this.fileInfo = fileInfo;
         this.setName(ClassUtils.getShortName(AmazonS3Reader.class));
@@ -49,8 +50,8 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
         this.fileName = this.fileInfo.getId();//For an S3 Reader job this should be the object key
-        this.sourcePath = stepExecution.getJobExecution().getJobParameters().getString(ODSConstants.SOURCE_BASE_PATH);
-        this.amazonS3URI = new AmazonS3URI(S3Utility.constructS3URI(this.sourceCredential.getUri(), this.fileName, this.sourcePath));
+        String sourcePath = stepExecution.getJobExecution().getJobParameters().getString(ODSConstants.SOURCE_BASE_PATH);
+        this.amazonS3URI = new AmazonS3URI(S3Utility.constructS3URI(this.sourceCredential.getUri(), this.fileName, sourcePath));
         this.getSkeleton = new GetObjectRequest(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey());
         logger.info("Starting S3 job for file {} with uri {}", this.fileName, this.amazonS3URI);
     }
@@ -80,14 +81,19 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
     }
 
     @Override
-    protected void doOpen() {
+    protected void doOpen() throws InterruptedException {
         logger.info(this.amazonS3URI.toString());
+        this.s3Client = this.pool.borrowObject();
         this.currentFileMetaData = this.s3Client.getObjectMetadata(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey());
         partitioner.createParts(this.currentFileMetaData.getContentLength(), this.fileName);
     }
 
     @Override
     protected void doClose() {
-        this.s3Client = null;
+        this.pool.returnObject(this.s3Client);
+    }
+
+    public void setPool(S3ConnectionPool s3ReaderPool) {
+        this.pool = s3ReaderPool;
     }
 }
