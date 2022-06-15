@@ -10,7 +10,7 @@ import java.util.ArrayList;
 
 @Data
 @Getter
-@AllArgsConstructor
+@NoArgsConstructor
 public class TransferJobRequest {
 
     @NonNull private String jobId;
