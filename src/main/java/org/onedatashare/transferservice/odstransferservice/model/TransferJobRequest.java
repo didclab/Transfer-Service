@@ -9,8 +9,8 @@ import org.onedatashare.transferservice.odstransferservice.model.credential.OAut
 import java.util.ArrayList;
 
 @Data
-@Builder
 @Getter
+@AllArgsConstructor
 public class TransferJobRequest {
 
     @NonNull private String jobId;

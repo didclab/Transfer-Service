@@ -160,6 +160,7 @@ public class JobControl extends DefaultBatchConfigurer {
             }
             child.reader(getRightReader(request.getSource().getType(), file))
                     .writer(getRightWriter(request.getDestination().getType(), file));
+//            child.throttleLimit(64); //this value might allow concurrency to be dynamic.
             logger.info("Creating step with id {} ", idForStep);
             flows.add(new FlowBuilder<Flow>(basePath + idForStep).start(child.build()).build());
         }
@@ -199,6 +200,7 @@ public class JobControl extends DefaultBatchConfigurer {
                 return ftpReader;
             case s3:
                 AmazonS3Reader amazonS3Reader = new AmazonS3Reader(request.getSource().getVfsSourceCredential(), fileInfo);
+                amazonS3Reader.setPool(connectionBag.getS3ReaderPool());
                 return amazonS3Reader;
             case box:
                 BoxReader boxReader = new BoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
@@ -241,11 +243,13 @@ public class JobControl extends DefaultBatchConfigurer {
                     AmazonS3SmallFileWriter amazonS3SmallFileWriter = new AmazonS3SmallFileWriter(request.getDestination().getVfsDestCredential(), fileInfo);
                     amazonS3SmallFileWriter.setMetricCache(this.metricCache);
                     amazonS3SmallFileWriter.setMetricsCollector(metricsCollector);
+                    amazonS3SmallFileWriter.setPool(connectionBag.getS3WriterPool());
                     return amazonS3SmallFileWriter;
                 } else {
                     AmazonS3LargeFileWriter amazonS3LargeFileWriter = new AmazonS3LargeFileWriter(request.getDestination().getVfsDestCredential(), fileInfo);
                     amazonS3LargeFileWriter.setMetricCache(this.metricCache);
                     amazonS3LargeFileWriter.setMetricsCollector(metricsCollector);
+                    amazonS3LargeFileWriter.setPool(connectionBag.getS3WriterPool());
                     return amazonS3LargeFileWriter;
                 }
             case box:

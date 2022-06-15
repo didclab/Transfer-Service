@@ -1,10 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3;
 
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import lombok.Setter;
@@ -13,6 +9,7 @@ import org.onedatashare.transferservice.odstransferservice.model.AWSSinglePutReq
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.pools.S3ConnectionPool;
 import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.slf4j.Logger;
@@ -45,8 +42,9 @@ public class AmazonS3SmallFileWriter implements ItemWriter<DataChunk> {
     MetricsCollector metricsCollector; //this is for influxdb and for running pmeter
     @Setter
     private MetricCache metricCache; //this is for the optimizer
+    @Setter
+    private S3ConnectionPool pool;
     private String bucketName;
-    private String region;
 
 
     public AmazonS3SmallFileWriter(AccountEndpointCredential destCredential, EntityInfo fileInfo) {
@@ -56,19 +54,14 @@ public class AmazonS3SmallFileWriter implements ItemWriter<DataChunk> {
         this.putObjectRequest = new AWSSinglePutRequestMetaData();
         String[] temp = this.destCredential.getUri().split(":::");
         this.bucketName = temp[1];
-        this.region = temp[0];
-        AWSCredentials credentials = new BasicAWSCredentials(destCredential.getUsername(), destCredential.getSecret());
-        this.client = AmazonS3ClientBuilder.standard()
-                .withCredentials(new AWSStaticCredentialsProvider(credentials))
-                .withRegion(region)
-                .build();
     }
 
     @BeforeStep
-    public void beforeStep(StepExecution stepExecution) {
+    public void beforeStep(StepExecution stepExecution) throws InterruptedException {
         logger.info("Before Step of AmazonS3SmallFileWriter and the step name is {} with file {}", stepExecution.getStepName(), this.fileInfo);
         this.destBasepath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
         this.stepExecution = stepExecution;
+        this.client = this.pool.borrowObject();
     }
 
     @BeforeRead
@@ -81,6 +74,12 @@ public class AmazonS3SmallFileWriter implements ItemWriter<DataChunk> {
     public void write(List<? extends DataChunk> items) throws Exception {
         this.fileName = items.get(0).getFileName();
         this.putObjectRequest.addAllChunks(items);
+        if(items.get(items.size()-1).getSize() != items.get(0).getSize()){
+            //last chunk
+            PutObjectRequest putObjectRequest = new PutObjectRequest(this.bucketName, Paths.get(this.destBasepath, fileName).toString(), this.putObjectRequest.condenseListToOneStream(this.fileInfo.getSize()), makeMetaDataForSinglePutRequest(this.fileInfo.getSize()));
+            client.putObject(putObjectRequest);
+            this.putObjectRequest.clear();
+        }
     }
 
     @AfterWrite
@@ -90,9 +89,7 @@ public class AmazonS3SmallFileWriter implements ItemWriter<DataChunk> {
 
     @AfterStep
     public void afterStep() {
-        PutObjectRequest putObjectRequest = new PutObjectRequest(this.bucketName, Paths.get(this.destBasepath, fileName).toString(), this.putObjectRequest.condenseListToOneStream(this.fileInfo.getSize()), makeMetaDataForSinglePutRequest(this.fileInfo.getSize()));
-        client.putObject(putObjectRequest);
-        this.putObjectRequest.clear();
+        this.pool.returnObject(this.client);
     }
 
     public ObjectMetadata makeMetaDataForSinglePutRequest(long size) {

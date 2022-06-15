@@ -1,160 +1,171 @@
 package org.onedatashare.transferservice.odstransferservice.model.metrics;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.influxdb.annotations.Column;
 import com.influxdb.annotations.Measurement;
 import lombok.Data;
 import org.springframework.stereotype.Component;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Data
-@Measurement(name= "data")
+@Measurement(name = "transfer_data")
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Component
 public class DataInflux {
-    @SerializedName(value="interface")
-    @Column(name= "interface")
+
+    @JsonProperty(value = "interface")
+    @Column(name = "interface")
     private String networkInterface;
 
-    @SerializedName(value="ods_user")
-    @Column(name= "ods_user")
+    @JsonProperty(value = "ods_user")
+    @Column(name = "ods_user")
     private String odsUser;
 
-    @SerializedName(value="active_core_count")
-    @Column(name= "active_core_count")
-    private float coreCount;
+    @JsonProperty(value = "active_core_count")
+    @Column(name = "active_core_count")
+    private Double coreCount;
 
-    @SerializedName(value="cpu_frequency")
-    private double[] cpuFrequency;
+    @JsonProperty(value = "cpu_frequency")
+    private Double[][] cpuFrequency;
 
-    @Column(name= "current_cpu_frequency")
-    private double currCpuFrequency;
+    @Column(name = "current_cpu_frequency")
+    private Double currCpuFrequency;
 
-    @Column(name= "max_cpu_frequency")
-    private double maxCpuFrequency;
+    @Column(name = "max_cpu_frequency")
+    private Double maxCpuFrequency;
 
-    @Column(name= "min_cpu_frequency")
-    private double minCpuFrequency;
+    @Column(name = "min_cpu_frequency")
+    private Double minCpuFrequency;
 
-    @SerializedName(value="energy_consumed")
-    @Column(name= "energy_consumed")
-    private float energyConsumed;
+    @JsonProperty(value = "energy_consumed")
+    @Column(name = "energy_consumed")
+    private Double energyConsumed;
 
-    @SerializedName(value="cpu_arch")
-    @Column(name="cpu_arch")
+    @JsonProperty(value = "cpu_arch")
+    @Column(name = "cpu_arch")
     private String cpuArchitecture;
 
-    @SerializedName(value="rtt")
-    @Column(name= "rtt")
-    private float rtt;
+    @JsonProperty(value = "packet_loss_rate")
+    @Column(name = "packet_loss_rate")
+    private Double packetLossRate;
 
-    @SerializedName(value="bandwidth")
-    @Column(name= "bandwidth")
-    private double bandwidth;
-
-    @SerializedName(value="bandwidth_delay_product")
-    @Column(name= "bandwidth_delay_product")
-    private float bandwidthDelayProduct;
-
-    @SerializedName(value="packet_loss_rate")
-    @Column(name= "packet_loss_rate")
-    private float packetLossRate;
-
-    @SerializedName(value="link_capacity")
-    @Column(name= "link_capacity")
-    private float linkCpacity;
-
-    @SerializedName(value="bytes_sent")
-    @Column(name= "bytes_sent")
-    private long bytesSent;
+    @JsonProperty(value = "link_capacity")
+    @Column(name = "link_capacity")
+    private Double linkCapacity;
 
     /* Delta values*/
-    @Column(name= "bytes_sent_delta")
-    private long bytesSentDelta;
+    @Column(name = "bytes_sent_delta")
+    private Long bytesSentDelta;
 
-    @Column(name= "bytes_received_delta")
-    private long bytesReceivedDelta;
+    @Column(name = "bytes_received_delta")
+    private Long bytesReceivedDelta;
 
-    @Column(name= "packets_sent_delta")
-    private long packetsSentDelta;
+    @Column(name = "packets_sent_delta")
+    private Long packetsSentDelta;
 
-    @Column(name= "packets_received_delta")
-    private long packetsReceivedDelta;
+    @Column(name = "packets_received_delta")
+    private Long packetsReceivedDelta;
 
-    @SerializedName(value="bytes_recv")
-    @Column(name= "bytes_recv")
-    private long bytesReceived;
+    //NIC values
 
-    @SerializedName(value="packets_sent")
-    @Column(name= "packets_sent")
-    private long packetSent;
+    @JsonProperty(value = "bytes_sent")
+    @Column(name = "bytes_sent")
+    private Long bytesSent;
 
-    @SerializedName(value="packets_recv")
-    @Column(name= "packets_recv")
-    private long packetReceived;
+    @JsonProperty(value = "bytes_recv")
+    @Column(name = "bytes_recv")
+    private Long bytesReceived;
 
-    @SerializedName(value="dropin")
-    @Column(name= "dropin")
-    private float dropin;
+    @JsonProperty(value = "packets_sent")
+    @Column(name = "packets_sent")
+    private Long packetSent;
 
-    @SerializedName(value="dropout")
-    @Column(name= "dropout")
-    private float dropout;
+    @JsonProperty(value = "packets_recv")
+    @Column(name = "packets_recv")
+    private Long packetReceived;
 
-    @SerializedName(value="nic_speed")
-    @Column(name= "nic_speed")
-    private double nicSpeed;
+    @JsonProperty(value = "dropin")
+    @Column(name = "dropin")
+    private Double dropin;
 
-    @SerializedName(value="nic_mtu")
-    @Column(name= "nic_mtu")
-    private double nicMtu;
+    @JsonProperty(value = "dropout")
+    @Column(name = "dropout")
+    private Double dropout;
 
-    @SerializedName(value="start_time")
-    @Column(name= "start_time")
-    private Timestamp startTime;
+    @JsonProperty(value = "nic_speed")
+    @Column(name = "nic_speed")
+    private Double nicSpeed;
 
-    @SerializedName(value="end_time")
-    @Column(name= "end_time")
-    private Timestamp endTime;
+    @JsonProperty(value = "nic_mtu")
+    @Column(name = "nic_mtu")
+    private Double nicMtu;
 
-    @SerializedName(value="latency")
-    private float[] latencyArr;
+    //2022-06-01 10:41:15.123591
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
+    @JsonProperty(value = "start_time")
+    @Column(name = "start_time")
+    private LocalDateTime startTime;
 
-    @Column(name= "latency")
-    private float latencyVal;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
+    @JsonProperty(value = "end_time")
+    @Column(name = "end_time")
+    private LocalDateTime endTime;
 
-    @SerializedName(value="errin")
-    @Column(name= "errin")
-    private float errin;
+    @JsonProperty(value = "latency")
+    @Column(name = "latency")
+    private Double latency;
 
-    @SerializedName(value="errout")
-    @Column(name= "errout")
-    private float errout;
+    @JsonProperty(value = "rtt")
+    @Column(name = "rtt")
+    private Double rtt;
 
-    @Column(name= "jobId")
-    private String jobId;
+    @JsonProperty(value = "errin")
+    @Column(name = "errin")
+    private Double errin;
 
-    @Column(name= "throughput")
-    private double throughput;
+    @JsonProperty(value = "errout")
+    @Column(name = "errout")
+    private Double errout;
 
-    @Column(name= "concurrency")
-    private int concurrency;
+    //Job Values
 
-    @Column(name= "parallelism")
-    private int parallelism;
+    @Column(name = "jobId")
+    private Long jobId;
 
-    @Column(name= "pipelining")
-    private int pipelining;
+    @Column(name = "throughput")
+    private Double throughput;
 
-    @Column(name= "cores")
-    private int cores;
+    @Column(name = "concurrency")
+    private Integer concurrency;
 
-    @Column(name= "memory")
-    private long memory;
+    @Column(name = "parallelism")
+    private Integer parallelism;
 
-    @Column(name="maxMemory")
-    private long maxMemory;
+    @Column(name = "pipelining")
+    private Integer pipelining;
 
-    @Column(name="freeMemory")
-    private long freeMemory;
+    @Column(name = "memory")
+    private Long memory;
+
+    @Column(name = "maxMemory")
+    private Long maxMemory;
+
+    @Column(name = "freeMemory")
+    private Long freeMemory;
+
+    @Column(name ="jobSize")
+    private Long jobSize;
+
+    @Column(name="avgJobSize")
+    private Long avgFileSize;
+
+    @Column(name="totalBytesSent")
+    private Long dataBytesSent;
+
+    @Column(name="compression")
+    private Boolean compression;
+
 }

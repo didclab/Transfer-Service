@@ -13,7 +13,7 @@ public class JschSessionPool implements ObjectPool<Session> {
 
     private final AccountEndpointCredential credential;
     private final int bufferSize;
-    private final LinkedBlockingQueue<Session> connectionPool;
+    public final LinkedBlockingQueue<Session> connectionPool;
     JSch jsch;
     private boolean compression;
 

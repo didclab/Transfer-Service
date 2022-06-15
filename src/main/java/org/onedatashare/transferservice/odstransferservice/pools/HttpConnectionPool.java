@@ -1,6 +1,8 @@
 package org.onedatashare.transferservice.odstransferservice.pools;
+
 import org.apache.commons.pool2.ObjectPool;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
+
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -8,18 +10,18 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class HttpConnectionPool implements ObjectPool<HttpClient> {
     AccountEndpointCredential credential;
     int bufferSize;
-    LinkedBlockingQueue<HttpClient> connectionPool;
+    public LinkedBlockingQueue<HttpClient> connectionPool;
     private boolean compress;
 
 
-    public HttpConnectionPool(AccountEndpointCredential credential, int bufferSize){
+    public HttpConnectionPool(AccountEndpointCredential credential, int bufferSize) {
         this.credential = credential;
         this.bufferSize = bufferSize;
         this.connectionPool = new LinkedBlockingQueue<>();
     }
 
     @Override
-    public void addObject(){
+    public void addObject() {
         HttpClient client = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_2)
                 .followRedirects(HttpClient.Redirect.NORMAL)
@@ -29,8 +31,8 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
     }
 
     @Override
-    public void addObjects(int count){
-        for(int i = 0; i < count; i++) {
+    public void addObjects(int count) {
+        for (int i = 0; i < count; i++) {
             this.addObject();
         }
     }
@@ -47,7 +49,7 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
 
     @Override
     public void close() {
-        for(HttpClient httpClient: this.connectionPool) {
+        for (HttpClient httpClient : this.connectionPool) {
             this.connectionPool.remove(httpClient);
         }
     }
@@ -68,7 +70,7 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
     }
 
     @Override
-    public void returnObject(HttpClient httpClient){
+    public void returnObject(HttpClient httpClient) {
         this.connectionPool.add(httpClient);
     }
 

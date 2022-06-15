@@ -33,9 +33,12 @@ public class OptimizerCron implements Runnable {
 
     Logger logger = LoggerFactory.getLogger(OptimizerCron.class);
 
+    @Autowired
+    ConnectionBag connectionBag;
+
     @Override
     public void run() {
-        if(!enableOptimizer) return;
+        if (!enableOptimizer) return;
         ConcurrentHashMap<String, Metric> cache = metricCache.threadCache;
         //running active job so we want to push and ask optimizer
         HashMap<String, ThreadPoolTaskExecutor> threadPoolMap = threadPoolManager.getExecutorHashmap();
