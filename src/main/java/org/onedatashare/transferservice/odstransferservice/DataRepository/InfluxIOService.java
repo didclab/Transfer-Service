@@ -7,6 +7,7 @@ import com.influxdb.client.domain.BucketRetentionRules;
 import com.influxdb.client.domain.SchemaType;
 import com.influxdb.client.domain.WritePrecision;
 import com.influxdb.exceptions.InfluxException;
+import com.influxdb.exceptions.UnprocessableEntityException;
 import org.onedatashare.transferservice.odstransferservice.model.metrics.DataInflux;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,9 +35,12 @@ public class InfluxIOService {
 
     @PostConstruct
     public void postConstruct(){
-        if(influxDBClient.getBucketsApi().findBucketByName(bucketName) == null){
+        Bucket bucket = influxDBClient.getBucketsApi().findBucketByName(bucketName);
+        if(bucket == null){
             logger.info("Creating the Influx bucket name={}, org={}", bucketName, org);
-            this.influxDBClient.getBucketsApi().createBucket(bucketName, org);
+            try{
+                bucket = this.influxDBClient.getBucketsApi().createBucket(bucketName, org);
+            }catch(UnprocessableEntityException ignored){}
         }
     }
 
