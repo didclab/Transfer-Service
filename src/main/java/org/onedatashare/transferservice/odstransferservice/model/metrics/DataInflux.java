@@ -33,7 +33,7 @@ public class DataInflux {
     private Double coreCount;
 
     @JsonProperty(value = "cpu_frequency")
-    private Double[][] cpuFrequency;
+    private Double avgCpuFrequency;
 
     @Column(name = "current_cpu_frequency")
     private Double currCpuFrequency;
