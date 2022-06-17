@@ -32,17 +32,18 @@ public class DataInflux {
     @Column(name = "active_core_count")
     private Double coreCount;
 
-    @JsonProperty(value = "cpu_frequency")
-    private Double[][] cpuFrequency;
+    @JsonProperty(value = "cpu_frequency_max")
+    @Column(name = "cpu_frequency_max")
+    private Double cpu_frequency_max;
 
-    @Column(name = "current_cpu_frequency")
-    private Double currCpuFrequency;
+    @JsonProperty(value = "cpu_frequency_current")
+    @Column(name = "cpu_frequency_current")
+    private Double cpu_frequency_current;
 
-    @Column(name = "max_cpu_frequency")
-    private Double maxCpuFrequency;
+    @JsonProperty(value = "cpu_frequency_min")
+    @Column(name = "cpu_frequency_min")
+    private Double cpu_frequency_min;
 
-    @Column(name = "min_cpu_frequency")
-    private Double minCpuFrequency;
 
     @JsonProperty(value = "energy_consumed")
     @Column(name = "energy_consumed")
