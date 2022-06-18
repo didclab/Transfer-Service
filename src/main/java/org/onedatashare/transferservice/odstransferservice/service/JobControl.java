@@ -4,7 +4,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
-import org.onedatashare.transferservice.odstransferservice.config.DataSourceConfig;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
@@ -53,9 +52,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
 
-import javax.sql.DataSource;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -84,6 +81,9 @@ public class JobControl extends DefaultBatchConfigurer {
 
     @Autowired
     ThreadPoolManager threadPoolManager;
+
+    @Autowired
+    VfsExpander vfsExpander;
 
     @Autowired
     JobBuilderFactory jobBuilderFactory;
@@ -121,6 +121,10 @@ public class JobControl extends DefaultBatchConfigurer {
 
     private List<Flow> createConcurrentFlow(List<EntityInfo> infoList, String basePath) {
         List<Flow> flows = new ArrayList<>();
+        if (this.request.getSource().getType().equals(EndpointType.vfs)) {
+            infoList = vfsExpander.expandDirectory(infoList, basePath);
+            logger.info("File list: {}", infoList);
+        }
         for (EntityInfo file : infoList) {
             String idForStep = "";
             if (!file.getId().isEmpty()) {
@@ -148,19 +152,6 @@ public class JobControl extends DefaultBatchConfigurer {
                 hr.setPool(connectionBag.getHttpReaderPool());
                 return hr;
             case vfs:
-                if (fileInfo.getChunkSize() < 1) {
-                    fileInfo.setChunkSize(ODSConstants.FIVE_MB);
-                }
-                Path path = Paths.get(fileInfo.getPath());
-                if (fileInfo.getSize() < 1) {
-                    File file = path.toFile();
-                    if (file.exists()) {
-                        fileInfo.setSize(file.length());
-                    }
-                    if (fileInfo.getId() == null || fileInfo.getId().isEmpty()) {
-                        fileInfo.setId(file.getName());
-                    }
-                }
                 VfsReader vfsReader = new VfsReader(request.getSource().getVfsSourceCredential(), fileInfo);
                 return vfsReader;
             case sftp:

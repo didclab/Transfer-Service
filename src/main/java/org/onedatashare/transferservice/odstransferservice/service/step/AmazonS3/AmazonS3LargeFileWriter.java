@@ -17,10 +17,7 @@ import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
-import org.springframework.batch.core.annotation.AfterStep;
-import org.springframework.batch.core.annotation.AfterWrite;
-import org.springframework.batch.core.annotation.BeforeRead;
-import org.springframework.batch.core.annotation.BeforeStep;
+import org.springframework.batch.core.annotation.*;
 import org.springframework.batch.item.ItemWriter;
 
 import java.nio.file.Paths;
