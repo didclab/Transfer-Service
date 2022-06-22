@@ -14,6 +14,7 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.OWNER_ID;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.PIPELINING;
 
 @Component
 public class InfluxCache {
@@ -43,7 +44,12 @@ public class InfluxCache {
         jobMetric.setStepExecution(stepExecution);
         jobMetric.setConcurrency(threadPoolManager.concurrencyCount());
         jobMetric.setParallelism(threadPoolManager.parallelismCount());
-        jobMetric.setPipelining(size);
+        try{
+            jobMetric.setPipelining(Math.toIntExact(stepExecution.getJobParameters().getLong(PIPELINING)));
+        }catch (NullPointerException ignored){
+            jobMetric.setPipelining(0);
+        }
+
         jobMetric.setOwnerId(stepExecution.getJobExecution().getJobParameters().getString(OWNER_ID));
         jobMetric.setJobId(stepExecution.getJobExecutionId());
         jobMetric.setThreadId(Thread.currentThread().getId());

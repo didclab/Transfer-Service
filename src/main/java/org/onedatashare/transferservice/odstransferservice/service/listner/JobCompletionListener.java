@@ -51,6 +51,15 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
     @Value("${optimizer.enable}")
     private boolean optimizerEnable;
 
+    @Value("${transfer.service.parallelism}")
+    int maxParallel;
+
+    @Value("${transfer.service.concurrency}")
+    int maxConc;
+
+    @Value("${transfer.service.pipelining}")
+    int maxPipe;
+
     @Autowired
     MetricCache metricCache;
 
@@ -61,7 +70,7 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
     public void beforeJob(JobExecution jobExecution) {
         logger.info("BEFOR JOB-------------------present time--" + System.currentTimeMillis());
         if(this.optimizerEnable){
-            optimizerService.createOptimizerBlocking(new OptimizerCreateRequest(appName, jobExecution.getStepExecutions().size(), 32, 32));
+            optimizerService.createOptimizerBlocking(new OptimizerCreateRequest(appName, maxConc, maxParallel, maxPipe));
             this.future = optimizerTaskScheduler.scheduleWithFixedDelay(optimizerCron, interval);
         }
     }

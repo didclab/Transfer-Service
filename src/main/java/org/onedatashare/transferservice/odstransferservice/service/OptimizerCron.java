@@ -42,23 +42,8 @@ public class OptimizerCron implements Runnable {
         ConcurrentHashMap<String, Metric> cache = metricCache.threadCache;
         //running active job so we want to push and ask optimizer
         HashMap<String, ThreadPoolTaskExecutor> threadPoolMap = threadPoolManager.getExecutorHashmap();
-        int parallelism = 0;
-        int concurrency = 0;
-        for (String key : threadPoolMap.keySet()) {
-            ThreadPoolTaskExecutor pool = threadPoolMap.get(key);
-            logger.info("Pool Prefix {} with active thread count {} and pool size of {}", pool.getThreadNamePrefix(), pool.getActiveCount(), pool.getPoolSize());
-            if (key.contains(ODSConstants.PARALLEL_POOL_PREFIX)) {
-                ThreadPoolTaskExecutor parallelPool = threadPoolMap.get(key);
-                parallelism = parallelPool.getActiveCount();
-            }
-            if (key.contains(ODSConstants.STEP_POOL_PREFIX)) {
-                ThreadPoolTaskExecutor concPool = threadPoolMap.get(key);
-                concurrency = concPool.getActiveCount();
-            }
-            if (parallelism > 0 && concurrency > 0) {
-                break;
-            }
-        }
+        int parallelism = threadPoolManager.parallelismCount();
+        int concurrency = threadPoolManager.concurrencyCount();
         if (metricCache.threadCache.size() > 0) {
             DoubleSummaryStatistics stats = new DoubleSummaryStatistics();
             OptimizerInputRequest inputRequest = new OptimizerInputRequest();
@@ -70,6 +55,7 @@ public class OptimizerCron implements Runnable {
                 stats.accept(metric.getThroughput());
                 break;
             }
+            inputRequest.setChunkSize(0);
             inputRequest.setThroughput(stats.getAverage());
             Optimizer optimizer = this.optimizerService.inputToOptimizerBlocking(inputRequest);
             logger.info("Optimizer gave us {}", optimizer);
