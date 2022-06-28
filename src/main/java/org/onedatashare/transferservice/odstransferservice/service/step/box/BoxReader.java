@@ -24,6 +24,7 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
     private BoxAPIConnection boxAPIConnection;
     private BoxFile currentFile;
     EntityInfo fileInfo;
+    int retry;
     Logger logger = LoggerFactory.getLogger(BoxReader.class);
 
     public BoxReader(OAuthEndpointCredential credential, EntityInfo fileInfo) {
@@ -31,6 +32,7 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
         this.setName(ClassUtils.getShortName(BoxReader.class));
         filePartitioner = new FilePartitioner(fileInfo.getChunkSize());
         this.fileInfo = fileInfo;
+        retry = 1;
     }
 
     /**
@@ -68,6 +70,7 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
     protected void doOpen() {
         this.boxAPIConnection = new BoxAPIConnection(credential.getToken());
         this.currentFile = new BoxFile(this.boxAPIConnection, this.fileInfo.getId());
+        this.boxAPIConnection.setMaxRetryAttempts(this.retry);
     }
 
     /**
@@ -81,6 +84,6 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
     }
 
     public void setMaxRetry(int attempt) {
-        this.boxAPIConnection.setMaxRetryAttempts(attempt);
+        this.retry = attempt;
     }
 }

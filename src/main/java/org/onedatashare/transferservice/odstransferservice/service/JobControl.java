@@ -169,7 +169,12 @@ public class JobControl extends DefaultBatchConfigurer {
                 return amazonS3Reader;
             case box:
                 BoxReader boxReader = new BoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
-                boxReader.setMaxRetry(ofNullable(this.request.getOptions().getRetry()).orElse(1));
+                if(this.request.getOptions().getRetry() != null){
+                    int retry = this.request.getOptions().getRetry();
+                    if(retry > 0){
+                        boxReader.setMaxRetry(retry);
+                    }
+                }
                 return boxReader;
             case dropbox:
                 DropBoxReader dropBoxReader = new DropBoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
