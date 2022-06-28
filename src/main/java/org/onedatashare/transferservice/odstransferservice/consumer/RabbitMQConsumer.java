@@ -39,10 +39,7 @@ public class RabbitMQConsumer {
     CrudService crudService;
 
 
-    @RabbitListener(
-            bindings = @QueueBinding(exchange = @Exchange("${ods.rabbitmq.exchange}"),
-            value = @Queue("${ods.rabbitmq.queue}"),
-            key = "${ods.rabbitmq.queue}"))
+    @RabbitListener(queues = "${ods.rabbitmq.queue}")
     public void consumeDefaultMessage(final Message message) throws Exception {
         String jsonStr = new String(message.getBody());
         System.out.println("Message received");// + jsonStr);

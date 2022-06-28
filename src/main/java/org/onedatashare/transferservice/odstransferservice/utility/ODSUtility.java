@@ -50,7 +50,7 @@ public class ODSUtility {
         return uploadPartRequest;
     }
 
-    public static final EndpointType[] SEEKABLE_PROTOCOLS = new EndpointType[]{EndpointType.s3, EndpointType.vfs, EndpointType.gdrive, EndpointType.box, EndpointType.dropbox};
+    public static final EndpointType[] SEEKABLE_PROTOCOLS = new EndpointType[]{EndpointType.s3, EndpointType.vfs, EndpointType.gdrive, EndpointType.dropbox};
 
     public static final HashSet<EndpointType> fullyOptimizableProtocols = new HashSet<EndpointType>(Arrays.asList(SEEKABLE_PROTOCOLS));
 }

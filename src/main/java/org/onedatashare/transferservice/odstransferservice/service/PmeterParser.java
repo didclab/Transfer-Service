@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -48,15 +49,20 @@ public class PmeterParser {
     @Value("${pmeter.options}")
     String pmeterOptions;
 
+    private CommandLine cmdLine;
 
-    public void runPmeter() {
-        //python3 src/pmeter/pmeter_cli.py measure awdl0 --user jgoldverg@gmail.com --measure 1 -KNS
+    @PostConstruct
+    public void postConstruct(){
         CommandLine cmdLine = CommandLine.parse(
                 String.format("python3 %s " + MEASURE + " %s --user %s --measure %s %s --file_name %s",
                         pmeterHome, pmeterNic, odsUser,
                         measureCount, pmeterOptions, pmeterReportPath));
+        this.cmdLine = cmdLine;
+        logger.info(this.cmdLine.toString());
+    }
 
-        logger.info(cmdLine.toString());
+
+    public void runPmeter() {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         PumpStreamHandler streamHandler = new PumpStreamHandler(outputStream);
 
@@ -71,7 +77,6 @@ public class PmeterParser {
             logger.error("Failed in executing pmeter script:\n " + cmdLine);
             e.printStackTrace();
         }
-        logger.info("Script executed");
     }
 
     public List<DataInflux> parsePmeterOutput() throws IOException {
@@ -80,7 +85,6 @@ public class PmeterParser {
         List<DataInflux> ret = new ArrayList<>();
         for (String line : allLines) {
             DataInflux dataInflux = this.pmeterMapper.readValue(line, DataInflux.class);
-            logger.info(dataInflux.toString());
             ret.add(dataInflux);
         }
         path.toFile().delete();

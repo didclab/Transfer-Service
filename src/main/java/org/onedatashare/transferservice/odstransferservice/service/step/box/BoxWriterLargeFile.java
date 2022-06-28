@@ -37,6 +37,7 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
  */
 public class BoxWriterLargeFile implements ItemWriter<DataChunk> {
 
+    private final OAuthEndpointCredential credential;
     private BoxAPIConnection boxAPIConnection;
     EntityInfo fileInfo;
     private HashMap<String, BoxFileUploadSession> fileMap;
@@ -60,6 +61,7 @@ public class BoxWriterLargeFile implements ItemWriter<DataChunk> {
         this.fileMap = new HashMap<>();
         this.digestMap = new HashMap<>();
         this.parts = new ArrayList<>();
+        this.credential = oAuthDestCredential;
     }
 
     @BeforeStep
@@ -135,7 +137,6 @@ public class BoxWriterLargeFile implements ItemWriter<DataChunk> {
     @BeforeRead
     public void beforeRead() {
         this.readStartTime = LocalDateTime.now();
-        logger.info("Before write start time {}", this.readStartTime);
     }
 
     @AfterWrite
