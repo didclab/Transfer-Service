@@ -34,6 +34,8 @@ public class ODSConstants {
     public static final String SOURCE = "source";
     public static final String SOURCE_CREDENTIAL_ID = "sourceCredential";
     public static final String DEST_CREDENTIAL_ID = "destCredential";
+    public static final String SOURCE_CREDENTIAL_TYPE = "sourceCredentialType";
+    public static final String DEST_CREDENTIAL_TYPE = "destCredentialType";
     public static final String DEST_URI = "destURI";
     public static final String INFO_LIST = "infoList";
     public static final String PRIORITY = "priority";

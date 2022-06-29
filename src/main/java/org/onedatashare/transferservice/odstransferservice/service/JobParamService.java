@@ -29,6 +29,8 @@ public class JobParamService {
         builder.addString(DEST_BASE_PATH, request.getDestination().getParentInfo().getPath());
         builder.addString(SOURCE_CREDENTIAL_ID, request.getSource().getCredId());
         builder.addString(DEST_CREDENTIAL_ID, request.getDestination().getCredId());
+        builder.addString(SOURCE_CREDENTIAL_TYPE, request.getSource().getType().toString());
+        builder.addString(DEST_CREDENTIAL_TYPE, request.getDestination().getType().toString());
         builder.addString(COMPRESS, String.valueOf(request.getOptions().getCompress()));
         builder.addLong(CONCURRENCY, (long) request.getOptions().getConcurrencyThreadCount());
         builder.addLong(PARALLELISM, (long) request.getOptions().getParallelThreadCount());
