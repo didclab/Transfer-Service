@@ -78,8 +78,8 @@ public class ODSConstants {
         long totalBytes = items.stream().mapToLong(DataChunk::getSize).sum();
         long timeItTookForThisList = Duration.between(readStartTime, writeEndTime).toMillis();
         double throughput = (double) totalBytes / timeItTookForThisList;
-        throughput = throughput * 1000;
-        logger.info("Thread name {} Total bytes {} with total time {} gives throughput {} Mbps and pipelining {}", Thread.currentThread(), totalBytes, timeItTookForThisList, throughput, stepExecution.getCommitCount());
+        throughput = throughput * 1000;//convert from miliseconds to seconds
+        logger.info("Thread name {} Total bytes {} with total time {} gives throughput {} bytes/seconds", Thread.currentThread(), totalBytes, (timeItTookForThisList*1000), throughput);
         cache.addMetric(Thread.currentThread().getName(), throughput, stepExecution, items.size());
         metricsCollector.getInfluxCache().addMetric(stepExecution, items.size(), totalBytes, readStartTime, writeEndTime);
     }

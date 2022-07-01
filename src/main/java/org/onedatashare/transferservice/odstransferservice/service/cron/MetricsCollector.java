@@ -88,11 +88,15 @@ public class MetricsCollector {
         long jobSize = 0L;
         long avgFileSize = 0L;
         long pipeSize = 0L;
+        String destType = "";
+        String sourceType = "";
         if (this.previousParentMetric.getStepExecution() != null) {
             JobParameters jobParameters = this.previousParentMetric.getStepExecution().getJobParameters();
             jobSize = jobParameters.getLong(JOB_SIZE);
             avgFileSize = jobParameters.getLong(FILE_SIZE_AVG);
             pipeSize = jobParameters.getLong(PIPELINING);
+            sourceType = jobParameters.getString(SOURCE_CREDENTIAL_TYPE);
+            destType = jobParameters.getString(DEST_CREDENTIAL_TYPE);
         }
         long freeMemory = Runtime.getRuntime().freeMemory();
         long maxMemory = Runtime.getRuntime().maxMemory();
@@ -114,6 +118,8 @@ public class MetricsCollector {
             dataInflux.setJobId(previousParentMetric.getJobId());
             dataInflux.setOdsUser(this.odsUser);
             dataInflux.setTransferNodeName(this.appName);
+            dataInflux.setSourceType(sourceType);
+            dataInflux.setDestType(destType);
             log.info("Pushing DataInflux {}", dataInflux.toString());
         }
         influxIOService.insertDataPoints(pmeterMetrics);

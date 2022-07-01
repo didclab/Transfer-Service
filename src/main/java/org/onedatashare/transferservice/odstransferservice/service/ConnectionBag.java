@@ -126,7 +126,8 @@ public class ConnectionBag {
     public void createFtpReaderPool(AccountEndpointCredential credential, int connectionCount, int chunkSize) {
         this.ftpReaderPool = new FtpConnectionPool(credential, chunkSize);
         try {
-            this.ftpReaderPool.setCompression(this.compression);
+            this.ftpReaderPool.setCompression(this.transferOptions.getCompress());
+            this.compression=this.transferOptions.getCompress();
             this.ftpReaderPool.addObjects(connectionCount);
         } catch (Exception e) {
             e.printStackTrace();
@@ -136,7 +137,8 @@ public class ConnectionBag {
     public void createFtpWriterPool(AccountEndpointCredential credential, int connectionCount, int chunkSize) {
         this.ftpWriterPool = new FtpConnectionPool(credential, chunkSize);
         try {
-            this.ftpWriterPool.setCompression(this.compression);
+            this.ftpWriterPool.setCompression(this.transferOptions.getCompress());
+            this.compression = this.transferOptions.getCompress();
             this.ftpWriterPool.addObjects(connectionCount);
         } catch (Exception e) {
             e.printStackTrace();
@@ -145,13 +147,15 @@ public class ConnectionBag {
 
     public void createSftpReaderPool(AccountEndpointCredential credential, int connectionCount, int chunkSize) {
         this.sftpReaderPool = new JschSessionPool(credential, chunkSize);
-        this.sftpReaderPool.setCompression(compression);
+        this.sftpReaderPool.setCompression(this.transferOptions.getCompress());
+        this.compression = this.transferOptions.getCompress();
         this.sftpReaderPool.addObjects(connectionCount);
     }
 
     public void createSftpWriterPool(AccountEndpointCredential credential, int connectionCount, int chunkSize) {
         this.sftpWriterPool = new JschSessionPool(credential, chunkSize);
-        this.sftpWriterPool.setCompression(compression);
+        this.sftpWriterPool.setCompression(this.transferOptions.getCompress());
+        this.compression = this.transferOptions.getCompress();
         this.sftpWriterPool.addObjects(connectionCount);
     }
 
@@ -163,6 +167,7 @@ public class ConnectionBag {
     }
 
     public void createS3ReaderPool(AccountEndpointCredential credential, TransferOptions transferOptions) {
+        this.compression = transferOptions.getCompress();
         this.s3ReaderPool = new S3ConnectionPool(credential, transferOptions);
         try {
             this.s3ReaderPool.addObjects(transferOptions.getConcurrencyThreadCount());
@@ -172,6 +177,7 @@ public class ConnectionBag {
     }
 
     public void createS3WriterPool(AccountEndpointCredential credential, TransferOptions transferOptions) {
+        this.compression = transferOptions.getCompress();
         this.s3WriterPool = new S3ConnectionPool(credential, transferOptions);
         try {
             this.s3WriterPool.addObjects(transferOptions.getConcurrencyThreadCount());

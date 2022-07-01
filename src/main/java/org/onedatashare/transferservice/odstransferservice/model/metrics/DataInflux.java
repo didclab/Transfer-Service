@@ -175,4 +175,10 @@ public class DataInflux {
 
     @Column(name="allocatedMemory")
     private Long allocatedMemory;
+
+    @Column(name="sourceType")
+    private String sourceType;
+
+    @Column(name="destType")
+    private String destType;
 }
