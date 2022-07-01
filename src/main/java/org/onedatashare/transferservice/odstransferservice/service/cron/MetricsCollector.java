@@ -90,6 +90,7 @@ public class MetricsCollector {
         long pipeSize = 0L;
         String destType = "";
         String sourceType = "";
+        String ownerId = this.odsUser;
         if (this.previousParentMetric.getStepExecution() != null) {
             JobParameters jobParameters = this.previousParentMetric.getStepExecution().getJobParameters();
             jobSize = jobParameters.getLong(JOB_SIZE);
@@ -97,6 +98,7 @@ public class MetricsCollector {
             pipeSize = jobParameters.getLong(PIPELINING);
             sourceType = jobParameters.getString(SOURCE_CREDENTIAL_TYPE);
             destType = jobParameters.getString(DEST_CREDENTIAL_TYPE);
+            ownerId = jobParameters.getString(OWNER_ID);
         }
         long freeMemory = Runtime.getRuntime().freeMemory();
         long maxMemory = Runtime.getRuntime().maxMemory();
@@ -116,7 +118,7 @@ public class MetricsCollector {
             dataInflux.setAvgFileSize(avgFileSize);
             dataInflux.setCompression(connectionBag.isCompression());
             dataInflux.setJobId(previousParentMetric.getJobId());
-            dataInflux.setOdsUser(this.odsUser);
+            dataInflux.setOdsUser(ownerId);
             dataInflux.setTransferNodeName(this.appName);
             dataInflux.setSourceType(sourceType);
             dataInflux.setDestType(destType);
