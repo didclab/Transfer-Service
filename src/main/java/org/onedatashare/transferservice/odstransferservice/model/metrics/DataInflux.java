@@ -111,12 +111,12 @@ public class DataInflux {
     //2022-06-01 10:41:15.123591
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
     @JsonProperty(value = "start_time")
-    @Column(name = "start_time")
+    @Column(name = "pmeter_start_time")
     private LocalDateTime startTime;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
     @JsonProperty(value = "end_time")
-    @Column(name = "end_time")
+    @Column(name = "pmeter_end_time")
     private LocalDateTime endTime;
 
     @JsonProperty(value = "latency")
