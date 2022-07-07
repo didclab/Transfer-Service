@@ -17,15 +17,15 @@ import java.time.LocalDateTime;
 public class DataInflux {
 
     @JsonProperty(value = "interface")
-    @Column(name = "interface")
+    @Column(name = "interface", tag = true)
     private String networkInterface;
 
     @JsonProperty(value = "ods_user")
-    @Column(name = "ods_user")
+    @Column(name = "ods_user", tag = true)
     private String odsUser;
 
     @JsonProperty(value = "transfer_node_name")
-    @Column(name = "transfer_node_name")
+    @Column(name = "transfer_node_name", tag = true)
     private String transferNodeName;
 
     @JsonProperty(value = "active_core_count")
@@ -50,7 +50,7 @@ public class DataInflux {
     private Double energyConsumed;
 
     @JsonProperty(value = "cpu_arch")
-    @Column(name = "cpu_arch")
+    @Column(name = "cpu_arch", tag = true)
     private String cpuArchitecture;
 
     @JsonProperty(value = "packet_loss_rate")
@@ -137,7 +137,7 @@ public class DataInflux {
 
     //Job Values
 
-    @Column(name = "jobId")
+    @Column(name = "jobId", tag = true)
     private Long jobId;
 
     @Column(name = "throughput")
@@ -161,24 +161,24 @@ public class DataInflux {
     @Column(name = "freeMemory")
     private Long freeMemory;
 
-    @Column(name ="jobSize")
+    @Column(name = "jobSize")
     private Long jobSize;
 
-    @Column(name="avgJobSize")
+    @Column(name = "avgJobSize")
     private Long avgFileSize;
 
-    @Column(name="totalBytesSent")
+    @Column(name = "totalBytesSent")
     private Long dataBytesSent;
 
-    @Column(name="compression")
+    @Column(name = "compression")
     private Boolean compression;
 
-    @Column(name="allocatedMemory")
+    @Column(name = "allocatedMemory")
     private Long allocatedMemory;
 
-    @Column(name="sourceType")
+    @Column(name = "sourceType", tag = true)
     private String sourceType;
 
-    @Column(name="destType")
+    @Column(name = "destType", tag = true)
     private String destType;
 }
