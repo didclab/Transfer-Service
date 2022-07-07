@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 public class DataInflux {
 
     @JsonProperty(value = "interface")
-    @Column(name = "interface", tag = true)
+    @Column(name = "interface")
     private String networkInterface;
 
     @JsonProperty(value = "ods_user")
@@ -25,7 +25,7 @@ public class DataInflux {
     private String odsUser;
 
     @JsonProperty(value = "transfer_node_name")
-    @Column(name = "transfer_node_name", tag = true)
+    @Column(name = "transfer_node_name")
     private String transferNodeName;
 
     @JsonProperty(value = "active_core_count")
@@ -50,7 +50,7 @@ public class DataInflux {
     private Double energyConsumed;
 
     @JsonProperty(value = "cpu_arch")
-    @Column(name = "cpu_arch", tag = true)
+    @Column(name = "cpu_arch")
     private String cpuArchitecture;
 
     @JsonProperty(value = "packet_loss_rate")
@@ -137,7 +137,7 @@ public class DataInflux {
 
     //Job Values
 
-    @Column(name = "jobId", tag = true)
+    @Column(name = "jobId")
     private Long jobId;
 
     @Column(name = "throughput")
@@ -176,9 +176,9 @@ public class DataInflux {
     @Column(name = "allocatedMemory")
     private Long allocatedMemory;
 
-    @Column(name = "sourceType", tag = true)
+    @Column(name = "sourceType")
     private String sourceType;
 
-    @Column(name = "destType", tag = true)
+    @Column(name = "destType")
     private String destType;
 }
