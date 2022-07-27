@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.Date;
+import java.util.Locale;
 
 @Configuration
 public class RabbitMQConfig {
@@ -30,6 +31,6 @@ public class RabbitMQConfig {
     @Bean
     Queue userQueue(){
         //String name, boolean durable, boolean exclusive, boolean autoDelete
-        return new Queue(this.queueName, true, false, true);
+        return new Queue(this.queueName.toLowerCase(), true, false, true);
     }
 }
