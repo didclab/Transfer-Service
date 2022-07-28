@@ -12,7 +12,7 @@ import java.util.Stack;
 @Service
 public class VfsExpander {
 
-    public List<EntityInfo> expandDirectory(List<EntityInfo> userResources, String basePath) {
+    public List<EntityInfo> expandDirectory(List<EntityInfo> userResources, String basePath, int userChunkSize) {
         List<EntityInfo> endList = new ArrayList<>();
         Stack<File> traversalStack = new Stack<>(); //only directories on the stack.
         if (userResources.size() == 0) return endList; //this case should never happen.
@@ -30,7 +30,7 @@ public class VfsExpander {
             if (files == null) continue;
             for (File file : files) {
                 if (file.isFile()) {
-                    endList.add(fileToEntity(file, 0));
+                    endList.add(fileToEntity(file, userChunkSize));
                 } else if (file.isDirectory()) {
                     traversalStack.push(file);
                 }

@@ -122,7 +122,7 @@ public class JobControl extends DefaultBatchConfigurer {
     private List<Flow> createConcurrentFlow(List<EntityInfo> infoList, String basePath) {
         List<Flow> flows = new ArrayList<>();
         if (this.request.getSource().getType().equals(EndpointType.vfs)) {
-            infoList = vfsExpander.expandDirectory(infoList, basePath);
+            infoList = vfsExpander.expandDirectory(infoList, basePath, this.request.getChunkSize());
             logger.info("File list: {}", infoList);
         }
         for (EntityInfo file : infoList) {
