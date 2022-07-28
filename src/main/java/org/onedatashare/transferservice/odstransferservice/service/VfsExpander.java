@@ -39,7 +39,7 @@ public class VfsExpander {
         return endList;
     }
 
-    public EntityInfo fileToEntity(File file, int chunkSize) {
+    private EntityInfo fileToEntity(File file, int chunkSize) {
         if (chunkSize < 64000) {
             chunkSize = 10000000; //10MB default
         }

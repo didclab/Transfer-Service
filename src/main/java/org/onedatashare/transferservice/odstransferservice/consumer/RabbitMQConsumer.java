@@ -2,10 +2,13 @@ package org.onedatashare.transferservice.odstransferservice.consumer;
 
 
 import com.google.gson.Gson;
+import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
+import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.CrudService;
 import org.onedatashare.transferservice.odstransferservice.service.JobControl;
 import org.onedatashare.transferservice.odstransferservice.service.JobParamService;
+import org.onedatashare.transferservice.odstransferservice.service.VfsExpander;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Binding;
@@ -21,6 +24,9 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class RabbitMQConsumer {
@@ -42,6 +48,9 @@ public class RabbitMQConsumer {
     @Autowired
     Queue userQueue;
 
+    @Autowired
+    VfsExpander vfsExpander;
+
     @RabbitListener(queues = "#{userQueue}")
     public void consumeDefaultMessage(final Message message) {
         String jsonStr = new String(message.getBody());
@@ -50,6 +59,10 @@ public class RabbitMQConsumer {
         Gson g = new Gson();
         TransferJobRequest request = g.fromJson(jsonStr, TransferJobRequest.class);
         logger.info(request.toString());
+        if(request.getSource().getType().equals(EndpointType.vfs)){
+            List<EntityInfo> fileExpandedList = vfsExpander.expandDirectory(request.getSource().getInfoList(), request.getSource().getParentInfo().getPath(), request.getChunkSize());
+            request.getSource().setInfoList(new ArrayList<>(fileExpandedList));
+        }
         try {
             JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);
             crudService.insertBeforeTransfer(request);
