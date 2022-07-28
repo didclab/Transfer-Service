@@ -8,6 +8,7 @@ import org.onedatashare.transferservice.odstransferservice.service.JobControl;
 import org.onedatashare.transferservice.odstransferservice.service.JobParamService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
@@ -41,9 +42,8 @@ public class RabbitMQConsumer {
     @Autowired
     Queue userQueue;
 
-
     @RabbitListener(queues = "#{userQueue}")
-    public void consumeDefaultMessage(final Message message) throws Exception {
+    public void consumeDefaultMessage(final Message message) {
         String jsonStr = new String(message.getBody());
         System.out.println("Message received");// + jsonStr);
 
