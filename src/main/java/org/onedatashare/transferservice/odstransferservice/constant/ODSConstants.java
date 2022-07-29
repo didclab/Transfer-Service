@@ -76,8 +76,9 @@ public class ODSConstants {
     public static void metricsForOptimizerAndInflux(List<? extends DataChunk> items, LocalDateTime readStartTime, Logger logger, StepExecution stepExecution, MetricCache cache, MetricsCollector metricsCollector) {
         LocalDateTime writeEndTime = LocalDateTime.now();
         long totalBytes = items.stream().mapToLong(DataChunk::getSize).sum();
-        long timeItTookForThisList = Duration.between(readStartTime, writeEndTime).toSeconds();
+        long timeItTookForThisList = Duration.between(readStartTime, writeEndTime).toMillis();
         double throughput = (double) totalBytes / timeItTookForThisList;
+        throughput = throughput * 1000;
         logger.info("Thread name {} Total bytes {} with total time {} gives throughput {} bits/seconds", Thread.currentThread(), totalBytes, (timeItTookForThisList*1000), (throughput*8));
         cache.addMetric(Thread.currentThread().getName(), throughput, stepExecution, items.size());
         metricsCollector.getInfluxCache().addMetric(stepExecution, items.size(), totalBytes, readStartTime, writeEndTime);
