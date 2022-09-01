@@ -2,8 +2,7 @@ package org.onedatashare.transferservice.odstransferservice.model.credential;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.google.gson.annotations.JsonAdapter;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.*;
 import lombok.experimental.Accessors;
 import org.onedatashare.transferservice.odstransferservice.config.EpochMillisDateAdapter;
 
@@ -13,6 +12,9 @@ import java.util.Date;
  * POJO for storing OAuth Credentials
  */
 @Data
+@Getter
+@Setter
+@NoArgsConstructor
 @AllArgsConstructor
 public class OAuthEndpointCredential extends EndpointCredential {
     private String token;
