@@ -44,7 +44,11 @@ public class JobParamService {
             totalSize+=fileInfo.getSize();
         }
         builder.addLong(JOB_SIZE, totalSize);
-        builder.addLong(FILE_SIZE_AVG, totalSize/request.getSource().getInfoList().size());
+        double value = 0;
+        if(request.getSource().getInfoList().size() > 0){
+            value = totalSize/ (double)request.getSource().getInfoList().size();
+        }
+        builder.addLong(FILE_SIZE_AVG, (long) value);
         return builder.toJobParameters();
     }
 }

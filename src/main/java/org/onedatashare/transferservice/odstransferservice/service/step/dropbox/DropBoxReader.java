@@ -46,7 +46,11 @@ public class DropBoxReader extends AbstractItemCountingItemStreamItemReader<Data
     public void beforeStep(StepExecution stepExecution) {
         logger.info("Before step for : " + stepExecution.getStepName());
         sBasePath = stepExecution.getJobParameters().getString(SOURCE_BASE_PATH);
-        this.sBasePath = Paths.get(sBasePath, fileInfo.getPath()).toString();
+        if(sBasePath == null){
+            this.sBasePath = Paths.get(sBasePath, fileInfo.getPath()).toString();
+        }
+        this.sBasePath = "";
+        this.sBasePath = "/"+this.sBasePath;
         this.partitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
     }
 
@@ -69,14 +73,15 @@ public class DropBoxReader extends AbstractItemCountingItemStreamItemReader<Data
     @Override
     protected void doOpen() throws DbxException {
         this.client = new DbxClientV2(ODSUtility.dbxRequestConfig, credential.getToken());
-        this.requestSkeleton = this.client.files().downloadBuilder(this.sBasePath);
-        this.fileMetaData = this.client.files().getMetadata(this.fileInfo.getId());
+        this.requestSkeleton = this.client.files().downloadBuilder(this.fileInfo.getPath());
+        this.fileMetaData = this.client.files().getMetadata(this.fileInfo.getPath());
     }
 
     @Override
     protected void doClose() {
         //this is not needed for some reason the client is auto destroyed somehow.
         //this could be through the closeable interface but not 100% sure will need to test/profile this
+        this.client = null;
     }
 
 }

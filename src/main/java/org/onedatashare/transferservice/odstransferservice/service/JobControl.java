@@ -4,7 +4,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
-import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
@@ -18,7 +17,7 @@ import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxR
 import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxWriterLargeFile;
 import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxWriterSmallFile;
 import org.onedatashare.transferservice.odstransferservice.service.step.dropbox.DropBoxReader;
-import org.onedatashare.transferservice.odstransferservice.service.step.dropbox.DropBoxWriter;
+import org.onedatashare.transferservice.odstransferservice.service.step.dropbox.DropBoxChunkedWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.http.HttpReader;
@@ -53,10 +52,7 @@ import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -169,12 +165,7 @@ public class JobControl extends DefaultBatchConfigurer {
                 return amazonS3Reader;
             case box:
                 BoxReader boxReader = new BoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
-                if(this.request.getOptions().getRetry() != null){
-                    int retry = this.request.getOptions().getRetry();
-                    if(retry > 0){
-                        boxReader.setMaxRetry(retry);
-                    }
-                }
+                boxReader.setMaxRetry(this.request.getOptions().getRetry());
                 return boxReader;
             case dropbox:
                 DropBoxReader dropBoxReader = new DropBoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
@@ -235,10 +226,10 @@ public class JobControl extends DefaultBatchConfigurer {
                     return boxWriterLargeFile;
                 }
             case dropbox:
-                DropBoxWriter dropBoxWriter = new DropBoxWriter(request.getDestination().getOauthDestCredential());
-                dropBoxWriter.setMetricsCollector(metricsCollector);
-                dropBoxWriter.setMetricCache(metricCache);
-                return dropBoxWriter;
+                DropBoxChunkedWriter dropBoxChunkedWriter = new DropBoxChunkedWriter(request.getDestination().getOauthDestCredential());
+                dropBoxChunkedWriter.setMetricsCollector(metricsCollector);
+                dropBoxChunkedWriter.setMetricCache(metricCache);
+                return dropBoxChunkedWriter;
             case scp:
                 SCPWriter scpWriter = new SCPWriter(fileInfo);
                 scpWriter.setPool(connectionBag.getSftpWriterPool());
