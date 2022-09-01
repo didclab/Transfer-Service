@@ -36,16 +36,6 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
     }
 
     /**
-     * This gets called before every single step executes and every step represents a single file fyi
-     *
-     * @param stepExecution
-     */
-    @BeforeStep
-    public void beforeStep(StepExecution stepExecution) {
-        filePartitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
-    }
-
-    /**
      * Read in those chunks
      *
      * @return
@@ -68,6 +58,7 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
      */
     @Override
     protected void doOpen() {
+        filePartitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
         this.boxAPIConnection = new BoxAPIConnection(credential.getToken());
         this.currentFile = new BoxFile(this.boxAPIConnection, this.fileInfo.getId());
         this.boxAPIConnection.setMaxRetryAttempts(this.retry);
