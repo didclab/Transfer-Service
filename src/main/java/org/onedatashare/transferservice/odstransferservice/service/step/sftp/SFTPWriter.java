@@ -107,7 +107,7 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
             channelSftp.cd(directory);
             return true;
         } catch (SftpException sftpException) {
-            logger.warn("Could not cd into the directory we might have made moohoo");
+            logger.warn("Failed to cd into directory {}", directory);
             sftpException.printStackTrace();
         }
         return false;
@@ -145,7 +145,6 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
     public void write(List<? extends DataChunk> items) throws Exception {
 //        String fileName = Paths.get(this.dBasePath, items.get(0).getFileName()).toString();
         String fileName = Paths.get(items.get(0).getFileName()).toString();
-        logger.info("Filename={}",fileName);
         List<? extends DataChunk> itemsToProcess = items;
         this.retryTemplate.execute((c) -> {
             try {
