@@ -88,7 +88,7 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
         String key = this.amazonS3URI.getKey();
         int idx = key.lastIndexOf("/");
         if(idx > -1){
-            this.fileName = key.substring(idx);
+            this.fileName = key.substring(idx+1);
         }
         partitioner.createParts(this.currentFileMetaData.getContentLength(), this.fileName);
     }
