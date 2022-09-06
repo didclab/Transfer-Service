@@ -85,6 +85,11 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
         logger.info(this.amazonS3URI.toString());
         this.s3Client = this.pool.borrowObject();
         this.currentFileMetaData = this.s3Client.getObjectMetadata(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey());
+        String key = this.amazonS3URI.getKey();
+        int idx = key.lastIndexOf("/");
+        if(idx > -1){
+            this.fileName = key.substring(idx);
+        }
         partitioner.createParts(this.currentFileMetaData.getContentLength(), this.fileName);
     }
 
