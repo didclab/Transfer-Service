@@ -145,6 +145,7 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
     public void write(List<? extends DataChunk> items) throws Exception {
 //        String fileName = Paths.get(this.dBasePath, items.get(0).getFileName()).toString();
         String fileName = Paths.get(items.get(0).getFileName()).toString();
+        logger.info("Filename={}",fileName);
         List<? extends DataChunk> itemsToProcess = items;
         this.retryTemplate.execute((c) -> {
             try {
