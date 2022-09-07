@@ -66,3 +66,56 @@ Let's begin with some verbiage clarification:
 2. Options, these options are fully described in the ODS-Starter documentation so please reference that.
 3. Source: represents the source where we are downloading data from
 4. Destination: represents the location where we are uploading data too.
+5. OwnerId: This is a required field that corresponds to the user email of the onedatashare.org account
+
+## How to run this locally.
+Things to install:
+1. Install Java 11
+2. Install maven
+3. Get the boot.sh and certs files from Jacob.
+
+## The way this works
+
+Please read Language Domain of Spring batch first.
+Using the above json as long as you replace the values appropriately you can run a transfer.
+General things to know: 1 step = 1 file, ODS parallelism= strapping a thread pool to a step, ODS concurrency= splitting steps across a thread pool.
+Connections are important, for us that entails pooling the clients, which honestly might not be the best idea for the cloud provider clients, but it works and compares/beats to RClone so.
+
+
+So to start this service receives a message. Either as a request through the controller or the RabbitMQ consumer.
+Once we get a request, we process which means running the code in JobControl.java, which all it really does it set up the Job object with the various steps.
+This is where we apply a concurrency, parallelism and pipelining(commit-count, number of read calls to 1 write) by splitting the execution of many steps across a thread pool. Once we are done defining a Job we launch the job in the JobLauncher.
+Once the job starts spring batch actually keeps track of the read, skip, write, ,,, counts in CockroachDB. Which means we can run many Transfer-Services that use the same Job table.
+
+Once we have created 
+
+### Helpful Links 
+
+1. [Spring Batch Docs](https://docs.spring.io/spring-batch/docs/current/reference/html/)
+   Sections: 
+    - (Language Domain)[https://docs.spring.io/spring-batch/docs/current/reference/html/domain.html#domainLanguageOfBatch]
+    - (Multi Threaded Steps)[https://docs.spring.io/spring-batch/docs/current/reference/html/scalability.html#multithreadedStep]
+    - (Parallel Steps)[https://docs.spring.io/spring-batch/docs/current/reference/html/scalability.html#scalabilityParallelSteps]
+    - few others as well but no point in listing them all
+    
+2. [AWS Java Docs](https://github.com/aws/aws-sdk-java-v2)
+    Sections
+   - Only worth reading about S3 stuff nothing else.
+    
+3. [Jsch Examples](http://www.jcraft.com/jsch/examples/)
+    Here is the thing about Jsch THERE ARE NO DOCS. I know I hate it too sorry. So we have to go off examples and 
+    stackoverflow BUT its actually a damn good library b/c it works similarly to how you would expect the ssh protocol to work
+    Sections
+    - Only read on stuff about Scp and Sftp, unless you are doing a remote execution which case 
+      I would prob use Shell or Exec docs
+      
+4. [Dropbox Github](https://github.com/dropbox/dropbox-sdk-java)
+   
+5. [Box Docs](http://opensource.box.com/box-java-sdk/)
+
+6. [Google Drive Docs](https://developers.google.com/drive/api/quickstart/java)
+   
+7. [Influx Docs](https://github.com/influxdata/influxdb-java)
+
+8. [Spring JPA](https://docs.spring.io/spring-data/jpa/docs/current/reference/html/)
+    I would only look this over if you plan on working with the Data otherwise not very necessary

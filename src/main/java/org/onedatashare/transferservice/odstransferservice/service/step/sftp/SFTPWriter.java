@@ -107,7 +107,7 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
             channelSftp.cd(directory);
             return true;
         } catch (SftpException sftpException) {
-            logger.warn("Could not cd into the directory we might have made moohoo");
+            logger.warn("Failed to cd into directory {}", directory);
             sftpException.printStackTrace();
         }
         return false;
@@ -129,7 +129,7 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
             }
             return channelSftp.put(fileName, ChannelSftp.OVERWRITE);
         } catch (SftpException sftpException) {
-            logger.warn("We failed getting the OuputStream to a file :(");
+            logger.warn("Failed creating OutputStream to destPath={}, fileName={}", this.dBasePath, fileName);
             sftpException.printStackTrace();
         }
         throw new IOException();
