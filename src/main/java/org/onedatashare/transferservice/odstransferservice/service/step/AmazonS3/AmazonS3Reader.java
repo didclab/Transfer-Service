@@ -50,8 +50,7 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
         this.fileName = this.fileInfo.getId();//For an S3 Reader job this should be the object key
-        String sourcePath = stepExecution.getJobExecution().getJobParameters().getString(ODSConstants.SOURCE_BASE_PATH);
-        this.amazonS3URI = new AmazonS3URI(S3Utility.constructS3URI(this.sourceCredential.getUri(), this.fileName, sourcePath));
+        this.amazonS3URI = new AmazonS3URI(S3Utility.constructS3URI(this.sourceCredential.getUri(), this.fileName));
         this.getSkeleton = new GetObjectRequest(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey());
         logger.info("Starting S3 job for file {} with uri {}", this.fileName, this.amazonS3URI);
     }
