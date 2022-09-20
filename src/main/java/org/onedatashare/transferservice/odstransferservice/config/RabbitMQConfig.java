@@ -36,7 +36,7 @@ public class RabbitMQConfig {
     @Bean
     Queue userQueue(){
         //String name, boolean durable, boolean exclusive, boolean autoDelete
-        return new Queue(this.queueName.toLowerCase(), true, false, true);
+        return new Queue(this.queueName.toLowerCase(), true, false, false);
     }
 
     @Bean
