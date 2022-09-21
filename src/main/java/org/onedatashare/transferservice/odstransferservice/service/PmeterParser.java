@@ -31,8 +31,8 @@ public class PmeterParser {
     @Autowired
     ObjectMapper pmeterMapper;
 
-    @Value("${pmeter.home}")
-    String pmeterHome;
+//    @Value("${pmeter.home}")
+//    String pmeterHome;
 
     @Value("${pmeter.report.path}")
     String pmeterReportPath;
@@ -54,8 +54,8 @@ public class PmeterParser {
     @PostConstruct
     public void postConstruct(){
         CommandLine cmdLine = CommandLine.parse(
-                String.format("python3 %s " + MEASURE + " %s --user %s --measure %s %s --file_name %s",
-                        pmeterHome, pmeterNic, odsUser,
+                String.format("pmeter " + MEASURE + " %s --user %s --measure %s %s --file_name %s",
+                        pmeterNic, odsUser,
                         measureCount, pmeterOptions, pmeterReportPath));
         this.cmdLine = cmdLine;
         logger.info(this.cmdLine.toString());
