@@ -2,7 +2,6 @@ package org.onedatashare.transferservice.odstransferservice.service.cron;
 
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
-import io.micrometer.core.instrument.Tags;
 import io.micrometer.influx.InfluxMeterRegistry;
 import lombok.Getter;
 import lombok.Setter;
@@ -115,6 +114,9 @@ public class MetricsCollector {
                     Tag.of(DataInfluxConstants.TRANSFER_NODE_NAME, this.appName)
             );
             Metrics.gauge(DataInfluxConstants.JOB_ID, tags, previousParentMetric.getJobId());
+            Metrics.gauge(DataInfluxConstants.AVERAGE_JOB_SIZE, avgFileSize);
+            Metrics.gauge(DataInfluxConstants.PIPELINING, pipeSize);
+            Metrics.gauge(DataInfluxConstants.JOB_SIZE, jobSize);
         }
         long freeMemory = Runtime.getRuntime().freeMemory();
         long maxMemory = Runtime.getRuntime().maxMemory();

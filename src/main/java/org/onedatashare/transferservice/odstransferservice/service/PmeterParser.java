@@ -106,6 +106,10 @@ public class PmeterParser {
     }
 
     private void processLineAndUpdateInflux(DataInflux dataInflux) {
+        Iterable<Tag> tags = List.of(
+                Tag.of(DataInfluxConstants.CPU_ARCHITECTURE, dataInflux.getCpuArchitecture())
+        );
+
         if(Objects.nonNull(dataInflux.getCpu_frequency_current())) {
             Metrics.gauge(DataInfluxConstants.CPU_FREQUENCY_CURRENT, dataInflux.getCpu_frequency_current());
         }
@@ -114,6 +118,54 @@ public class PmeterParser {
         }
         if(Objects.nonNull(dataInflux.getCpu_frequency_min())) {
             Metrics.gauge(DataInfluxConstants.CPU_FREQUENCY_MIN, dataInflux.getCpu_frequency_min());
+        }
+        if(Objects.nonNull(dataInflux.getCoreCount())) {
+            Metrics.gauge(DataInfluxConstants.ACTIVE_CORE_COUNT, dataInflux.getCoreCount());
+        }
+        if(Objects.nonNull(dataInflux.getBytesReceived())) {
+            Metrics.gauge(DataInfluxConstants.BYTES_RECEIVED, dataInflux.getBytesReceived());
+        }
+        if(Objects.nonNull(dataInflux.getBytesSent())) {
+            Metrics.gauge(DataInfluxConstants.BYTES_SENT, dataInflux.getBytesSent());
+        }
+        if(Objects.nonNull(dataInflux.getDropin())) {
+            Metrics.gauge(DataInfluxConstants.DROP_IN, dataInflux.getDropin());
+        }
+        if(Objects.nonNull(dataInflux.getDropout())) {
+            Metrics.gauge(DataInfluxConstants.DROP_OUT, dataInflux.getDropout());
+        }
+        if(Objects.nonNull(dataInflux.getEnergyConsumed())) {
+            Metrics.gauge(DataInfluxConstants.ENERGY_CONSUMED, dataInflux.getEnergyConsumed());
+        }
+        if(Objects.nonNull(dataInflux.getErrin())) {
+            Metrics.gauge(DataInfluxConstants.ERROR_IN, dataInflux.getErrin());
+        }
+        if(Objects.nonNull(dataInflux.getErrout())) {
+            Metrics.gauge(DataInfluxConstants.ERROR_OUT, dataInflux.getErrout());
+        }
+        if(Objects.nonNull(dataInflux.getLatency())) {
+            Metrics.timer(DataInfluxConstants.LATENCY).record(dataInflux.getLatency().longValue(), TimeUnit.MILLISECONDS);
+        }
+        if(Objects.nonNull(dataInflux.getLinkCapacity())) {
+            Metrics.gauge(DataInfluxConstants.LINK_CAPACITY, dataInflux.getLinkCapacity());
+        }
+        if(Objects.nonNull(dataInflux.getNicMtu())) {
+            Metrics.gauge(DataInfluxConstants.NIC_MTU, dataInflux.getNicMtu());
+        }
+        if(Objects.nonNull(dataInflux.getNicSpeed())) {
+            Metrics.gauge(DataInfluxConstants.NIC_SPEED, dataInflux.getNicSpeed());
+        }
+        if(Objects.nonNull(dataInflux.getPacketLossRate())) {
+            Metrics.gauge(DataInfluxConstants.PACKET_LOSS_RATE, dataInflux.getPacketLossRate());
+        }
+        if(Objects.nonNull(dataInflux.getPacketReceived())) {
+            Metrics.gauge(DataInfluxConstants.PACKETS_RECEIVED, dataInflux.getPacketReceived());
+        }
+        if(Objects.nonNull(dataInflux.getPacketSent())) {
+            Metrics.gauge(DataInfluxConstants.PACKETS_SENT, dataInflux.getPacketSent());
+        }
+        if(Objects.nonNull(dataInflux.getRtt())) {
+            Metrics.timer(DataInfluxConstants.RTT).record(dataInflux.getRtt().longValue(), TimeUnit.MILLISECONDS);
         }
     }
 }
