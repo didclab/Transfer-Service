@@ -1,9 +1,14 @@
 package org.onedatashare.transferservice.odstransferservice.service.cron;
 
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.influx.InfluxMeterRegistry;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import org.onedatashare.transferservice.odstransferservice.DataRepository.InfluxIOService;
+import org.onedatashare.transferservice.odstransferservice.constant.DataInfluxConstants;
 import org.onedatashare.transferservice.odstransferservice.model.JobMetric;
 import org.onedatashare.transferservice.odstransferservice.model.metrics.DataInflux;
 import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManager;
@@ -62,6 +67,8 @@ public class MetricsCollector {
     @Autowired
     ConnectionBag connectionBag;
 
+    @Autowired
+    InfluxMeterRegistry registry;
 
     /**
      * This is not blocking to the transfer job as this is getting run by the thread that is processing the CRON.
@@ -91,6 +98,7 @@ public class MetricsCollector {
         String destType = "";
         String sourceType = "";
         String ownerId = this.odsUser;
+
         if (this.previousParentMetric.getStepExecution() != null) {
             JobParameters jobParameters = this.previousParentMetric.getStepExecution().getJobParameters();
             jobSize = jobParameters.getLong(JOB_SIZE);
@@ -99,21 +107,29 @@ public class MetricsCollector {
             sourceType = jobParameters.getString(SOURCE_CREDENTIAL_TYPE);
             destType = jobParameters.getString(DEST_CREDENTIAL_TYPE);
             ownerId = jobParameters.getString(OWNER_ID);
+
+            Iterable<Tag> tags = List.of((
+                    Tag.of(DataInfluxConstants.SOURCE_TYPE, sourceType)),
+                    Tag.of(DataInfluxConstants.DESTINATION_TYPE, destType),
+                    Tag.of(DataInfluxConstants.ODS_USER, ownerId),
+                    Tag.of(DataInfluxConstants.TRANSFER_NODE_NAME, this.appName)
+            );
+            Metrics.gauge(DataInfluxConstants.JOB_ID, tags, previousParentMetric.getJobId());
         }
         long freeMemory = Runtime.getRuntime().freeMemory();
         long maxMemory = Runtime.getRuntime().maxMemory();
         long allocatedMemory = Runtime.getRuntime().totalMemory();
         long memory = allocatedMemory - freeMemory;
         for (DataInflux dataInflux : pmeterMetrics) {
-            dataInflux.setConcurrency(threadPoolManager.concurrencyCount());
-            dataInflux.setParallelism(threadPoolManager.parallelismCount());
+            dataInflux.setConcurrency(threadPoolManager.concurrencyCount()); // TODO Micrometer threadpool
+            dataInflux.setParallelism(threadPoolManager.parallelismCount()); // TODO Micrometer threadpool
             dataInflux.setPipelining((int) pipeSize); //if this is to be dynamic then we would need to adjust the clients.
             dataInflux.setThroughput(this.previousParentMetric.getThroughput());
             dataInflux.setDataBytesSent(this.previousParentMetric.getBytesSent());
-            dataInflux.setFreeMemory(freeMemory);
-            dataInflux.setMaxMemory(maxMemory);
-            dataInflux.setAllocatedMemory(allocatedMemory);
-            dataInflux.setMemory(memory);
+            dataInflux.setFreeMemory(freeMemory); // TODO - Leave it
+            dataInflux.setMaxMemory(maxMemory); // TODO - JVM properties
+            dataInflux.setAllocatedMemory(allocatedMemory); // TODO - JVM properties
+            dataInflux.setMemory(memory); // TODO - JVM properties
             dataInflux.setJobSize(jobSize);
             dataInflux.setAvgFileSize(avgFileSize);
             dataInflux.setCompression(connectionBag.isCompression());
@@ -122,7 +138,7 @@ public class MetricsCollector {
             dataInflux.setTransferNodeName(this.appName);
             dataInflux.setSourceType(sourceType);
             dataInflux.setDestType(destType);
-            log.info("Pushing DataInflux {}", dataInflux.toString());
+            log.info("Pushing DataInflux {}", dataInflux);
         }
         influxIOService.insertDataPoints(pmeterMetrics);
         this.influxCache.clearCache();

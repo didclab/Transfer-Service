@@ -1,10 +1,16 @@
 package org.onedatashare.transferservice.odstransferservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.*;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.micrometer.influx.InfluxConfig;
+import io.micrometer.influx.InfluxMeterRegistry;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteWatchdog;
 import org.apache.commons.exec.PumpStreamHandler;
+import org.jetbrains.annotations.NotNull;
+import org.onedatashare.transferservice.odstransferservice.constant.DataInfluxConstants;
 import org.onedatashare.transferservice.odstransferservice.model.metrics.DataInflux;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +26,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class PmeterParser {
@@ -83,12 +91,29 @@ public class PmeterParser {
         Path path = Paths.get(pmeterReportPath);
         List<String> allLines = Files.readAllLines(path);
         List<DataInflux> ret = new ArrayList<>();
+
         for (String line : allLines) {
+            System.out.println("COMING");
+            System.out.println(line);
+
             DataInflux dataInflux = this.pmeterMapper.readValue(line, DataInflux.class);
+            processLineAndUpdateInflux(dataInflux);
             ret.add(dataInflux);
         }
         path.toFile().delete();
         path.toFile().createNewFile();
         return ret;
+    }
+
+    private void processLineAndUpdateInflux(DataInflux dataInflux) {
+        if(Objects.nonNull(dataInflux.getCpu_frequency_current())) {
+            Metrics.gauge(DataInfluxConstants.CPU_FREQUENCY_CURRENT, dataInflux.getCpu_frequency_current());
+        }
+        if(Objects.nonNull(dataInflux.getCpu_frequency_max())) {
+            Metrics.gauge(DataInfluxConstants.CPU_FREQUENCY_MAX, dataInflux.getCpu_frequency_max());
+        }
+        if(Objects.nonNull(dataInflux.getCpu_frequency_min())) {
+            Metrics.gauge(DataInfluxConstants.CPU_FREQUENCY_MIN, dataInflux.getCpu_frequency_min());
+        }
     }
 }
