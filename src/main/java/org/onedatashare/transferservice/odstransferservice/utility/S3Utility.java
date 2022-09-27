@@ -17,13 +17,12 @@ public class S3Utility {
                 .build();
     }
 
-    public static String constructS3URI(String uri, String fileKey, String basePath){
-        if(basePath.equals("/")) basePath = "";
+    public static String constructS3URI(String uri, String fileKey){
         StringBuilder builder = new StringBuilder();
         String[] temp = uri.split(":::");
         String bucketName = temp[1];
         String region = temp[0];
-        builder.append("https://").append(bucketName).append(".").append("s3.").append(region).append(".").append("amazonaws.com/").append(basePath).append(fileKey);
+        builder.append("https://").append(bucketName).append(".").append("s3.").append(region).append(".").append("amazonaws.com/").append(fileKey);
         return builder.toString();
     }
 }
