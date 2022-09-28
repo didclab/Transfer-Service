@@ -97,7 +97,7 @@ public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChu
     protected void doOpen() throws InterruptedException, JSchException, SftpException {
         this.session = this.connectionPool.borrowObject();
         this.channelSftp = getChannelSftp();
-        this.channelSftp.setBulkRequests(this.pipeSize);
+        this.channelSftp.setBulkRequests(64);
         this.inputStream = channelSftp.get(fileInfo.getPath());
         //clientCreateSourceStream();
     }
