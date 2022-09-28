@@ -96,7 +96,8 @@ public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChu
     @Override
     protected void doOpen() throws InterruptedException, JSchException, SftpException {
         this.session = this.connectionPool.borrowObject();
-        this.channelSftp = getChannelSftp();
+        this.channelSftp = (ChannelSftp) this.session.openChannel("sftp");
+        this.channelSftp.connect();
         this.channelSftp.setBulkRequests(64);
         this.inputStream = channelSftp.get(fileInfo.getPath());
         //clientCreateSourceStream();
@@ -118,35 +119,14 @@ public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChu
 
     public ChannelSftp getChannelSftp() throws JSchException, SftpException {
         if (this.channelSftp == null || !this.channelSftp.isConnected() || this.channelSftp.isClosed()) {
-            this.channelSftp = (ChannelSftp) this.session.openChannel("sftp");
-            this.channelSftp.connect();
-            if(!sBasePath.isEmpty()){
-                this.channelSftp.cd(sBasePath);
-                logger.info("after cd into base path" + this.channelSftp.pwd());
-            }
+//            if(!sBasePath.isEmpty()){
+//                this.channelSftp.cd(sBasePath);
+//                logger.info("after cd into base path" + this.channelSftp.pwd());
+//            }
         }
         return this.channelSftp;
     }
 
-    @SneakyThrows
-    public void clientCreateSourceStream() {
-        logger.info("Inside clientCreateSourceStream for : " + this.fileInfo.getId());
-        JSch jsch = new JSch();
-        try {
-            ChannelSftp channelSftp = SftpUtility.createConnection(jsch, sourceCred);
-            logger.info("before pwd: ----" + channelSftp.pwd());
-            if (!sBasePath.isEmpty()) {
-                channelSftp.cd(sBasePath);
-                logger.info("after cd into base path" + channelSftp.pwd());
-            }
-            this.inputStream = channelSftp.get(fileInfo.getPath());
-        } catch (JSchException e) {
-            logger.error("Error in JSch end");
-            e.printStackTrace();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
     @Override
     public void setPool(ObjectPool connectionPool) {
