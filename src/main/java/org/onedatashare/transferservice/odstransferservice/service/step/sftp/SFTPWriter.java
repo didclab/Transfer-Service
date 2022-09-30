@@ -89,7 +89,7 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
         try {
             ChannelSftp channelSftp = (ChannelSftp) this.session.openChannel("sftp");
             //https://stackoverflow.com/questions/8849240/why-when-i-transfer-a-file-through-sftp-it-takes-longer-than-ftp
-            channelSftp.setBulkRequests(256); //Not very sure if this should be set to the pipelining parameter or not I would assume so
+            channelSftp.setBulkRequests(Integer.parseInt(this.stepExecution.getJobParameters().getString(ODSConstants.PIPELINING))); //Not very sure if this should be set to the pipelining parameter or not I would assume so
             channelSftp.connect();
             this.cdIntoDir(channelSftp, this.dBasePath);
 //            ChannelSftp channelSftp = SftpUtility.createConnection(jsch, destCred);
