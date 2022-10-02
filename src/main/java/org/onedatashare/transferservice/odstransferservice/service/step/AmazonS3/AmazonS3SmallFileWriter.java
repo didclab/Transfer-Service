@@ -75,14 +75,6 @@ public class AmazonS3SmallFileWriter implements ItemWriter<DataChunk> {
     public void write(List<? extends DataChunk> items) throws Exception {
         this.fileName = items.get(0).getFileName();
         this.putObjectRequest.addAllChunks(items);
-        if(items.get(items.size()-1).getSize() != items.get(0).getSize()){
-            //last chunk
-            PutObjectRequest putObjectRequest = new PutObjectRequest(this.bucketName, Paths.get(this.destBasepath, fileName).toString(), this.putObjectRequest.condenseListToOneStream(this.fileInfo.getSize()), makeMetaDataForSinglePutRequest(this.fileInfo.getSize()));
-            PutObjectResult result = client.putObject(putObjectRequest);
-            logger.info("Pushed the final chunk of the small file");
-            logger.info(result.toString());
-            this.putObjectRequest.clear();
-        }
     }
 
     @AfterWrite
@@ -92,6 +84,11 @@ public class AmazonS3SmallFileWriter implements ItemWriter<DataChunk> {
 
     @AfterStep
     public void afterStep() {
+        PutObjectRequest putObjectRequest = new PutObjectRequest(this.bucketName, Paths.get(this.destBasepath, fileName).toString(), this.putObjectRequest.condenseListToOneStream(this.fileInfo.getSize()), makeMetaDataForSinglePutRequest(this.fileInfo.getSize()));
+        PutObjectResult result = client.putObject(putObjectRequest);
+        logger.info("Pushed the final chunk of the small file");
+        logger.info(result.toString());
+        this.putObjectRequest.clear();
         this.pool.returnObject(this.client);
     }
 
