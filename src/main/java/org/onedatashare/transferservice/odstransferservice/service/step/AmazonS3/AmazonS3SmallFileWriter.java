@@ -3,6 +3,7 @@ package org.onedatashare.transferservice.odstransferservice.service.step.AmazonS
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.PutObjectResult;
 import lombok.Setter;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.AWSSinglePutRequestMetaData;
@@ -77,7 +78,9 @@ public class AmazonS3SmallFileWriter implements ItemWriter<DataChunk> {
         if(items.get(items.size()-1).getSize() != items.get(0).getSize()){
             //last chunk
             PutObjectRequest putObjectRequest = new PutObjectRequest(this.bucketName, Paths.get(this.destBasepath, fileName).toString(), this.putObjectRequest.condenseListToOneStream(this.fileInfo.getSize()), makeMetaDataForSinglePutRequest(this.fileInfo.getSize()));
-            client.putObject(putObjectRequest);
+            PutObjectResult result = client.putObject(putObjectRequest);
+            logger.info("Pushed the final chunk of the small file");
+            logger.info(result.toString());
             this.putObjectRequest.clear();
         }
     }
