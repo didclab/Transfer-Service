@@ -16,6 +16,7 @@ import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsC
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.*;
 import org.springframework.batch.item.ItemWriter;
@@ -106,10 +107,11 @@ public class AmazonS3LargeFileWriter implements ItemWriter<DataChunk> {
     }
 
     @AfterStep
-    public void afterStep() {
+    public ExitStatus afterStep(StepExecution stepExecution) {
         this.metaData.completeMultipartUpload(client);
         this.metaData.reset();
         this.pool.returnObject(this.client);
+        return stepExecution.getExitStatus();
     }
 
     public void setPool(S3ConnectionPool s3WriterPool) {

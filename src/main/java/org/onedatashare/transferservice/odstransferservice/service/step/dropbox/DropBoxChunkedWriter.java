@@ -7,6 +7,7 @@ import com.dropbox.core.v2.files.FileMetadata;
 import com.dropbox.core.v2.files.UploadSessionCursor;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.SneakyThrows;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
@@ -15,6 +16,7 @@ import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsC
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.AfterWrite;
@@ -64,12 +66,14 @@ public class DropBoxChunkedWriter implements ItemWriter<DataChunk> {
 
     }
 
+    @SneakyThrows
     @AfterStep
-    public void afterStep() throws DbxException {
+    public ExitStatus afterStep(StepExecution stepExecution) {
         String path = Paths.get(this.destinationPath, this.fileName).toString();
         path = "/"+path;
         CommitInfo commitInfo = CommitInfo.newBuilder(path).build();
         this.uploadSessionFinishUploader = this.client.files().uploadSessionFinish(cursor, commitInfo).finish();
+        return stepExecution.getExitStatus();
     }
 
     @Override

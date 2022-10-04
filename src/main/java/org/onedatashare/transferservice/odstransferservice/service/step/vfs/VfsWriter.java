@@ -9,6 +9,7 @@ import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.AfterWrite;
@@ -58,7 +59,7 @@ public class VfsWriter implements ItemWriter<DataChunk> {
     }
 
     @AfterStep
-    public void afterStep() {
+    public ExitStatus afterStep(StepExecution stepExecution) {
         try {
             if (this.stepDrain.containsKey(this.fileName)) {
                 this.stepDrain.get(this.fileName).close();
@@ -66,6 +67,7 @@ public class VfsWriter implements ItemWriter<DataChunk> {
         } catch (IOException exception) {
             exception.printStackTrace();
         }
+        return stepExecution.getExitStatus();
     }
 
     public FileChannel getChannel(String fileName) {

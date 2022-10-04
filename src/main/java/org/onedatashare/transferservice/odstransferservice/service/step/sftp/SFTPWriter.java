@@ -13,6 +13,7 @@ import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.AfterWrite;
@@ -76,13 +77,14 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
     }
 
     @AfterStep
-    public void afterStep() {
+    public ExitStatus afterStep(StepExecution stepExecution) {
         for (ChannelSftp value : fileToChannel.values()) {
             if (value.isConnected()) {
                 value.disconnect();
             }
         }
         this.connectionPool.returnObject(this.session);
+        return stepExecution.getExitStatus();
     }
 
     public void establishChannel(String fileName) {

@@ -14,6 +14,7 @@ import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.AfterWrite;
@@ -66,8 +67,9 @@ public class BoxWriterSmallFile implements ItemWriter<DataChunk> {
      * For large file uploads we upload the hash we compute and commit so Box constructs the file
      */
     @AfterStep
-    public void afterStep() {
+    public ExitStatus afterStep(StepExecution stepExecution) {
         boxFolder.uploadFile(this.smallFileUpload.condenseListToOneStream(this.fileInfo.getSize()), fileName);
+        return stepExecution.getExitStatus();
     }
 
     @BeforeRead
