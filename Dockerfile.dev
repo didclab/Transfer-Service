@@ -7,14 +7,12 @@ RUN mvn -f /home/app/pom.xml clean package -DskipTests
 FROM alpine:3.16.2 as pmeter-build
 RUN apk add --update --no-cache git build-base python3 linux-headers python3-dev && \ 
     ln -sf python3 /usr/bin/python && python -m ensurepip \
-    && pip3 install --upgrade pip setuptools \
+    && pip3 install --upgrade pip setuptools wheel \
     && rm -r /usr/lib/python*/ensurepip && \
     if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi && \
     rm -r /root/.cache
 
-RUN git clone https://github.com/didclab/pmeter.git && cd pmeter && \
-    pip install --user .
-
+RUN cd $HOME && pip install pmeter_ods --user
 
 ARG ALPINE_VERSION=3.16
 
@@ -41,17 +39,17 @@ RUN find /usr/local/aws-cli/v2/current/dist/awscli/botocore/data -name examples-
 # Final Image
 FROM alpine:3.16.2
 RUN apk add --update --no-cache python3 && ln -sf python3 /usr/bin/python && \
-    apk add --no-cache openjdk11 --repository=https://dl-cdn.alpinelinux.org/alpine/latest-stable/community && \
-    apk add --no-cache aws-cli
+    apk add --no-cache openjdk11 --repository=https://dl-cdn.alpinelinux.org/alpine/latest-stable/community
 
 COPY --from=build /home/app/target/ods-transfer-service-0.0.1-SNAPSHOT.jar /usr/local/lib/ods-transfer-service-0.0.1-SNAPSHOT.jar
-
-COPY --from=pmeter-build  /root/.local /root/.local
-RUN export PATH=/root/.local/bin:$PATH && \
-    mkdir -p /app/scripts /app/config /app/certs
+RUN adduser ods -D -s /bin/sh
+COPY --from=pmeter-build --chown=ods:ods /root/.local /home/ods/.local
+RUN  mkdir -p /app/scripts /app/config /app/certs
 COPY --from=aws-build /usr/local/aws-cli/ /usr/local/aws-cli/
 COPY --from=aws-build /aws-cli-bin/ /usr/local/bin/
 ADD scripts/runner.sh /app/scripts/runner.sh
-RUN chmod u+x /app/scripts/runner.sh
-EXPOSE 8083
+RUN chown -R ods:ods /app && chmod u+x /app/scripts/runner.sh
+USER ods
+ENV PATH "/home/ods/.local/bin:${PATH}"
+EXPOSE 8092
 ENTRYPOINT ["/bin/sh","-c","/app/scripts/runner.sh"]
