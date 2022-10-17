@@ -107,7 +107,11 @@ public class PmeterParser {
 
     private void processLineAndUpdateInflux(DataInflux dataInflux) {
         Iterable<Tag> tags = List.of(
-                Tag.of(DataInfluxConstants.CPU_ARCHITECTURE, dataInflux.getCpuArchitecture())
+                Tag.of(DataInfluxConstants.CPU_ARCHITECTURE, dataInflux.getCpuArchitecture()),
+                Tag.of(DataInfluxConstants.ODS_USER, dataInflux.getOdsUser()),
+                Tag.of(DataInfluxConstants.TRANSFER_NODE_NAME, dataInflux.getTransferNodeName()),
+                Tag.of(DataInfluxConstants.SOURCE_TYPE, dataInflux.getSourceType()),
+                Tag.of(DataInfluxConstants.DESTINATION_TYPE, dataInflux.getDestType())
         );
 
         if(Objects.nonNull(dataInflux.getCpu_frequency_current())) {
@@ -167,5 +171,30 @@ public class PmeterParser {
         if(Objects.nonNull(dataInflux.getRtt())) {
             Metrics.timer(DataInfluxConstants.RTT).record(dataInflux.getRtt().longValue(), TimeUnit.MILLISECONDS);
         }
+        if(Objects.nonNull(dataInflux.getConcurrency())) {
+            Metrics.gauge(DataInfluxConstants.CONCURRENCY, dataInflux.getConcurrency());
+        }
+        if(Objects.nonNull(dataInflux.getParallelism())) {
+            Metrics.gauge(DataInfluxConstants.PARALLELISM, dataInflux.getParallelism());
+        }
+        if(Objects.nonNull(dataInflux.getDataBytesSent())) {
+            Metrics.gauge(DataInfluxConstants.TOTAL_BYTES_SENT, dataInflux.getDataBytesSent());
+        }
+        if(Objects.nonNull(dataInflux.getThroughput())) {
+            Metrics.gauge(DataInfluxConstants.THROUGHPUT, dataInflux.getThroughput());
+        }
+        if(Objects.nonNull(dataInflux.getMemory())) {
+            Metrics.gauge(DataInfluxConstants.MEMORY, dataInflux.getMemory());
+        }
+        if(Objects.nonNull(dataInflux.getMaxMemory())) {
+            Metrics.gauge(DataInfluxConstants.MAX_MEMORY, dataInflux.getMaxMemory());
+        }
+        if(Objects.nonNull(dataInflux.getFreeMemory())) {
+            Metrics.gauge(DataInfluxConstants.FREE_MEMORY, dataInflux.getFreeMemory());
+        }
+        if(Objects.nonNull(dataInflux.getAllocatedMemory())) {
+            Metrics.gauge(DataInfluxConstants.ALLOCATED_MEMORY, dataInflux.getAllocatedMemory());
+        }
+
     }
 }
