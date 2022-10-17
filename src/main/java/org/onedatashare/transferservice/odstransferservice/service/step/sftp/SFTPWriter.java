@@ -13,6 +13,7 @@ import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.AfterWrite;
@@ -76,20 +77,21 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
     }
 
     @AfterStep
-    public void afterStep() {
+    public ExitStatus afterStep(StepExecution stepExecution) {
         for (ChannelSftp value : fileToChannel.values()) {
             if (value.isConnected()) {
                 value.disconnect();
             }
         }
         this.connectionPool.returnObject(this.session);
+        return stepExecution.getExitStatus();
     }
 
     public void establishChannel(String fileName) {
         try {
             ChannelSftp channelSftp = (ChannelSftp) this.session.openChannel("sftp");
             //https://stackoverflow.com/questions/8849240/why-when-i-transfer-a-file-through-sftp-it-takes-longer-than-ftp
-            channelSftp.setBulkRequests(256); //Not very sure if this should be set to the pipelining parameter or not I would assume so
+            channelSftp.setBulkRequests(Integer.parseInt(this.stepExecution.getJobParameters().getString(ODSConstants.PIPELINING))); //Not very sure if this should be set to the pipelining parameter or not I would assume so
             channelSftp.connect();
             this.cdIntoDir(channelSftp, this.dBasePath);
 //            ChannelSftp channelSftp = SftpUtility.createConnection(jsch, destCred);

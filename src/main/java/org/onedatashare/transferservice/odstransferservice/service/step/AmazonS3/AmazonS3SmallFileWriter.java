@@ -3,6 +3,7 @@ package org.onedatashare.transferservice.odstransferservice.service.step.AmazonS
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.PutObjectResult;
 import lombok.Setter;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.AWSSinglePutRequestMetaData;
@@ -14,6 +15,7 @@ import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.AfterWrite;
@@ -74,12 +76,6 @@ public class AmazonS3SmallFileWriter implements ItemWriter<DataChunk> {
     public void write(List<? extends DataChunk> items) throws Exception {
         this.fileName = items.get(0).getFileName();
         this.putObjectRequest.addAllChunks(items);
-        if(items.get(items.size()-1).getSize() != items.get(0).getSize()){
-            //last chunk
-            PutObjectRequest putObjectRequest = new PutObjectRequest(this.bucketName, Paths.get(this.destBasepath, fileName).toString(), this.putObjectRequest.condenseListToOneStream(this.fileInfo.getSize()), makeMetaDataForSinglePutRequest(this.fileInfo.getSize()));
-            client.putObject(putObjectRequest);
-            this.putObjectRequest.clear();
-        }
     }
 
     @AfterWrite
@@ -88,8 +84,14 @@ public class AmazonS3SmallFileWriter implements ItemWriter<DataChunk> {
     }
 
     @AfterStep
-    public void afterStep() {
+    public ExitStatus afterStep(StepExecution stepExecution) {
+        PutObjectRequest putObjectRequest = new PutObjectRequest(this.bucketName, Paths.get(this.destBasepath, fileName).toString(), this.putObjectRequest.condenseListToOneStream(this.fileInfo.getSize()), makeMetaDataForSinglePutRequest(this.fileInfo.getSize()));
+        PutObjectResult result = client.putObject(putObjectRequest);
+        logger.info("Pushed the final chunk of the small file");
+        logger.info(result.toString());
+        this.putObjectRequest.clear();
         this.pool.returnObject(this.client);
+        return stepExecution.getExitStatus();
     }
 
     public ObjectMetadata makeMetaDataForSinglePutRequest(long size) {

@@ -1,7 +1,9 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.sftp;
 
-import com.jcraft.jsch.*;
-import lombok.SneakyThrows;
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
+import com.jcraft.jsch.SftpException;
 import org.apache.commons.pool2.ObjectPool;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
@@ -60,32 +62,19 @@ public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChu
     }
 
     @Override
-    protected DataChunk doRead() throws Exception {
+    protected DataChunk doRead() throws IOException {
         FilePart thisChunk = this.filePartitioner.nextPart();
         if (thisChunk == null) return null;
-
-        return this.retryTemplate.execute((c) -> {
-            byte[] data = new byte[thisChunk.getSize()];
-            int totalRead = 0;//the total we have read in for this stream
-            while (totalRead < thisChunk.getSize()) {
-                int bytesRead = 0;
-                try {
-                    bytesRead = this.inputStream.read(data, totalRead, thisChunk.getSize() - totalRead);
-                    if (bytesRead == -1) return null;
-                    totalRead += bytesRead;
-                } catch(IOException ex) {
-                    logger.info("IOException occurred retrying the read operation. Attempting to retry chunk :{} ", thisChunk);
-                    doClose();
-                    doOpen();
-                    throw ex;
-                }
-            }
-            DataChunk chunk = ODSUtility.makeChunk(thisChunk.getSize(), data, this.fileIdx, this.chunksCreated, this.fileInfo.getId());
-            this.fileIdx += totalRead;
-            this.chunksCreated++;
-            logger.info(chunk.toString());
-            return chunk;
-        });
+        byte[] data = new byte[thisChunk.getSize()];
+        int totalRead = 0;//the total we have read in for this stream
+        while (totalRead < thisChunk.getSize()) {
+            int bytesRead = this.inputStream.read(data, totalRead, thisChunk.getSize() - totalRead);
+            if (bytesRead == -1) return null;
+            totalRead += bytesRead;
+        }
+        DataChunk chunk = ODSUtility.makeChunk(thisChunk.getSize(), data, thisChunk.getStart(), Long.valueOf(thisChunk.getPartIdx()).intValue(), this.fileInfo.getId());
+        logger.info(chunk.toString());
+        return chunk;
     }
 
     /**
@@ -96,14 +85,15 @@ public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChu
     @Override
     protected void doOpen() throws InterruptedException, JSchException, SftpException {
         this.session = this.connectionPool.borrowObject();
-        this.channelSftp = getChannelSftp();
+        this.channelSftp = (ChannelSftp) this.session.openChannel("sftp");
         this.channelSftp.setBulkRequests(this.pipeSize);
+        this.channelSftp.connect();
         this.inputStream = channelSftp.get(fileInfo.getPath());
         //clientCreateSourceStream();
     }
 
     @Override
-    protected void doClose() throws InterruptedException {
+    protected void doClose() {
         try {
             if (inputStream != null) inputStream.close();
         } catch (IOException e) {
@@ -113,38 +103,6 @@ public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChu
         this.connectionPool.returnObject(this.session);
         if (!this.session.isConnected()) {
             this.connectionPool.invalidateAndCreateNewSession(this.session);
-        }
-    }
-
-    public ChannelSftp getChannelSftp() throws JSchException, SftpException {
-        if (this.channelSftp == null || !this.channelSftp.isConnected() || this.channelSftp.isClosed()) {
-            this.channelSftp = (ChannelSftp) this.session.openChannel("sftp");
-            this.channelSftp.connect();
-            if(!sBasePath.isEmpty()){
-                this.channelSftp.cd(sBasePath);
-                logger.info("after cd into base path" + this.channelSftp.pwd());
-            }
-        }
-        return this.channelSftp;
-    }
-
-    @SneakyThrows
-    public void clientCreateSourceStream() {
-        logger.info("Inside clientCreateSourceStream for : " + this.fileInfo.getId());
-        JSch jsch = new JSch();
-        try {
-            ChannelSftp channelSftp = SftpUtility.createConnection(jsch, sourceCred);
-            logger.info("before pwd: ----" + channelSftp.pwd());
-            if (!sBasePath.isEmpty()) {
-                channelSftp.cd(sBasePath);
-                logger.info("after cd into base path" + channelSftp.pwd());
-            }
-            this.inputStream = channelSftp.get(fileInfo.getPath());
-        } catch (JSchException e) {
-            logger.error("Error in JSch end");
-            e.printStackTrace();
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 

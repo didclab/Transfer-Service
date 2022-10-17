@@ -18,6 +18,7 @@ import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.AfterWrite;
@@ -42,7 +43,6 @@ public class FTPWriter implements ItemWriter<DataChunk>, SetPool {
     OutputStream outputStream;
     private String dBasePath;
     AccountEndpointCredential destCred;
-    FileObject foDest;
     private FtpConnectionPool connectionPool;
     private FTPClient client;
     private StepExecution stepExecution;
@@ -75,7 +75,7 @@ public class FTPWriter implements ItemWriter<DataChunk>, SetPool {
     }
 
     @AfterStep
-    public void afterStep() {
+    public ExitStatus afterStep(StepExecution stepExecution) {
         logger.info("Inside FTP afterStep");
         try {
             if (outputStream != null) outputStream.close();
@@ -84,6 +84,7 @@ public class FTPWriter implements ItemWriter<DataChunk>, SetPool {
             ex.printStackTrace();
         }
         this.connectionPool.returnObject(this.client);
+        return stepExecution.getExitStatus();
     }
 
     private OutputStream getStream(String fileName) throws IOException {
@@ -98,28 +99,6 @@ public class FTPWriter implements ItemWriter<DataChunk>, SetPool {
             //ftpDest();
         }
         return this.outputStream;
-    }
-
-    public void ftpDest() {
-        logger.info("Creating ftpDest for :" + this.stepName);
-        try {
-            FileSystemOptions opts = FtpUtility.generateOpts();
-            StaticUserAuthenticator auth = new StaticUserAuthenticator(null, this.destCred.getUsername(), this.destCred.getSecret());
-            DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
-            String wholeThing;
-            if (!dBasePath.endsWith("/")) dBasePath += "/";
-            if (this.destCred.getUri().contains("ftp://")) {
-                wholeThing = this.destCred.getUri() + "/" + dBasePath + this.stepName;
-            } else {
-                wholeThing = "ftp://" + this.destCred.getUri() + "/" + dBasePath + this.stepName;
-            }
-            foDest = VFS.getManager().resolveFile(wholeThing, opts);
-            foDest.createFile();
-            outputStream = foDest.getContent().getOutputStream();
-        } catch (Exception ex) {
-            logger.error("Error in setting ftp connection...");
-            ex.printStackTrace();
-        }
     }
 
     @BeforeRead
