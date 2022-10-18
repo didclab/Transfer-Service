@@ -1,0 +1,51 @@
+name: Push to ECR
+on:
+  push:
+    branches:
+      - "release/**"
+jobs:
+  push_ecr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      
+      - name: Build Image 
+        env: 
+          AWS_ID: ${{ secrets.CI_AWS_ACCOUNT_ID }}
+        run: |
+          set +x
+          docker build -t ${AWSID}.dkr.ecr.us-east-2.amazonaws.com/ods_transfer_service:1.0.0
+          set -x
+      
+      - name: Setup AWS Access
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET }}
+          AWS_REGION: us-east-2
+          AWS_ID: ${{ secrets.CI_AWS_ACCOUNT_ID }}
+        run: |
+          pip3 install aws-sts-tool
+          set +x
+          aws_sts_tool ${AWS_ID} ${GITHUB_JOB}_${GITHUB_RUN_ID} ods_ci_ecr_push shell
+          set -x
+      
+      - name: Login to ECR and push
+        env:
+          AWS_ID: ${{ secrets.CI_AWS_ACCOUNT_ID }}
+        run: |
+          set +x
+          source credentials.sh
+
+          aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin ${AWS_ID}.dkr.ecr.us-east-2.amazonaws.com
+
+
+          docker push ${AWS_ID}.dkr.ecr.us-east-2.amazonaws.com/ods_transfer_service:1.0.0
+
+          set -x
+      
+      - name: Clean up
+        if: success() || failure()
+        run: |
+          rm credentials.sh
+  
