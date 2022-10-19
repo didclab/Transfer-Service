@@ -13,8 +13,11 @@ jobs:
       - name: Build Image 
         env: 
           AWS_ID: ${{ secrets.CI_AWS_ACCOUNT_ID }}
+          CERT_PATH: ${{ secrets.CERTPATH }}
         run: |
           set +x
+          sed -i "" "s|<path-to-config>|${CERT_PATH}|g" scripts/runner.sh
+          sed -i "" "s|<path-to-certs>|${CERT_PATH}|g" scripts/runner.sh
           docker build -t ${AWSID}.dkr.ecr.us-east-2.amazonaws.com/ods_transfer_service:1.0.0
           set -x
       
