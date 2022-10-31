@@ -1,6 +1,7 @@
 package org.onedatashare.transferservice.odstransferservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.util.concurrent.AtomicDouble;
 import io.micrometer.core.instrument.*;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.influx.InfluxConfig;
@@ -28,6 +29,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class PmeterParser {
@@ -59,6 +62,34 @@ public class PmeterParser {
 
     private CommandLine cmdLine;
 
+    private AtomicDouble memory = new AtomicDouble(0L);
+    private AtomicDouble cpuFrequencyMax = new AtomicDouble(0L);
+    private AtomicDouble cpuFrequencyMin = new AtomicDouble(0L);
+    private AtomicDouble activeCoreCount = new AtomicDouble(0L);
+    private AtomicDouble bytesReceived = new AtomicDouble(0L);
+    private AtomicDouble bytesSent = new AtomicDouble(0L);
+    private AtomicDouble dropIn = new AtomicDouble(0L);
+    private AtomicDouble dropOut = new AtomicDouble(0L);
+    private AtomicDouble energyConsumed = new AtomicDouble(0L);
+    private AtomicDouble errorIn = new AtomicDouble(0L);
+    private AtomicDouble errorOut = new AtomicDouble(0L);
+    private AtomicDouble linkCapacity = new AtomicDouble(0L);
+    private AtomicDouble nicMtu = new AtomicDouble(0L);
+    private AtomicDouble nicSpeed = new AtomicDouble(0L);
+    private AtomicDouble packetLossRate = new AtomicDouble(0L);
+    private AtomicDouble packetReceived = new AtomicDouble(0L);
+    private AtomicDouble packetSent = new AtomicDouble(0L);
+    private AtomicDouble concurrency = new AtomicDouble(0L);
+    private AtomicDouble parallelism = new AtomicDouble(0L);
+    private AtomicDouble totalBytesSent = new AtomicDouble(0L);
+    private AtomicDouble throughput = new AtomicDouble(0L);
+    private AtomicDouble maxMemory = new AtomicDouble(0L);
+    private AtomicDouble freeMemory = new AtomicDouble(0L);
+    private AtomicDouble allocatedMemory = new AtomicDouble(0L);
+
+    private AtomicLong rtt = new AtomicLong(0L);
+    private AtomicLong latency = new AtomicLong(0L);
+
     @PostConstruct
     public void postConstruct(){
         CommandLine cmdLine = CommandLine.parse(
@@ -67,6 +98,31 @@ public class PmeterParser {
                         measureCount, pmeterOptions, pmeterReportPath));
         this.cmdLine = cmdLine;
         logger.info(this.cmdLine.toString());
+
+        Metrics.gauge(DataInfluxConstants.MEMORY, memory);
+        Metrics.gauge(DataInfluxConstants.CPU_FREQUENCY_MAX, cpuFrequencyMax);
+        Metrics.gauge(DataInfluxConstants.CPU_FREQUENCY_MIN, cpuFrequencyMin);
+        Metrics.gauge(DataInfluxConstants.ACTIVE_CORE_COUNT, activeCoreCount);
+        Metrics.gauge(DataInfluxConstants.BYTES_RECEIVED, bytesReceived);
+        Metrics.gauge(DataInfluxConstants.BYTES_SENT, bytesSent);
+        Metrics.gauge(DataInfluxConstants.DROP_IN, dropIn);
+        Metrics.gauge(DataInfluxConstants.DROP_OUT, dropOut);
+        Metrics.gauge(DataInfluxConstants.ENERGY_CONSUMED, energyConsumed);
+        Metrics.gauge(DataInfluxConstants.ERROR_IN, errorIn);
+        Metrics.gauge(DataInfluxConstants.ERROR_OUT, errorOut);
+        Metrics.gauge(DataInfluxConstants.LINK_CAPACITY, linkCapacity);
+        Metrics.gauge(DataInfluxConstants.NIC_MTU, nicMtu);
+        Metrics.gauge(DataInfluxConstants.NIC_SPEED, nicSpeed);
+        Metrics.gauge(DataInfluxConstants.PACKET_LOSS_RATE, packetLossRate);
+        Metrics.gauge(DataInfluxConstants.PACKETS_RECEIVED, packetReceived);
+        Metrics.gauge(DataInfluxConstants.PACKETS_SENT, packetSent);
+        Metrics.gauge(DataInfluxConstants.CONCURRENCY, concurrency);
+        Metrics.gauge(DataInfluxConstants.PARALLELISM, parallelism);
+        Metrics.gauge(DataInfluxConstants.TOTAL_BYTES_SENT, totalBytesSent);
+        Metrics.gauge(DataInfluxConstants.THROUGHPUT, throughput);
+        Metrics.gauge(DataInfluxConstants.MAX_MEMORY, maxMemory);
+        Metrics.gauge(DataInfluxConstants.FREE_MEMORY, freeMemory);
+        Metrics.gauge(DataInfluxConstants.ALLOCATED_MEMORY, allocatedMemory);
     }
 
 
@@ -107,94 +163,70 @@ public class PmeterParser {
 
     private void processLineAndUpdateInflux(DataInflux dataInflux) {
         Iterable<Tag> tags = List.of(
-                Tag.of(DataInfluxConstants.CPU_ARCHITECTURE, dataInflux.getCpuArchitecture()),
-                Tag.of(DataInfluxConstants.ODS_USER, dataInflux.getOdsUser()),
-                Tag.of(DataInfluxConstants.TRANSFER_NODE_NAME, dataInflux.getTransferNodeName()),
-                Tag.of(DataInfluxConstants.SOURCE_TYPE, dataInflux.getSourceType()),
-                Tag.of(DataInfluxConstants.DESTINATION_TYPE, dataInflux.getDestType())
+                Tag.of(DataInfluxConstants.CPU_ARCHITECTURE, dataInflux.getCpuArchitecture())
+//                Tag.of(DataInfluxConstants.ODS_USER, dataInflux.getOdsUser()),
+//                Tag.of(DataInfluxConstants.TRANSFER_NODE_NAME, dataInflux.getTransferNodeName()),
+//                Tag.of(DataInfluxConstants.SOURCE_TYPE, dataInflux.getSourceType()),
+//                Tag.of(DataInfluxConstants.DESTINATION_TYPE, dataInflux.getDestType())
         );
 
-        if(Objects.nonNull(dataInflux.getCpu_frequency_current())) {
-            Metrics.gauge(DataInfluxConstants.CPU_FREQUENCY_CURRENT, dataInflux.getCpu_frequency_current());
+//        Metrics.summary(DataInfluxConstants.MEMORY, tags).record(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
+
+        memory.set(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
+        cpuFrequencyMax.set(dataInflux.getCpu_frequency_max());
+        cpuFrequencyMin.set(dataInflux.getCpu_frequency_min());
+        activeCoreCount.set(dataInflux.getCoreCount());
+        bytesReceived.set(dataInflux.getBytesReceived());
+        if (Objects.nonNull(dataInflux.getBytesSent())) {
+            bytesSent.set(dataInflux.getBytesSent());
         }
-        if(Objects.nonNull(dataInflux.getCpu_frequency_max())) {
-            Metrics.gauge(DataInfluxConstants.CPU_FREQUENCY_MAX, dataInflux.getCpu_frequency_max());
+
+        dropIn.set(dataInflux.getDropin());
+        dropOut.set(dataInflux.getDropout());
+        energyConsumed.set(dataInflux.getEnergyConsumed());
+        errorIn.set(dataInflux.getErrin());
+        errorOut.set(dataInflux.getErrout());
+        linkCapacity.set(dataInflux.getLinkCapacity());
+        nicMtu.set(dataInflux.getNicMtu());
+        nicSpeed.set(dataInflux.getNicSpeed());
+        packetLossRate.set(dataInflux.getPacketLossRate());
+        packetReceived.set(dataInflux.getPacketReceived());
+        packetSent.set(dataInflux.getPacketSent());
+
+        if (Objects.nonNull(dataInflux.getConcurrency())) {
+            concurrency.set(dataInflux.getConcurrency());
         }
-        if(Objects.nonNull(dataInflux.getCpu_frequency_min())) {
-            Metrics.gauge(DataInfluxConstants.CPU_FREQUENCY_MIN, dataInflux.getCpu_frequency_min());
+
+        if (Objects.nonNull(dataInflux.getParallelism())) {
+            parallelism.set(dataInflux.getParallelism());
         }
-        if(Objects.nonNull(dataInflux.getCoreCount())) {
-            Metrics.gauge(DataInfluxConstants.ACTIVE_CORE_COUNT, dataInflux.getCoreCount());
+
+        if (Objects.nonNull(dataInflux.getDataBytesSent())) {
+            totalBytesSent.set(dataInflux.getDataBytesSent());
         }
-        if(Objects.nonNull(dataInflux.getBytesReceived())) {
-            Metrics.gauge(DataInfluxConstants.BYTES_RECEIVED, dataInflux.getBytesReceived());
+
+        if (Objects.nonNull(dataInflux.getThroughput())) {
+            throughput.set(dataInflux.getThroughput());
         }
-        if(Objects.nonNull(dataInflux.getBytesSent())) {
-            Metrics.gauge(DataInfluxConstants.BYTES_SENT, dataInflux.getBytesSent());
+
+        if (Objects.nonNull(dataInflux.getMaxMemory())) {
+            maxMemory.set(dataInflux.getMaxMemory());
         }
-        if(Objects.nonNull(dataInflux.getDropin())) {
-            Metrics.gauge(DataInfluxConstants.DROP_IN, dataInflux.getDropin());
+
+        if (Objects.nonNull(dataInflux.getFreeMemory())) {
+            freeMemory.set(dataInflux.getFreeMemory());
         }
-        if(Objects.nonNull(dataInflux.getDropout())) {
-            Metrics.gauge(DataInfluxConstants.DROP_OUT, dataInflux.getDropout());
+
+        if (Objects.nonNull(dataInflux.getAllocatedMemory())) {
+            allocatedMemory.set(dataInflux.getAllocatedMemory());
         }
-        if(Objects.nonNull(dataInflux.getEnergyConsumed())) {
-            Metrics.gauge(DataInfluxConstants.ENERGY_CONSUMED, dataInflux.getEnergyConsumed());
-        }
-        if(Objects.nonNull(dataInflux.getErrin())) {
-            Metrics.gauge(DataInfluxConstants.ERROR_IN, dataInflux.getErrin());
-        }
-        if(Objects.nonNull(dataInflux.getErrout())) {
-            Metrics.gauge(DataInfluxConstants.ERROR_OUT, dataInflux.getErrout());
-        }
-        if(Objects.nonNull(dataInflux.getLatency())) {
-            Metrics.timer(DataInfluxConstants.LATENCY).record(dataInflux.getLatency().longValue(), TimeUnit.MILLISECONDS);
-        }
-        if(Objects.nonNull(dataInflux.getLinkCapacity())) {
-            Metrics.gauge(DataInfluxConstants.LINK_CAPACITY, dataInflux.getLinkCapacity());
-        }
-        if(Objects.nonNull(dataInflux.getNicMtu())) {
-            Metrics.gauge(DataInfluxConstants.NIC_MTU, dataInflux.getNicMtu());
-        }
-        if(Objects.nonNull(dataInflux.getNicSpeed())) {
-            Metrics.gauge(DataInfluxConstants.NIC_SPEED, dataInflux.getNicSpeed());
-        }
-        if(Objects.nonNull(dataInflux.getPacketLossRate())) {
-            Metrics.gauge(DataInfluxConstants.PACKET_LOSS_RATE, dataInflux.getPacketLossRate());
-        }
-        if(Objects.nonNull(dataInflux.getPacketReceived())) {
-            Metrics.gauge(DataInfluxConstants.PACKETS_RECEIVED, dataInflux.getPacketReceived());
-        }
-        if(Objects.nonNull(dataInflux.getPacketSent())) {
-            Metrics.gauge(DataInfluxConstants.PACKETS_SENT, dataInflux.getPacketSent());
-        }
+
         if(Objects.nonNull(dataInflux.getRtt())) {
             Metrics.timer(DataInfluxConstants.RTT).record(dataInflux.getRtt().longValue(), TimeUnit.MILLISECONDS);
         }
-        if(Objects.nonNull(dataInflux.getConcurrency())) {
-            Metrics.gauge(DataInfluxConstants.CONCURRENCY, dataInflux.getConcurrency());
-        }
-        if(Objects.nonNull(dataInflux.getParallelism())) {
-            Metrics.gauge(DataInfluxConstants.PARALLELISM, dataInflux.getParallelism());
-        }
-        if(Objects.nonNull(dataInflux.getDataBytesSent())) {
-            Metrics.gauge(DataInfluxConstants.TOTAL_BYTES_SENT, dataInflux.getDataBytesSent());
-        }
-        if(Objects.nonNull(dataInflux.getThroughput())) {
-            Metrics.gauge(DataInfluxConstants.THROUGHPUT, dataInflux.getThroughput());
-        }
-        if(Objects.nonNull(dataInflux.getMemory())) {
-            Metrics.gauge(DataInfluxConstants.MEMORY, dataInflux.getMemory());
-        }
-        if(Objects.nonNull(dataInflux.getMaxMemory())) {
-            Metrics.gauge(DataInfluxConstants.MAX_MEMORY, dataInflux.getMaxMemory());
-        }
-        if(Objects.nonNull(dataInflux.getFreeMemory())) {
-            Metrics.gauge(DataInfluxConstants.FREE_MEMORY, dataInflux.getFreeMemory());
-        }
-        if(Objects.nonNull(dataInflux.getAllocatedMemory())) {
-            Metrics.gauge(DataInfluxConstants.ALLOCATED_MEMORY, dataInflux.getAllocatedMemory());
-        }
 
+        if(Objects.nonNull(dataInflux.getLatency())) {
+            Metrics.timer(DataInfluxConstants.LATENCY).record(dataInflux.getLatency().longValue(), TimeUnit.MILLISECONDS);
+        }
     }
 }
