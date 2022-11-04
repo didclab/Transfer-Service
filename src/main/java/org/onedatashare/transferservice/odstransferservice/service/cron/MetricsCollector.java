@@ -1,5 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service.cron;
 
+import com.google.common.util.concurrent.AtomicDouble;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.influx.InfluxMeterRegistry;
@@ -76,11 +77,14 @@ public class MetricsCollector {
     private AtomicLong avgFileSize = new AtomicLong(0L);
     private AtomicLong pipeSize = new AtomicLong(0L);
 
+    private AtomicDouble throughput = new AtomicDouble(0L);
+
     @PostConstruct
     public void postConstruct() {
         Metrics.gauge(DataInfluxConstants.AVERAGE_JOB_SIZE, avgFileSize);
         Metrics.gauge(DataInfluxConstants.PIPELINING, pipeSize);
         Metrics.gauge(DataInfluxConstants.JOB_SIZE, jobSize);
+        Metrics.gauge(DataInfluxConstants.THROUGHPUT, throughput);
     }
 
     /**
@@ -115,6 +119,8 @@ public class MetricsCollector {
             jobSize.set(jobParameters.getLong(JOB_SIZE));
             avgFileSize.set(jobParameters.getLong(FILE_SIZE_AVG));
             pipeSize.set(jobParameters.getLong(PIPELINING));
+            throughput.set(this.previousParentMetric.getThroughput());
+
             sourceType = jobParameters.getString(SOURCE_CREDENTIAL_TYPE);
             destType = jobParameters.getString(DEST_CREDENTIAL_TYPE);
             ownerId = jobParameters.getString(OWNER_ID);

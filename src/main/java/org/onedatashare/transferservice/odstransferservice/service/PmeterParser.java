@@ -82,7 +82,6 @@ public class PmeterParser {
     private AtomicDouble concurrency = new AtomicDouble(0L);
     private AtomicDouble parallelism = new AtomicDouble(0L);
     private AtomicDouble totalBytesSent = new AtomicDouble(0L);
-    private AtomicDouble throughput = new AtomicDouble(0L);
     private AtomicDouble maxMemory = new AtomicDouble(0L);
     private AtomicDouble freeMemory = new AtomicDouble(0L);
     private AtomicDouble allocatedMemory = new AtomicDouble(0L);
@@ -119,10 +118,10 @@ public class PmeterParser {
         Metrics.gauge(DataInfluxConstants.CONCURRENCY, concurrency);
         Metrics.gauge(DataInfluxConstants.PARALLELISM, parallelism);
         Metrics.gauge(DataInfluxConstants.TOTAL_BYTES_SENT, totalBytesSent);
-        Metrics.gauge(DataInfluxConstants.THROUGHPUT, throughput);
         Metrics.gauge(DataInfluxConstants.MAX_MEMORY, maxMemory);
         Metrics.gauge(DataInfluxConstants.FREE_MEMORY, freeMemory);
         Metrics.gauge(DataInfluxConstants.ALLOCATED_MEMORY, allocatedMemory);
+
     }
 
 
@@ -181,7 +180,10 @@ public class PmeterParser {
             bytesSent.set(dataInflux.getBytesSent());
         }
 
-        dropIn.set(dataInflux.getDropin());
+        if (Objects.nonNull(dataInflux.getDropin())) {
+            dropIn.set(dataInflux.getDropin());
+        }
+
         dropOut.set(dataInflux.getDropout());
         energyConsumed.set(dataInflux.getEnergyConsumed());
         errorIn.set(dataInflux.getErrin());
@@ -203,10 +205,6 @@ public class PmeterParser {
 
         if (Objects.nonNull(dataInflux.getDataBytesSent())) {
             totalBytesSent.set(dataInflux.getDataBytesSent());
-        }
-
-        if (Objects.nonNull(dataInflux.getThroughput())) {
-            throughput.set(dataInflux.getThroughput());
         }
 
         if (Objects.nonNull(dataInflux.getMaxMemory())) {
