@@ -134,7 +134,7 @@ public class JobControl extends DefaultBatchConfigurer {
             }
             child.reader(getRightReader(request.getSource().getType(), file))
                     .writer(getRightWriter(request.getDestination().getType(), file));
-//            child.throttleLimit(64); //this value might allow concurrency to be dynamic.
+            child.throttleLimit(32); //this value might allow concurrency to be dynamic.
             logger.info("Creating step with id {} ", idForStep);
             flows.add(new FlowBuilder<Flow>(basePath + idForStep).start(child.build()).build());
         }

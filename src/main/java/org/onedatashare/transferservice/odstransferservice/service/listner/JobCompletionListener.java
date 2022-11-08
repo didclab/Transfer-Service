@@ -68,7 +68,7 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
 
     @Override
     public void beforeJob(JobExecution jobExecution) {
-        logger.info("BEFOR JOB-------------------present time--" + System.currentTimeMillis());
+        logger.info("BEFOR JOB-------------------present time--" + jobExecution.getStartTime());
         if(this.optimizerEnable){
             optimizerService.createOptimizerBlocking(new OptimizerCreateRequest(appName, maxConc, maxParallel, maxPipe));
             this.future = optimizerTaskScheduler.scheduleWithFixedDelay(optimizerCron, interval);
@@ -77,7 +77,7 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
 
     @Override
     public void afterJob(JobExecution jobExecution) {
-        logger.info("After JOB------------------present time--" + System.currentTimeMillis());
+        logger.info("After JOB------------------present time--" + jobExecution.getEndTime());
         connectionBag.closePools();
         threadPoolManager.clearJobPool();
         if(this.optimizerEnable){
