@@ -181,7 +181,7 @@ public class JobControl extends DefaultBatchConfigurer {
     protected ItemWriter<DataChunk> getRightWriter(EndpointType type, EntityInfo fileInfo) {
         switch (type) {
             case vfs:
-                VfsWriter vfsWriter = new VfsWriter(request.getDestination().getVfsDestCredential());
+                VfsWriter vfsWriter = new VfsWriter(request.getDestination().getVfsDestCredential(), fileInfo);
                 vfsWriter.setMetricsCollector(metricsCollector);
                 vfsWriter.setMetricCache(metricCache);
                 return vfsWriter;
