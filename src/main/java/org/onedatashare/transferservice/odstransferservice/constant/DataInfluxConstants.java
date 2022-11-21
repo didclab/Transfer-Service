@@ -47,4 +47,7 @@ public class DataInfluxConstants {
     public static final String ALLOCATED_MEMORY = "allocatedMemory";
     public static final String SOURCE_TYPE = "sourceType";
     public static final String DESTINATION_TYPE = "destType";
+    public static final String READ_THROUGHPUT = "read_throughput";
+    public static final String WRITE_THROUGHPUT = "write_throughput";
+
 }

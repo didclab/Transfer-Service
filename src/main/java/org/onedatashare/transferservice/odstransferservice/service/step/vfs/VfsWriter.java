@@ -11,10 +11,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
+import org.springframework.batch.core.annotation.AfterRead;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.AfterWrite;
 import org.springframework.batch.core.annotation.BeforeRead;
 import org.springframework.batch.core.annotation.BeforeStep;
+import org.springframework.batch.core.annotation.BeforeWrite;
 import org.springframework.batch.item.ItemWriter;
 
 import java.io.IOException;
@@ -38,7 +40,10 @@ public class VfsWriter implements ItemWriter<DataChunk> {
 
     @Setter
     MetricsCollector metricsCollector;
+    private LocalDateTime writeStartTime;
     private LocalDateTime readStartTime;
+
+
     @Getter
     @Setter
     private MetricCache metricCache;
@@ -97,22 +102,20 @@ public class VfsWriter implements ItemWriter<DataChunk> {
         }
     }
 
-    @BeforeRead
-    public void beforeRead() {
-        this.readStartTime = LocalDateTime.now();
-        logger.info("Before read start time {}", this.readStartTime);
+    @BeforeWrite
+    public void beforeWrite() {
+        this.writeStartTime = LocalDateTime.now();
+        logger.info("Before write start time {}", this.writeStartTime);
     }
-
 
     @Override
     public void write(List<? extends DataChunk> items) throws Exception {
         this.fileName = items.get(0).getFileName();
         this.filePath = Paths.get(this.filePath.toString(), this.fileName);
-        for (int i = 0; i < items.size(); i++) {
-            DataChunk chunk = items.get(i);
+        for (DataChunk chunk : items) {
             FileChannel channel = getChannel(chunk.getFileName());
             int bytesWritten = channel.write(ByteBuffer.wrap(chunk.getData()), chunk.getStartPosition());
-            logger.info("Wrote the amount of bytes: " + String.valueOf(bytesWritten));
+            logger.info("Wrote the amount of bytes: " + bytesWritten);
             if (chunk.getSize() != bytesWritten)
                 logger.info("Wrote " + bytesWritten + " but we should have written " + chunk.getSize());
         }
@@ -120,6 +123,18 @@ public class VfsWriter implements ItemWriter<DataChunk> {
 
     @AfterWrite
     public void afterWrite(List<? extends DataChunk> items) {
-        ODSConstants.metricsForOptimizerAndInflux(items, this.readStartTime, logger, stepExecution, metricCache, metricsCollector);
+        ODSConstants.metricsForOptimizerAndInflux(items, this.writeStartTime, logger, stepExecution, metricCache, metricsCollector);
+    }
+
+
+    @BeforeRead
+    public void beforeRead() {
+        this.readStartTime = LocalDateTime.now();
+        logger.info("Before read start time {}", this.readStartTime);
+    }
+
+    @AfterRead
+    public void afterRead(DataChunk item) {
+        ODSConstants.metricsForOptimizerAndInflux(item, this.readStartTime, logger, stepExecution, metricCache, metricsCollector);
     }
 }

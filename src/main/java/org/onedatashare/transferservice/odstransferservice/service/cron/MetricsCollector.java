@@ -25,7 +25,6 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
@@ -78,6 +77,8 @@ public class MetricsCollector {
     private AtomicLong pipeSize = new AtomicLong(0L);
 
     private AtomicDouble throughput = new AtomicDouble(0L);
+    private AtomicDouble readThroughput = new AtomicDouble(0L);
+    private AtomicDouble writeThroughput = new AtomicDouble(0L);
 
     @PostConstruct
     public void postConstruct() {
@@ -85,6 +86,9 @@ public class MetricsCollector {
         Metrics.gauge(DataInfluxConstants.PIPELINING, pipeSize);
         Metrics.gauge(DataInfluxConstants.JOB_SIZE, jobSize);
         Metrics.gauge(DataInfluxConstants.THROUGHPUT, throughput);
+
+        Metrics.gauge(DataInfluxConstants.READ_THROUGHPUT, readThroughput);
+        Metrics.gauge(DataInfluxConstants.WRITE_THROUGHPUT, writeThroughput);
     }
 
     /**
@@ -119,7 +123,10 @@ public class MetricsCollector {
             jobSize.set(jobParameters.getLong(JOB_SIZE));
             avgFileSize.set(jobParameters.getLong(FILE_SIZE_AVG));
             pipeSize.set(jobParameters.getLong(PIPELINING));
-            throughput.set(this.previousParentMetric.getThroughput());
+            throughput.set(this.previousParentMetric.getWriteThroughput());
+
+            readThroughput.set(this.previousParentMetric.getReadThroughput());
+            writeThroughput.set(this.previousParentMetric.getWriteThroughput());
 
             sourceType = jobParameters.getString(SOURCE_CREDENTIAL_TYPE);
             destType = jobParameters.getString(DEST_CREDENTIAL_TYPE);
@@ -132,7 +139,6 @@ public class MetricsCollector {
                     Tag.of(DataInfluxConstants.TRANSFER_NODE_NAME, this.appName)
             );
             Metrics.gauge(DataInfluxConstants.JOB_ID, tags, previousParentMetric.getJobId());
-
         }
         long freeMemory = Runtime.getRuntime().freeMemory();
         long maxMemory = Runtime.getRuntime().maxMemory();
@@ -142,7 +148,7 @@ public class MetricsCollector {
             dataInflux.setConcurrency(threadPoolManager.concurrencyCount()); // TODO Micrometer threadpool
             dataInflux.setParallelism(threadPoolManager.parallelismCount()); // TODO Micrometer threadpool
             dataInflux.setPipelining((int) pipeSize.get()); //if this is to be dynamic then we would need to adjust the clients.
-            dataInflux.setThroughput(this.previousParentMetric.getThroughput());
+            dataInflux.setThroughput(this.previousParentMetric.getWriteThroughput());
             dataInflux.setDataBytesSent(this.previousParentMetric.getBytesSent());
             dataInflux.setFreeMemory(freeMemory); // TODO - Leave it
             dataInflux.setMaxMemory(maxMemory); // TODO - JVM properties

@@ -1,6 +1,7 @@
 package org.onedatashare.transferservice.odstransferservice.constant;
 
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
+import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
 import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.slf4j.Logger;
@@ -73,24 +74,28 @@ public class ODSConstants {
     public static final String SEQUENTIAL_POOL_PREFIX = "sequential";
 
 
-    public static void metricsForOptimizerAndInflux(List<? extends DataChunk> items, LocalDateTime readStartTime, Logger logger, StepExecution stepExecution, MetricCache cache, MetricsCollector metricsCollector) {
+    public static void metricsForOptimizerAndInflux(List<? extends DataChunk> items, LocalDateTime writeStartTime, Logger logger, StepExecution stepExecution, MetricCache cache, MetricsCollector metricsCollector) {
         LocalDateTime writeEndTime = LocalDateTime.now();
         long totalBytes = items.stream().mapToLong(DataChunk::getSize).sum();
+        addMetricsForOptimizer(items, writeStartTime, logger, stepExecution, cache, writeEndTime, totalBytes);
+        metricsCollector.getInfluxCache().addMetric(stepExecution, totalBytes, writeStartTime, writeEndTime);
+    }
+
+    private static void addMetricsForOptimizer(List<? extends DataChunk> items, LocalDateTime readStartTime, Logger logger, StepExecution stepExecution, MetricCache cache, LocalDateTime writeEndTime, long totalBytes) {
         long timeItTookForThisList = Duration.between(readStartTime, writeEndTime).toMillis();
         double throughput = (double) totalBytes / timeItTookForThisList;
         throughput = throughput * 1000;
         logger.info("Thread name {} Total bytes {} with total time {} gives throughput {} bits/seconds", Thread.currentThread(), totalBytes, (timeItTookForThisList*1000), (throughput*8));
         cache.addMetric(Thread.currentThread().getName(), throughput, stepExecution, items.size());
-        metricsCollector.getInfluxCache().addMetric(stepExecution, items.size(), totalBytes, readStartTime, writeEndTime);
     }
 
-    public static void metricsForOptimizerAndInflux(DataChunk chunk, int pipeLining, LocalDateTime readStartTime, Logger logger, StepExecution stepExecution, MetricCache cache, MetricsCollector metricsCollector) {
-        LocalDateTime writeEndTime = LocalDateTime.now();
-        long timeItTookForThisList = Duration.between(readStartTime, writeEndTime).toSeconds();
+    public static void metricsForOptimizerAndInflux(DataChunk chunk, LocalDateTime startTime, Logger logger, StepExecution stepExecution, MetricCache cache, MetricsCollector metricsCollector) {
+        LocalDateTime endTime = LocalDateTime.now();
+        long timeItTookForThisList = Duration.between(startTime, endTime).toSeconds();
         double throughput = (double) chunk.getSize() / timeItTookForThisList;
-//        throughput = throughput * 1000;
+        throughput = throughput * 1000;
         logger.info("Thread name {} Total bytes {} with total time {} gives throughput {} bytes per second and pipelining {}", Thread.currentThread(), chunk.getSize(), timeItTookForThisList, throughput, stepExecution.getCommitCount());
-        cache.addMetric(Thread.currentThread().getName(), throughput, stepExecution, pipeLining);
-        metricsCollector.getInfluxCache().addMetric(stepExecution, pipeLining, chunk.getSize(), readStartTime, writeEndTime);
+//        cache.addMetric(Thread.currentThread().getName(), throughput, stepExecution, pipeLining);
+        metricsCollector.getInfluxCache().addMetric(stepExecution, chunk.getSize(), startTime, endTime, InfluxCache.ThroughputType.READER);
     }
 }
