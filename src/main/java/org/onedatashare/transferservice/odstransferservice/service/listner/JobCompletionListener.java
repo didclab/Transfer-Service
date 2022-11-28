@@ -1,5 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service.listner;
 
+import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.optimizer.OptimizerCreateRequest;
 import org.onedatashare.transferservice.odstransferservice.model.optimizer.OptimizerDeleteRequest;
 import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManager;
@@ -70,7 +71,8 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
     public void beforeJob(JobExecution jobExecution) {
         logger.info("BEFOR JOB-------------------present time--" + jobExecution.getStartTime());
         if(this.optimizerEnable){
-            optimizerService.createOptimizerBlocking(new OptimizerCreateRequest(appName, maxConc, maxParallel, maxPipe));
+            String optimizerType = jobExecution.getJobParameters().getString(ODSConstants.OPTIMIZER);
+            optimizerService.createOptimizerBlocking(new OptimizerCreateRequest(appName, maxConc, maxParallel, maxPipe, optimizerType));
             this.future = optimizerTaskScheduler.scheduleWithFixedDelay(optimizerCron, interval);
         }
     }

@@ -38,6 +38,7 @@ public class JobParamService {
         builder.addLong(RETRY, (long) request.getOptions().getRetry());
         builder.addString(APP_NAME, System.getenv("APP_NAME"));
         builder.addLong(PIPELINING, (long) request.getOptions().getPipeSize());
+        builder.addString(OPTIMIZER, request.getOptions().getOptimizer());
         long totalSize = 0L;
         for(EntityInfo fileInfo : request.getSource().getInfoList()){
             builder.addString(fileInfo.getId(), fileInfo.toString());
