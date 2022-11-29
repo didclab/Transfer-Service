@@ -32,6 +32,7 @@ public class ODSConstants {
     public static final String SOURCE_BASE_PATH = "sourceBasePath";
     public static final String DEST_BASE_PATH = "destBasePath";
     public static final String SOURCE = "source";
+    public static final String FILE_COUNT="fileCount";
     public static final String SOURCE_CREDENTIAL_ID = "sourceCredential";
     public static final String DEST_CREDENTIAL_ID = "destCredential";
     public static final String SOURCE_CREDENTIAL_TYPE = "sourceCredentialType";

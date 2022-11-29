@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 
 import java.util.DoubleSummaryStatistics;
 import java.util.HashMap;
@@ -38,6 +39,7 @@ public class OptimizerCron implements Runnable {
 
     @Override
     public void run() {
+        logger.info("Optimizer Cron running");
         if (!enableOptimizer) return;
         ConcurrentHashMap<String, Metric> cache = metricCache.threadCache;
         //running active job so we want to push and ask optimizer
@@ -57,10 +59,15 @@ public class OptimizerCron implements Runnable {
             }
             inputRequest.setChunkSize(0);
             inputRequest.setThroughput(stats.getAverage());
-            Optimizer optimizer = this.optimizerService.inputToOptimizerBlocking(inputRequest);
-            logger.info("Optimizer gave us {}", optimizer);
+            try{
+                logger.info("Inputting to Optimizer: {}", inputRequest);
+                Optimizer optimizer = this.optimizerService.inputToOptimizerBlocking(inputRequest);
+                logger.info("Optimizer gave us {}", optimizer);
+                this.threadPoolManager.applyOptimizer(optimizer.getConcurrency(), optimizer.getParallelism());
+            } catch (RestClientException e){
+                logger.error("Failed to get new parameters from the optimizer, continuing with current parameters");
+            }
             cache.clear();
-            this.threadPoolManager.applyOptimizer(optimizer.getConcurrency(), optimizer.getParallelism());
             //we need to add pipelining to protocols that support it.
         }
     }

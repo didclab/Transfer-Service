@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClientException;
 
 import java.util.concurrent.ScheduledFuture;
 
@@ -72,8 +73,14 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
         logger.info("BEFOR JOB-------------------present time--" + jobExecution.getStartTime());
         if(this.optimizerEnable){
             String optimizerType = jobExecution.getJobParameters().getString(ODSConstants.OPTIMIZER);
-            optimizerService.createOptimizerBlocking(new OptimizerCreateRequest(appName, maxConc, maxParallel, maxPipe, optimizerType));
-            this.future = optimizerTaskScheduler.scheduleWithFixedDelay(optimizerCron, interval);
+            long fileCount = jobExecution.getJobParameters().getLong(ODSConstants.FILE_COUNT);
+            OptimizerCreateRequest createRequest = new OptimizerCreateRequest(appName, maxConc, maxParallel, maxPipe, optimizerType, fileCount);
+            try{
+                optimizerService.createOptimizerBlocking(createRequest);
+                this.future = optimizerTaskScheduler.scheduleWithFixedDelay(optimizerCron, interval);
+            } catch (RestClientException e){
+                logger.error("Failed to create the optimizer: {}", createRequest);
+            }
         }
     }
 
@@ -83,9 +90,13 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
         connectionBag.closePools();
         threadPoolManager.clearJobPool();
         if(this.optimizerEnable){
-            this.future.cancel(true);
-            metricCache.clearCache();
-            optimizerService.deleteOptimizerBlocking(new OptimizerDeleteRequest(appName));
+            try{
+                optimizerService.deleteOptimizerBlocking(new OptimizerDeleteRequest(appName));
+                this.future.cancel(true);
+                metricCache.clearCache();
+            } catch (RestClientException e){
+                logger.error("Failed to delete optimizer: {}", appName);
+            }
         }
     }
 }

@@ -39,6 +39,7 @@ public class JobParamService {
         builder.addString(APP_NAME, System.getenv("APP_NAME"));
         builder.addLong(PIPELINING, (long) request.getOptions().getPipeSize());
         builder.addString(OPTIMIZER, request.getOptions().getOptimizer());
+        builder.addLong(FILE_COUNT, (long) request.getSource().getInfoList().size());
         long totalSize = 0L;
         for(EntityInfo fileInfo : request.getSource().getInfoList()){
             builder.addString(fileInfo.getId(), fileInfo.toString());

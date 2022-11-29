@@ -121,7 +121,7 @@ public class JobControl extends DefaultBatchConfigurer {
             infoList = vfsExpander.expandDirectory(infoList, basePath, this.request.getChunkSize());
             logger.info("File list: {}", infoList);
         }
-        for (EntityInfo file : infoList) {
+        infoList.stream().parallel().forEach(file -> {
             String idForStep = "";
             if (!file.getId().isEmpty()) {
                 idForStep = file.getId();
@@ -137,7 +137,7 @@ public class JobControl extends DefaultBatchConfigurer {
             child.throttleLimit(32); //this value might allow concurrency to be dynamic.
             logger.info("Creating step with id {} ", idForStep);
             flows.add(new FlowBuilder<Flow>(basePath + idForStep).start(child.build()).build());
-        }
+        });
         return flows;
     }
 
