@@ -118,7 +118,7 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
         }
         LocalDateTime endTime = LocalDateTime.now();
         logger.info("After Job  LocalDateTime.now(): {}", endTime);
-        logger.info("Total Job Time in seconds: {}", Duration.between(startTime, endTime));
+        logger.info("Total Job Time in seconds: {}", Duration.between(startTime, endTime).toSeconds());
     }
 }
 
