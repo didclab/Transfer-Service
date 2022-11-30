@@ -19,6 +19,10 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
 
 
@@ -50,7 +54,6 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
     @Value("${optimizer.interval}")
     Integer interval;
 
-    @Value("${optimizer.enable}")
     private boolean optimizerEnable;
 
     @Value("${transfer.service.parallelism}")
@@ -66,27 +69,42 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
     MetricCache metricCache;
 
     private ScheduledFuture<?> future;
+    LocalDateTime startTime;
 
 
     @Override
     public void beforeJob(JobExecution jobExecution) {
-        logger.info("BEFOR JOB-------------------present time--" + jobExecution.getStartTime());
-        if(this.optimizerEnable){
-            String optimizerType = jobExecution.getJobParameters().getString(ODSConstants.OPTIMIZER);
-            long fileCount = jobExecution.getJobParameters().getLong(ODSConstants.FILE_COUNT);
-            OptimizerCreateRequest createRequest = new OptimizerCreateRequest(appName, maxConc, maxParallel, maxPipe, optimizerType, fileCount);
-            try{
-                optimizerService.createOptimizerBlocking(createRequest);
-                this.future = optimizerTaskScheduler.scheduleWithFixedDelay(optimizerCron, interval);
-            } catch (RestClientException e){
-                logger.error("Failed to create the optimizer: {}", createRequest);
-            }
+        logger.info("*****Job Execution start Time***** : {}", jobExecution.getStartTime());
+        String optimizerType = jobExecution.getJobParameters().getString(ODSConstants.OPTIMIZER);
+        if(optimizerType == null){
+            this.optimizerEnable = false;
+            return;
+        }else if(optimizerType.isEmpty()){
+            this.optimizerEnable = false;
+            return;
+        }else if(!optimizerType.equals("BO") && !optimizerType.equals("VDA2C")){
+            this.optimizerEnable = false;
+            return;
         }
+        long fileCount = jobExecution.getJobParameters().getLong(ODSConstants.FILE_COUNT);
+        OptimizerCreateRequest createRequest = new OptimizerCreateRequest(appName, maxConc, maxParallel, maxPipe, optimizerType, fileCount);
+        try{
+            optimizerService.createOptimizerBlocking(createRequest);
+            this.future = optimizerTaskScheduler.scheduleWithFixedDelay(optimizerCron, interval);
+            logger.info("Starting optimizer thread: {}", optimizerType);
+            this.optimizerEnable = true;
+        } catch (RestClientException e){
+            logger.error("Failed to create the optimizer: {}", createRequest);
+            this.optimizerEnable=false;
+            this.future.cancel(true);
+        }
+        startTime = LocalDateTime.now();
+        logger.info("Before Job Start LocalDateTime.now(): {}", startTime);
     }
 
     @Override
     public void afterJob(JobExecution jobExecution) {
-        logger.info("After JOB------------------present time--" + jobExecution.getEndTime());
+        logger.info("*****Job Execution End Time**** : {}", jobExecution.getEndTime());
         connectionBag.closePools();
         threadPoolManager.clearJobPool();
         if(this.optimizerEnable){
@@ -98,6 +116,9 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
                 logger.error("Failed to delete optimizer: {}", appName);
             }
         }
+        LocalDateTime endTime = LocalDateTime.now();
+        logger.info("After Job  LocalDateTime.now(): {}", endTime);
+        logger.info("Total Job Time in seconds: {}", Duration.between(startTime, endTime));
     }
 }
 

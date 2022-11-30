@@ -40,7 +40,6 @@ public class OptimizerCron implements Runnable {
     @Override
     public void run() {
         logger.info("Optimizer Cron running");
-        if (!enableOptimizer) return;
         ConcurrentHashMap<String, Metric> cache = metricCache.threadCache;
         //running active job so we want to push and ask optimizer
         HashMap<String, ThreadPoolTaskExecutor> threadPoolMap = threadPoolManager.getExecutorHashmap();
