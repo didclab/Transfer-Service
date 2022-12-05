@@ -5,27 +5,21 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import lombok.Setter;
-import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.AWSSinglePutRequestMetaData;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.pools.S3ConnectionPool;
-import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
-import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
-import org.springframework.batch.core.annotation.AfterWrite;
-import org.springframework.batch.core.annotation.BeforeRead;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemWriter;
 
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
@@ -38,13 +32,7 @@ public class AmazonS3SmallFileWriter extends ODSBaseWriter implements ItemWriter
     Logger logger = LoggerFactory.getLogger(AmazonS3SmallFileWriter.class);
     private String destBasepath;
     private AWSSinglePutRequestMetaData putObjectRequest;
-    private StepExecution stepExecution;
     private AmazonS3 client;
-    private LocalDateTime readStartTime;
-    @Setter
-    MetricsCollector metricsCollector; //this is for influxdb and for running pmeter
-    @Setter
-    private MetricCache metricCache; //this is for the optimizer
     @Setter
     private S3ConnectionPool pool;
     private String bucketName;

@@ -49,14 +49,6 @@ public class SCPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, S
     private OutputStream outputStream;
     private InputStream inputStream;
     private byte[] socketBuffer;
-    private StepExecution stepExecution;
-    @Setter
-    private MetricsCollector metricsCollector;
-    @Getter
-    @Setter
-    private MetricCache metricCache;
-
-    private LocalDateTime readStartTime;
 
     public SCPWriter(EntityInfo fileInfo) {
         this.fileInfo = fileInfo;
@@ -71,6 +63,7 @@ public class SCPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, S
 
     @BeforeWrite
     public void beforeWrite(List<DataChunk> items) {
+        this.writeStartTime = LocalDateTime.now();
         this.open(items.get(0).getFileName(), this.fileInfo.getSize());
     }
 

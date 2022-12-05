@@ -1,30 +1,24 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.vfs;
 
-import lombok.Getter;
-import lombok.Setter;
-import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
-import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
-import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
-import org.springframework.batch.core.annotation.AfterRead;
 import org.springframework.batch.core.annotation.AfterStep;
-import org.springframework.batch.core.annotation.AfterWrite;
-import org.springframework.batch.core.annotation.BeforeRead;
 import org.springframework.batch.core.annotation.BeforeStep;
-import org.springframework.batch.core.annotation.BeforeWrite;
 import org.springframework.batch.item.ItemWriter;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.*;
-import java.time.LocalDateTime;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.List;
 
@@ -37,18 +31,6 @@ public class VfsWriter extends ODSBaseWriter implements ItemWriter<DataChunk> {
     String fileName;
     String destinationPath;
     Path filePath;
-    StepExecution stepExecution;
-
-    @Setter
-    MetricsCollector metricsCollector;
-    private LocalDateTime writeStartTime;
-    private LocalDateTime readStartTime;
-
-
-    @Getter
-    @Setter
-    private MetricCache metricCache;
-
 
     public VfsWriter(AccountEndpointCredential credential) {
         stepDrain = new HashMap<>();

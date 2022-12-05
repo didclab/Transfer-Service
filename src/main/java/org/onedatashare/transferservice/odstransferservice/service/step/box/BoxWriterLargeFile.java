@@ -4,28 +4,20 @@ import com.box.sdk.BoxAPIConnection;
 import com.box.sdk.BoxFileUploadSession;
 import com.box.sdk.BoxFileUploadSessionPart;
 import com.box.sdk.BoxFolder;
-import lombok.Getter;
-import lombok.Setter;
-import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
-import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
-import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
-import org.springframework.batch.core.annotation.AfterWrite;
-import org.springframework.batch.core.annotation.BeforeRead;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemWriter;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
@@ -48,14 +40,6 @@ public class BoxWriterLargeFile extends ODSBaseWriter implements ItemWriter<Data
     String destinationBasePath;
     BoxFolder boxFolder;
     Logger logger = LoggerFactory.getLogger(BoxWriterLargeFile.class);
-    StepExecution stepExecution;
-    @Setter
-    private MetricsCollector metricsCollector;
-    @Getter
-    @Setter
-    private MetricCache metricCache;
-
-    private LocalDateTime readStartTime;
 
     public BoxWriterLargeFile(OAuthEndpointCredential oAuthDestCredential, EntityInfo fileInfo) {
         this.boxAPIConnection = new BoxAPIConnection(oAuthDestCredential.getToken());

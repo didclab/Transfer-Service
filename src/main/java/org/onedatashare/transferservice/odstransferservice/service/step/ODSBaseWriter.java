@@ -25,8 +25,8 @@ public class ODSBaseWriter {
 
     @Setter
     MetricsCollector metricsCollector;
-    private LocalDateTime writeStartTime;
-    private LocalDateTime readStartTime;
+    protected LocalDateTime writeStartTime;
+    protected LocalDateTime readStartTime;
 
     @Getter
     @Setter
