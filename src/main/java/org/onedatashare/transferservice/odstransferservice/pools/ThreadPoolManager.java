@@ -1,14 +1,21 @@
 package org.onedatashare.transferservice.odstransferservice.pools;
 
+import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
+import io.micrometer.influx.InfluxMeterRegistry;
 import lombok.Getter;
+import org.onedatashare.transferservice.odstransferservice.constant.DataInfluxConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
@@ -20,6 +27,9 @@ public class ThreadPoolManager {
     HashMap<String, ThreadPoolTaskExecutor> executorHashmap;
 
     Logger logger = LoggerFactory.getLogger(ThreadPoolManager.class);
+
+    @Autowired
+    InfluxMeterRegistry registry;
 
     @PostConstruct
     public void createMap() {
@@ -36,6 +46,10 @@ public class ThreadPoolManager {
         if (this.executorHashmap == null) {
             this.executorHashmap = new HashMap<>();
         }
+        Iterable<Tag> tags = List.of();
+        ExecutorServiceMetrics serviceMetrics = new ExecutorServiceMetrics(executor.getThreadPoolExecutor(), executor.getThreadNamePrefix(), tags);
+        serviceMetrics.bindTo(registry);
+
         this.executorHashmap.put(prefix, executor);
         return executor;
     }

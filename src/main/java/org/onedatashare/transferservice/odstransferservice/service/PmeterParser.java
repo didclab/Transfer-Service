@@ -2,15 +2,12 @@ package org.onedatashare.transferservice.odstransferservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.AtomicDouble;
-import io.micrometer.core.instrument.*;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import io.micrometer.influx.InfluxConfig;
-import io.micrometer.influx.InfluxMeterRegistry;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Tag;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteWatchdog;
 import org.apache.commons.exec.PumpStreamHandler;
-import org.jetbrains.annotations.NotNull;
 import org.onedatashare.transferservice.odstransferservice.constant.DataInfluxConstants;
 import org.onedatashare.transferservice.odstransferservice.model.metrics.DataInflux;
 import org.slf4j.Logger;
@@ -29,7 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Service

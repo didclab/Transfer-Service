@@ -10,23 +10,23 @@ import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequ
 import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManager;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
-import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3LargeFileWriter;
+import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3LargeFileWriterODS;
 import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3Reader;
-import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3SmallFileWriter;
+import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3SmallFileWriterODS;
 import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxReader;
-import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxWriterLargeFile;
-import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxWriterSmallFile;
+import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxWriterLargeFileODS;
+import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxWriterSmallFileODS;
 import org.onedatashare.transferservice.odstransferservice.service.step.dropbox.DropBoxReader;
-import org.onedatashare.transferservice.odstransferservice.service.step.dropbox.DropBoxChunkedWriter;
+import org.onedatashare.transferservice.odstransferservice.service.step.dropbox.DropBoxChunkedWriterODS;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPReader;
-import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPWriter;
+import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPWriterODS;
 import org.onedatashare.transferservice.odstransferservice.service.step.http.HttpReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.scp.SCPReader;
-import org.onedatashare.transferservice.odstransferservice.service.step.scp.SCPWriter;
+import org.onedatashare.transferservice.odstransferservice.service.step.scp.SCPWriterODS;
 import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPReader;
-import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPWriter;
+import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPWriterODS;
 import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsReader;
-import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsWriter;
+import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsWriterODS;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -181,19 +181,19 @@ public class JobControl extends DefaultBatchConfigurer {
     protected ItemWriter<DataChunk> getRightWriter(EndpointType type, EntityInfo fileInfo) {
         switch (type) {
             case vfs:
-                VfsWriter vfsWriter = new VfsWriter(request.getDestination().getVfsDestCredential());
+                VfsWriterODS vfsWriter = new VfsWriterODS(request.getDestination().getVfsDestCredential());
                 vfsWriter.setMetricsCollector(metricsCollector);
                 vfsWriter.setMetricCache(metricCache);
                 return vfsWriter;
             case sftp:
-                SFTPWriter sftpWriter = new SFTPWriter(request.getDestination().getVfsDestCredential(), request.getOptions().getPipeSize());
+                SFTPWriterODS sftpWriter = new SFTPWriterODS(request.getDestination().getVfsDestCredential(), request.getOptions().getPipeSize());
                 sftpWriter.setPool(connectionBag.getSftpWriterPool());
                 sftpWriter.setMetricsCollector(metricsCollector);
                 sftpWriter.setMetricCache(metricCache);
                 sftpWriter.setRetryTemplate(retryTemplateForReaderAndWriter);
                 return sftpWriter;
             case ftp:
-                FTPWriter ftpWriter = new FTPWriter(request.getDestination().getVfsDestCredential());
+                FTPWriterODS ftpWriter = new FTPWriterODS(request.getDestination().getVfsDestCredential());
                 ftpWriter.setPool(connectionBag.getFtpWriterPool());
                 ftpWriter.setMetricsCollector(metricsCollector);
                 ftpWriter.setMetricCache(metricCache);
@@ -201,13 +201,13 @@ public class JobControl extends DefaultBatchConfigurer {
                 return ftpWriter;
             case s3:
                 if (fileInfo.getSize() < TWENTY_MB) {
-                    AmazonS3SmallFileWriter amazonS3SmallFileWriter = new AmazonS3SmallFileWriter(request.getDestination().getVfsDestCredential(), fileInfo);
+                    AmazonS3SmallFileWriterODS amazonS3SmallFileWriter = new AmazonS3SmallFileWriterODS(request.getDestination().getVfsDestCredential(), fileInfo);
                     amazonS3SmallFileWriter.setMetricCache(this.metricCache);
                     amazonS3SmallFileWriter.setMetricsCollector(metricsCollector);
                     amazonS3SmallFileWriter.setPool(connectionBag.getS3WriterPool());
                     return amazonS3SmallFileWriter;
                 } else {
-                    AmazonS3LargeFileWriter amazonS3LargeFileWriter = new AmazonS3LargeFileWriter(request.getDestination().getVfsDestCredential(), fileInfo);
+                    AmazonS3LargeFileWriterODS amazonS3LargeFileWriter = new AmazonS3LargeFileWriterODS(request.getDestination().getVfsDestCredential(), fileInfo);
                     amazonS3LargeFileWriter.setMetricCache(this.metricCache);
                     amazonS3LargeFileWriter.setMetricsCollector(metricsCollector);
                     amazonS3LargeFileWriter.setPool(connectionBag.getS3WriterPool());
@@ -215,23 +215,23 @@ public class JobControl extends DefaultBatchConfigurer {
                 }
             case box:
                 if (fileInfo.getSize() < TWENTY_MB) {
-                    BoxWriterSmallFile boxWriterSmallFile = new BoxWriterSmallFile(request.getDestination().getOauthDestCredential(), fileInfo);
+                    BoxWriterSmallFileODS boxWriterSmallFile = new BoxWriterSmallFileODS(request.getDestination().getOauthDestCredential(), fileInfo);
                     boxWriterSmallFile.setMetricsCollector(metricsCollector);
                     boxWriterSmallFile.setMetricCache(metricCache);
                     return boxWriterSmallFile;
                 } else {
-                    BoxWriterLargeFile boxWriterLargeFile = new BoxWriterLargeFile(request.getDestination().getOauthDestCredential(), fileInfo);
+                    BoxWriterLargeFileODS boxWriterLargeFile = new BoxWriterLargeFileODS(request.getDestination().getOauthDestCredential(), fileInfo);
                     boxWriterLargeFile.setMetricsCollector(metricsCollector);
                     boxWriterLargeFile.setMetricCache(metricCache);
                     return boxWriterLargeFile;
                 }
             case dropbox:
-                DropBoxChunkedWriter dropBoxChunkedWriter = new DropBoxChunkedWriter(request.getDestination().getOauthDestCredential());
+                DropBoxChunkedWriterODS dropBoxChunkedWriter = new DropBoxChunkedWriterODS(request.getDestination().getOauthDestCredential());
                 dropBoxChunkedWriter.setMetricsCollector(metricsCollector);
                 dropBoxChunkedWriter.setMetricCache(metricCache);
                 return dropBoxChunkedWriter;
             case scp:
-                SCPWriter scpWriter = new SCPWriter(fileInfo);
+                SCPWriterODS scpWriter = new SCPWriterODS(fileInfo);
                 scpWriter.setPool(connectionBag.getSftpWriterPool());
                 scpWriter.setMetricsCollector(metricsCollector);
                 scpWriter.setMetricCache(metricCache);

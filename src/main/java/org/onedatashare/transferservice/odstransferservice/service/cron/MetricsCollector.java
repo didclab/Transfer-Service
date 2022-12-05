@@ -148,7 +148,7 @@ public class MetricsCollector {
             dataInflux.setConcurrency(threadPoolManager.concurrencyCount()); // TODO Micrometer threadpool
             dataInflux.setParallelism(threadPoolManager.parallelismCount()); // TODO Micrometer threadpool
             dataInflux.setPipelining((int) pipeSize.get()); //if this is to be dynamic then we would need to adjust the clients.
-            dataInflux.setThroughput(this.previousParentMetric.getWriteThroughput());
+            dataInflux.setThroughput(Math.min(this.previousParentMetric.getWriteThroughput(), this.previousParentMetric.getReadThroughput()));
             dataInflux.setDataBytesSent(this.previousParentMetric.getBytesSent());
             dataInflux.setFreeMemory(freeMemory); // TODO - Leave it
             dataInflux.setMaxMemory(maxMemory); // TODO - JVM properties
