@@ -11,6 +11,7 @@ import org.onedatashare.transferservice.odstransferservice.model.credential.Acco
 import org.onedatashare.transferservice.odstransferservice.pools.JschSessionPool;
 import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
+import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.ExitStatus;
@@ -31,7 +32,7 @@ import java.util.List;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
 
-public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
+public class SFTPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, SetPool {
 
     private final int pipeSize;
     Logger logger = LoggerFactory.getLogger(SFTPWriter.class);
@@ -137,12 +138,6 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
         throw new IOException();
     }
 
-    @BeforeRead
-    public void beforeRead() {
-        this.readStartTime = LocalDateTime.now();
-        logger.info("Before write start time {}", this.readStartTime);
-    }
-
     @Override
     public void write(List<? extends DataChunk> items) throws Exception {
 //        String fileName = Paths.get(this.dBasePath, items.get(0).getFileName()).toString();
@@ -172,11 +167,6 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
             this.connectionPool.invalidateAndCreateNewSession(this.session);
             this.session = this.connectionPool.borrowObject();
         }
-    }
-
-    @AfterWrite
-    public void afterWrite(List<? extends DataChunk> items) {
-        ODSConstants.metricsForOptimizerAndInflux(items, this.readStartTime, logger, stepExecution, metricCache, metricsCollector);
     }
 
     @Override

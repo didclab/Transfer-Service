@@ -7,6 +7,7 @@ import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
+import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.ExitStatus;
@@ -29,7 +30,7 @@ import java.util.List;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
 
-public class VfsWriter implements ItemWriter<DataChunk> {
+public class VfsWriter extends ODSBaseWriter implements ItemWriter<DataChunk> {
     Logger logger = LoggerFactory.getLogger(VfsWriter.class);
     AccountEndpointCredential destCredential;
     HashMap<String, FileChannel> stepDrain;
@@ -102,12 +103,6 @@ public class VfsWriter implements ItemWriter<DataChunk> {
         }
     }
 
-    @BeforeWrite
-    public void beforeWrite() {
-        this.writeStartTime = LocalDateTime.now();
-        logger.info("Before write start time {}", this.writeStartTime);
-    }
-
     @Override
     public void write(List<? extends DataChunk> items) throws Exception {
         this.fileName = items.get(0).getFileName();
@@ -119,22 +114,5 @@ public class VfsWriter implements ItemWriter<DataChunk> {
             if (chunk.getSize() != bytesWritten)
                 logger.info("Wrote " + bytesWritten + " but we should have written " + chunk.getSize());
         }
-    }
-
-    @AfterWrite
-    public void afterWrite(List<? extends DataChunk> items) {
-        ODSConstants.metricsForOptimizerAndInflux(items, this.writeStartTime, logger, stepExecution, metricCache, metricsCollector);
-    }
-
-
-    @BeforeRead
-    public void beforeRead() {
-        this.readStartTime = LocalDateTime.now();
-        logger.info("Before read start time {}", this.readStartTime);
-    }
-
-    @AfterRead
-    public void afterRead(DataChunk item) {
-        ODSConstants.metricsForOptimizerAndInflux(item, this.readStartTime, logger, stepExecution, metricCache, metricsCollector);
     }
 }

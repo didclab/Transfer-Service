@@ -12,6 +12,7 @@ import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
+import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.ExitStatus;
@@ -36,7 +37,7 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
  * This class is responsible for writing to Box using the chunked upload approach & small file upload
  * Ideally we should separate this out I think.
  */
-public class BoxWriterLargeFile implements ItemWriter<DataChunk> {
+public class BoxWriterLargeFile extends ODSBaseWriter implements ItemWriter<DataChunk> {
 
     private final OAuthEndpointCredential credential;
     private BoxAPIConnection boxAPIConnection;
@@ -135,15 +136,4 @@ public class BoxWriterLargeFile implements ItemWriter<DataChunk> {
         }
         this.digestMap.put(fileName, digest);
     }
-
-    @BeforeRead
-    public void beforeRead() {
-        this.readStartTime = LocalDateTime.now();
-    }
-
-    @AfterWrite
-    public void afterWrite(List<? extends DataChunk> items) {
-        ODSConstants.metricsForOptimizerAndInflux(items, this.readStartTime, logger, stepExecution, metricCache, metricsCollector);
-    }
-
 }

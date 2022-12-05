@@ -16,6 +16,7 @@ import org.onedatashare.transferservice.odstransferservice.model.credential.Acco
 import org.onedatashare.transferservice.odstransferservice.pools.FtpConnectionPool;
 import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
+import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.ExitStatus;
@@ -35,7 +36,7 @@ import java.util.List;
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
 
 
-public class FTPWriter implements ItemWriter<DataChunk>, SetPool {
+public class FTPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, SetPool {
 
     Logger logger = LoggerFactory.getLogger(FTPWriter.class);
 
@@ -101,12 +102,6 @@ public class FTPWriter implements ItemWriter<DataChunk>, SetPool {
         return this.outputStream;
     }
 
-    @BeforeRead
-    public void beforeRead() {
-        this.readStartTime = LocalDateTime.now();
-        logger.info("Before write start time {}", this.readStartTime);
-    }
-
 
     public void write(List<? extends DataChunk> list) throws IOException {
         logger.info("Inside Writer---writing chunk of : " + list.get(0).getFileName());
@@ -132,12 +127,6 @@ public class FTPWriter implements ItemWriter<DataChunk>, SetPool {
         });
 
     }
-
-    @AfterWrite
-    public void afterWrite(List<? extends DataChunk> items) {
-        ODSConstants.metricsForOptimizerAndInflux(items, this.readStartTime, logger, stepExecution, metricCache, metricsCollector);
-    }
-
 
     @Override
     public void setPool(ObjectPool connectionPool) {

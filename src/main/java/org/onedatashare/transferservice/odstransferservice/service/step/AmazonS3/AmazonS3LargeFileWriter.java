@@ -13,6 +13,7 @@ import org.onedatashare.transferservice.odstransferservice.model.credential.Acco
 import org.onedatashare.transferservice.odstransferservice.pools.S3ConnectionPool;
 import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
+import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +29,7 @@ import java.util.List;
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
 
 
-public class AmazonS3LargeFileWriter implements ItemWriter<DataChunk> {
+public class AmazonS3LargeFileWriter extends ODSBaseWriter implements ItemWriter<DataChunk> {
 
     private final String bucketName;
     Logger logger = LoggerFactory.getLogger(AmazonS3LargeFileWriter.class);
@@ -65,11 +66,6 @@ public class AmazonS3LargeFileWriter implements ItemWriter<DataChunk> {
         this.client = this.pool.borrowObject();
     }
 
-    @BeforeRead
-    public void beforeRead() {
-        this.readStartTime = LocalDateTime.now();
-    }
-
     public synchronized void prepareS3Transfer(String fileName) {
         if (!this.firstPass) {
             this.metaData = new AWSMultiPartMetaData();
@@ -99,11 +95,6 @@ public class AmazonS3LargeFileWriter implements ItemWriter<DataChunk> {
             this.metaData.addUploadPart(uploadPartResult);
 //            ODSConstants.metricsForOptimizerAndInflux(currentChunk, items.size(), this.readStartTime, logger, stepExecution, metricCache, metricsCollector);
         }
-    }
-
-    @AfterWrite
-    public void afterWrite(List<? extends DataChunk> items) {
-        ODSConstants.metricsForOptimizerAndInflux(items, this.readStartTime, logger, stepExecution, metricCache, metricsCollector);
     }
 
     @AfterStep

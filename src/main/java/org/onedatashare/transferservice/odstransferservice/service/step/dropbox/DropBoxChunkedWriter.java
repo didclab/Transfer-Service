@@ -13,6 +13,7 @@ import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
+import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +32,7 @@ import java.util.List;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
 
-public class DropBoxChunkedWriter implements ItemWriter<DataChunk> {
+public class DropBoxChunkedWriter extends ODSBaseWriter implements ItemWriter<DataChunk> {
 
     private final OAuthEndpointCredential credential;
     private String destinationPath;
@@ -85,16 +86,4 @@ public class DropBoxChunkedWriter implements ItemWriter<DataChunk> {
         }
         this.fileName= items.get(0).getFileName();
     }
-
-    @BeforeRead
-    public void beforeRead() {
-        this.readStartTime = LocalDateTime.now();
-        logger.info("Before write start time {}", this.readStartTime);
-    }
-
-    @AfterWrite
-    public void afterWrite(List<? extends DataChunk> items) {
-        ODSConstants.metricsForOptimizerAndInflux(items, this.readStartTime, logger, stepExecution, metricCache, metricsCollector);
-    }
-
 }
