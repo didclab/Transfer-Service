@@ -58,32 +58,61 @@ public class PmeterParser {
 
     private CommandLine cmdLine;
 
-    private AtomicDouble memory = new AtomicDouble(0L);
-    private AtomicDouble cpuFrequencyMax = new AtomicDouble(0L);
-    private AtomicDouble cpuFrequencyMin = new AtomicDouble(0L);
-    private AtomicDouble activeCoreCount = new AtomicDouble(0L);
-    private AtomicDouble bytesReceived = new AtomicDouble(0L);
-    private AtomicDouble bytesSent = new AtomicDouble(0L);
-    private AtomicDouble dropIn = new AtomicDouble(0L);
-    private AtomicDouble dropOut = new AtomicDouble(0L);
-    private AtomicDouble energyConsumed = new AtomicDouble(0L);
-    private AtomicDouble errorIn = new AtomicDouble(0L);
-    private AtomicDouble errorOut = new AtomicDouble(0L);
-    private AtomicDouble linkCapacity = new AtomicDouble(0L);
-    private AtomicDouble nicMtu = new AtomicDouble(0L);
-    private AtomicDouble nicSpeed = new AtomicDouble(0L);
-    private AtomicDouble packetLossRate = new AtomicDouble(0L);
-    private AtomicDouble packetReceived = new AtomicDouble(0L);
-    private AtomicDouble packetSent = new AtomicDouble(0L);
-    private AtomicDouble concurrency = new AtomicDouble(0L);
-    private AtomicDouble parallelism = new AtomicDouble(0L);
-    private AtomicDouble totalBytesSent = new AtomicDouble(0L);
-    private AtomicDouble maxMemory = new AtomicDouble(0L);
-    private AtomicDouble freeMemory = new AtomicDouble(0L);
-    private AtomicDouble allocatedMemory = new AtomicDouble(0L);
+    private AtomicDouble memory;
+    private AtomicDouble cpuFrequencyMax;
+    private AtomicDouble cpuFrequencyMin;
+    private AtomicDouble activeCoreCount;
+    private AtomicDouble bytesReceived;
+    private AtomicDouble bytesSent;
+    private AtomicDouble dropIn;
+    private AtomicDouble dropOut;
+    private AtomicDouble energyConsumed;
+    private AtomicDouble errorIn;
+    private AtomicDouble errorOut;
+    private AtomicDouble linkCapacity;
+    private AtomicDouble nicMtu;
+    private AtomicDouble nicSpeed;
+    private AtomicDouble packetLossRate;
+    private AtomicDouble packetReceived;
+    private AtomicDouble packetSent;
+    private AtomicDouble concurrency;
+    private AtomicDouble parallelism;
+    private AtomicDouble totalBytesSent;
+    private AtomicDouble maxMemory;
+    private AtomicDouble freeMemory;
+    private AtomicDouble allocatedMemory;
 
-    private AtomicLong rtt = new AtomicLong(0L);
-    private AtomicLong latency = new AtomicLong(0L);
+    private AtomicLong rtt;
+    private AtomicLong latency;
+
+    public PmeterParser() {
+        memory = new AtomicDouble(0L);
+        cpuFrequencyMax = new AtomicDouble(0L);
+        cpuFrequencyMin = new AtomicDouble(0L);
+        activeCoreCount = new AtomicDouble(0L);
+        bytesReceived = new AtomicDouble(0L);
+        bytesSent = new AtomicDouble(0L);
+        dropIn = new AtomicDouble(0L);
+        dropOut = new AtomicDouble(0L);
+        energyConsumed = new AtomicDouble(0L);
+        errorIn = new AtomicDouble(0L);
+        errorOut = new AtomicDouble(0L);
+        linkCapacity = new AtomicDouble(0L);
+        nicMtu = new AtomicDouble(0L);
+        nicSpeed = new AtomicDouble(0L);
+        packetLossRate = new AtomicDouble(0L);
+        packetReceived = new AtomicDouble(0L);
+        packetSent = new AtomicDouble(0L);
+        concurrency = new AtomicDouble(0L);
+        parallelism = new AtomicDouble(0L);
+        totalBytesSent = new AtomicDouble(0L);
+        maxMemory = new AtomicDouble(0L);
+        freeMemory = new AtomicDouble(0L);
+        allocatedMemory = new AtomicDouble(0L);
+
+        rtt = new AtomicLong(0L);
+        latency = new AtomicLong(0L);
+    }
 
     @PostConstruct
     public void postConstruct(){
