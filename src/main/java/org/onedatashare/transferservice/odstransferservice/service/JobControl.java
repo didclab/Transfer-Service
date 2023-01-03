@@ -57,6 +57,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.TWENTY_MB;
@@ -121,7 +122,7 @@ public class JobControl extends DefaultBatchConfigurer {
             infoList = vfsExpander.expandDirectory(infoList, basePath, this.request.getChunkSize());
             logger.info("File list: {}", infoList);
         }
-        for (EntityInfo file : infoList) {
+        return infoList.stream().map(file -> {
             String idForStep = "";
             if (!file.getId().isEmpty()) {
                 idForStep = file.getId();
@@ -134,11 +135,12 @@ public class JobControl extends DefaultBatchConfigurer {
             }
             child.reader(getRightReader(request.getSource().getType(), file))
                     .writer(getRightWriter(request.getDestination().getType(), file));
-//            child.throttleLimit(64); //this value might allow concurrency to be dynamic.
+            child.throttleLimit(32); //this value might allow concurrency to be dynamic.
             logger.info("Creating step with id {} ", idForStep);
-            flows.add(new FlowBuilder<Flow>(basePath + idForStep).start(child.build()).build());
-        }
-        return flows;
+//            flows.add(new FlowBuilder<Flow>(basePath + idForStep).start(child.build()).build());
+            return new FlowBuilder<Flow>(basePath + idForStep).start(child.build()).build();
+        }).collect(Collectors.toList());
+//        return flows;
     }
 
     protected AbstractItemCountingItemStreamItemReader<DataChunk> getRightReader(EndpointType type, EntityInfo fileInfo) {
@@ -181,7 +183,7 @@ public class JobControl extends DefaultBatchConfigurer {
     protected ItemWriter<DataChunk> getRightWriter(EndpointType type, EntityInfo fileInfo) {
         switch (type) {
             case vfs:
-                VfsWriter vfsWriter = new VfsWriter(request.getDestination().getVfsDestCredential());
+                VfsWriter vfsWriter = new VfsWriter(request.getDestination().getVfsDestCredential(), fileInfo);
                 vfsWriter.setMetricsCollector(metricsCollector);
                 vfsWriter.setMetricCache(metricCache);
                 return vfsWriter;
