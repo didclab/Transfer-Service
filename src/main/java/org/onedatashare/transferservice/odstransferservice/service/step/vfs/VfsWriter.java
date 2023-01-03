@@ -20,7 +20,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.HashMap;
 import java.util.List;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
@@ -71,10 +70,10 @@ public class VfsWriter extends ODSBaseWriter implements ItemWriter<DataChunk> {
     public void write(List<? extends DataChunk> items) throws Exception {
         this.fileName = items.get(0).getFileName();
         this.filePath = Paths.get(this.filePath.toString(), this.fileName);
-        for (DataChunk chunk : items) {
-            FileChannel channel = getChannel(chunk.getFileName());
-            int bytesWritten = channel.write(ByteBuffer.wrap(chunk.getData()), chunk.getStartPosition());
-            logger.info("Wrote the amount of bytes: " + bytesWritten);
+        for (int i = 0; i < items.size(); i++) {
+            DataChunk chunk = items.get(i);
+            int bytesWritten = this.fileChannel.write(ByteBuffer.wrap(chunk.getData()), chunk.getStartPosition());
+            logger.info("Wrote the amount of bytes: " + String.valueOf(bytesWritten));
             if (chunk.getSize() != bytesWritten)
                 logger.info("Wrote " + bytesWritten + " but we should have written " + chunk.getSize());
             chunk = null;
