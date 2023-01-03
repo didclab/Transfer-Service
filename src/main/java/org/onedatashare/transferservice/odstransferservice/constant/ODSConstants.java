@@ -32,6 +32,7 @@ public class ODSConstants {
     public static final String SOURCE_BASE_PATH = "sourceBasePath";
     public static final String DEST_BASE_PATH = "destBasePath";
     public static final String SOURCE = "source";
+    public static final String FILE_COUNT="fileCount";
     public static final String SOURCE_CREDENTIAL_ID = "sourceCredential";
     public static final String DEST_CREDENTIAL_ID = "destCredential";
     public static final String SOURCE_CREDENTIAL_TYPE = "sourceCredentialType";
@@ -64,6 +65,7 @@ public class ODSConstants {
     public static final String CONCURRENCY = "concurrency";
     public static final String PARALLELISM = "parallelism";
     public static final String PIPELINING = "pipelining";
+    public static final String OPTIMIZER = "optimizer";
     public static final String RETRY = "retry";
     public static final String BYTES_READ = "bytesRead";
     public static final String BYTES_WRITTEN = "bytesWritten";

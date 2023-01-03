@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
+import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
@@ -28,10 +29,12 @@ import java.util.List;
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
 
 public class VfsWriter implements ItemWriter<DataChunk> {
+
+    private final EntityInfo fileInfo;
     Logger logger = LoggerFactory.getLogger(VfsWriter.class);
     AccountEndpointCredential destCredential;
-    HashMap<String, FileChannel> stepDrain;
     String fileName;
+    FileChannel fileChannel;
     String destinationPath;
     Path filePath;
     StepExecution stepExecution;
@@ -44,52 +47,30 @@ public class VfsWriter implements ItemWriter<DataChunk> {
     private MetricCache metricCache;
 
 
-    public VfsWriter(AccountEndpointCredential credential) {
-        stepDrain = new HashMap<>();
+    public VfsWriter(AccountEndpointCredential credential, EntityInfo fileInfo) {
         this.destCredential = credential;
+        this.fileInfo = fileInfo;
     }
 
     @BeforeStep
-    public void beforeStep(StepExecution stepExecution) {
+    public void beforeStep(StepExecution stepExecution) throws IOException {
         this.destinationPath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
         assert this.destinationPath != null;
-        this.filePath = Paths.get(this.destinationPath);
+        this.filePath = Paths.get(this.destinationPath, this.fileInfo.getId());
         this.stepExecution = stepExecution;
         prepareFile();
+        this.fileChannel = FileChannel.open(this.filePath, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
     }
 
     @AfterStep
-    public ExitStatus afterStep(StepExecution stepExecution) {
-        try {
-            if (this.stepDrain.containsKey(this.fileName)) {
-                this.stepDrain.get(this.fileName).close();
-            }
-        } catch (IOException exception) {
-            exception.printStackTrace();
-        }
+    public ExitStatus afterStep(StepExecution stepExecution) throws IOException {
+        this.fileChannel.close();
         return stepExecution.getExitStatus();
-    }
-
-    public FileChannel getChannel(String fileName) {
-        if (this.stepDrain.containsKey(fileName)) {
-            return this.stepDrain.get(fileName);
-        } else {
-            logger.info("creating file : " + fileName);
-            FileChannel channel = null;
-            try {
-                channel = FileChannel.open(this.filePath, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
-                stepDrain.put(fileName, channel);
-            } catch (IOException exception) {
-                logger.error("Not Able to open the channel");
-                exception.printStackTrace();
-            }
-            return channel;
-        }
     }
 
     public void prepareFile() {
         try {
-            Files.createDirectories(this.filePath);
+            Files.createDirectories(Paths.get(this.destinationPath));
         } catch (FileAlreadyExistsException fileAlreadyExistsException) {
             logger.warn("Already have the file with this path \t" + this.filePath.toString());
         } catch (IOException e) {
@@ -106,15 +87,13 @@ public class VfsWriter implements ItemWriter<DataChunk> {
 
     @Override
     public void write(List<? extends DataChunk> items) throws Exception {
-        this.fileName = items.get(0).getFileName();
-        this.filePath = Paths.get(this.filePath.toString(), this.fileName);
         for (int i = 0; i < items.size(); i++) {
             DataChunk chunk = items.get(i);
-            FileChannel channel = getChannel(chunk.getFileName());
-            int bytesWritten = channel.write(ByteBuffer.wrap(chunk.getData()), chunk.getStartPosition());
+            int bytesWritten = this.fileChannel.write(ByteBuffer.wrap(chunk.getData()), chunk.getStartPosition());
             logger.info("Wrote the amount of bytes: " + String.valueOf(bytesWritten));
             if (chunk.getSize() != bytesWritten)
                 logger.info("Wrote " + bytesWritten + " but we should have written " + chunk.getSize());
+            chunk = null;
         }
     }
 
