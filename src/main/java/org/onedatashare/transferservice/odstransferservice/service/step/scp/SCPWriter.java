@@ -14,9 +14,12 @@ import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.pools.JschSessionPool;
 import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
+import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
+import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.AfterWrite;
 import org.springframework.batch.core.annotation.BeforeRead;
 import org.springframework.batch.core.annotation.BeforeStep;
@@ -34,7 +37,7 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SCP_COMMAND_LOCAL_TO_REMOTE;
 import static org.onedatashare.transferservice.odstransferservice.service.step.sftp.SftpUtility.*;
 
-public class SCPWriter implements ItemWriter<DataChunk>, SetPool {
+public class SCPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, SetPool {
 
     private final EntityInfo fileInfo;
     Logger logger = LoggerFactory.getLogger(SCPWriter.class);
@@ -46,14 +49,6 @@ public class SCPWriter implements ItemWriter<DataChunk>, SetPool {
     private OutputStream outputStream;
     private InputStream inputStream;
     private byte[] socketBuffer;
-    private StepExecution stepExecution;
-    @Setter
-    private MetricsCollector metricsCollector;
-    @Getter
-    @Setter
-    private MetricCache metricCache;
-
-    private LocalDateTime readStartTime;
 
     public SCPWriter(EntityInfo fileInfo) {
         this.fileInfo = fileInfo;
@@ -68,6 +63,7 @@ public class SCPWriter implements ItemWriter<DataChunk>, SetPool {
 
     @BeforeWrite
     public void beforeWrite(List<DataChunk> items) {
+        this.writeStartTime = LocalDateTime.now();
         this.open(items.get(0).getFileName(), this.fileInfo.getSize());
     }
 
@@ -82,28 +78,26 @@ public class SCPWriter implements ItemWriter<DataChunk>, SetPool {
         items = null;
     }
 
-    @BeforeRead
-    public void beforeRead() {
-        this.readStartTime = LocalDateTime.now();
-        logger.info("Before write start time {}", this.readStartTime);
-    }
-
-    @AfterWrite
-    public void afterWrite(List<? extends DataChunk> items) throws IOException {
+    @AfterStep
+    public ExitStatus afterStep(StepExecution stepExecution) {
         socketBuffer = new byte[1024];
-        okAck(this.outputStream, this.socketBuffer);
-        if (this.outputStream != null) {
-            this.outputStream.close();
+        try {
+            okAck(this.outputStream, this.socketBuffer);
+            if (this.inputStream != null) {
+                this.inputStream.close();
+            }
+            if (this.outputStream != null) {
+                this.outputStream.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        if (this.inputStream != null) {
-            this.inputStream.close();
-        }
+
         this.scpChannel.disconnect();
         this.connectionPool.returnObject(this.session);
         logger.info("Shut Down SCPWriter ");
-        ODSConstants.metricsForOptimizerAndInflux(items, this.readStartTime, logger, stepExecution, metricCache, metricsCollector);
+        return ExitStatus.COMPLETED;
     }
-
 
     @Override
     public void setPool(ObjectPool connectionPool) {

@@ -9,7 +9,8 @@ import org.springframework.batch.core.StepExecution;
 @Data
 public class JobMetric {
     private Long jobId;
-    private Double throughput;
+    private Double writeThroughput;
+    private Double readThroughput;
     private String ownerId;
     private Integer concurrency;
     private Integer parallelism;
@@ -21,7 +22,8 @@ public class JobMetric {
 
     public JobMetric() {
         this.jobId = -1L;
-        this.throughput = 0.0;
+        this.writeThroughput = 0.0;
+        this.readThroughput = 0.0;
         this.ownerId = "";
         this.concurrency = 0;
         this.parallelism = 0;

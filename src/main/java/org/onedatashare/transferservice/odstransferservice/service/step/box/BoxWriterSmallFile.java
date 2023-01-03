@@ -3,32 +3,25 @@ package org.onedatashare.transferservice.odstransferservice.service.step.box;
 import com.box.sdk.BoxAPIConnection;
 import com.box.sdk.BoxFileUploadSession;
 import com.box.sdk.BoxFolder;
-import lombok.Getter;
-import lombok.Setter;
-import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.BoxSmallFileUpload;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
-import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
-import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
+import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
-import org.springframework.batch.core.annotation.AfterWrite;
-import org.springframework.batch.core.annotation.BeforeRead;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemWriter;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
 
-public class BoxWriterSmallFile implements ItemWriter<DataChunk> {
+public class BoxWriterSmallFile extends ODSBaseWriter implements ItemWriter<DataChunk> {
 
     private BoxAPIConnection boxAPIConnection;
     EntityInfo fileInfo;
@@ -38,14 +31,6 @@ public class BoxWriterSmallFile implements ItemWriter<DataChunk> {
     BoxSmallFileUpload smallFileUpload;
     private String fileName;
     Logger logger = LoggerFactory.getLogger(BoxWriterSmallFile.class);
-    StepExecution stepExecution;
-    @Setter
-    private MetricsCollector metricsCollector;
-    @Getter
-    @Setter
-    private MetricCache metricCache;
-
-    private LocalDateTime readStartTime;
 
     public BoxWriterSmallFile(OAuthEndpointCredential credential, EntityInfo fileInfo) {
         this.boxAPIConnection = new BoxAPIConnection(credential.getToken());
@@ -72,22 +57,11 @@ public class BoxWriterSmallFile implements ItemWriter<DataChunk> {
         return stepExecution.getExitStatus();
     }
 
-    @BeforeRead
-    public void beforeRead() {
-        this.readStartTime = LocalDateTime.now();
-        logger.info("Before write start time {}", this.readStartTime);
-    }
-
     @Override
     public void write(List<? extends DataChunk> items) throws Exception {
         this.fileName = items.get(0).getFileName();
         this.smallFileUpload.addAllChunks(items);
         logger.info("Small file box writer wrote {} DataChunks", items.size());
-    }
-
-    @AfterWrite
-    public void afterWrite(List<? extends DataChunk> items) {
-        ODSConstants.metricsForOptimizerAndInflux(items, this.readStartTime, logger, stepExecution, metricCache, metricsCollector);
     }
 
 }

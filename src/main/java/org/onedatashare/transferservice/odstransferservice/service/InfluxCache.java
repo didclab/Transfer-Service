@@ -27,20 +27,20 @@ public class InfluxCache {
     @Autowired
     ThreadPoolManager threadPoolManager;
 
+    public enum ThroughputType {
+        READER,
+        WRITER
+    }
+
     public InfluxCache() {
         this.threadCache = new ConcurrentHashMap<>();
     }
 
-    public void addMetric(StepExecution stepExecution, int size, long totalBytes, LocalDateTime readStartTime, LocalDateTime writeEndTime) {
+    public void addMetric(StepExecution stepExecution, long totalBytes, LocalDateTime startTime, LocalDateTime endTime, ThroughputType type) {
         if (!isJobMetricCollectionEnabled) {
             return;
         }
-        JobMetric jobMetric = this.threadCache.get(Thread.currentThread().getId());
-        if (jobMetric == null) {
-            jobMetric = new JobMetric();
-        }
-        totalBytes += jobMetric.getBytesSent();
-        long timeItTookForThisList = Duration.between(readStartTime, writeEndTime).toMillis() + jobMetric.getTotalTime();
+        JobMetric jobMetric = this.threadCache.getOrDefault(Thread.currentThread().getId(), new JobMetric());
         jobMetric.setStepExecution(stepExecution);
         jobMetric.setConcurrency(threadPoolManager.concurrencyCount());
         jobMetric.setParallelism(threadPoolManager.parallelismCount());
@@ -53,12 +53,30 @@ public class InfluxCache {
         jobMetric.setOwnerId(stepExecution.getJobExecution().getJobParameters().getString(OWNER_ID));
         jobMetric.setJobId(stepExecution.getJobExecutionId());
         jobMetric.setThreadId(Thread.currentThread().getId());
-        jobMetric.setBytesSent(totalBytes);
+        calculateThroughputAndUpdateCache(jobMetric, startTime, endTime, totalBytes, type);
+
+        this.threadCache.put(Thread.currentThread().getId(), jobMetric);
+    }
+
+    private void calculateThroughputAndUpdateCache(JobMetric jobMetric, LocalDateTime startTime, LocalDateTime endTime, long currentDataBytes, ThroughputType type) {
+        long timeItTookForThisList = Duration.between(startTime, endTime).toMillis() + jobMetric.getTotalTime();
         jobMetric.setTotalTime(timeItTookForThisList);
+
+        currentDataBytes += jobMetric.getBytesSent();
+        jobMetric.setBytesSent(currentDataBytes);
+
         double throughput = (double) jobMetric.getBytesSent() / jobMetric.getTotalTime();
         throughput = throughput * 1000;
-        jobMetric.setThroughput(throughput);
-        this.threadCache.put(Thread.currentThread().getId(), jobMetric);
+
+        if(type == ThroughputType.READER) {
+            jobMetric.setReadThroughput(throughput);
+        } else {
+            jobMetric.setWriteThroughput(throughput);
+        }
+    }
+
+    public void addMetric(StepExecution stepExecution, long totalBytes, LocalDateTime startTime, LocalDateTime endTime) {
+        addMetric(stepExecution, totalBytes, startTime, endTime, ThroughputType.WRITER);
     }
 
     public JobMetric someJobMetric() {
@@ -68,10 +86,10 @@ public class InfluxCache {
         JobMetric jobMetric = new JobMetric();
         while (itr.hasNext()) {
             jobMetric = (JobMetric) itr.next();
-            stats.accept(jobMetric.getThroughput());
+            stats.accept(jobMetric.getWriteThroughput());
             totalBytes += jobMetric.getBytesSent();
         }
-        jobMetric.setThroughput(stats.getAverage());
+        jobMetric.setWriteThroughput(stats.getAverage());
         jobMetric.setBytesSent(totalBytes);
         return jobMetric;
     }

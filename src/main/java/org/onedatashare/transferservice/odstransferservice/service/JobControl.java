@@ -16,8 +16,8 @@ import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3
 import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxWriterLargeFile;
 import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxWriterSmallFile;
-import org.onedatashare.transferservice.odstransferservice.service.step.dropbox.DropBoxReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.dropbox.DropBoxChunkedWriter;
+import org.onedatashare.transferservice.odstransferservice.service.step.dropbox.DropBoxReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.http.HttpReader;
@@ -115,7 +115,7 @@ public class JobControl extends DefaultBatchConfigurer {
         return jobLauncher;
     }
 
-
+    // TODO : parallelism - Kavi
     private List<Flow> createConcurrentFlow(List<EntityInfo> infoList, String basePath) {
         List<Flow> flows = new ArrayList<>();
         if (this.request.getSource().getType().equals(EndpointType.vfs)) {

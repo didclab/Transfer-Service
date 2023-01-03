@@ -1,23 +1,22 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.sftp;
 
-import com.jcraft.jsch.*;
-import lombok.Getter;
-import lombok.Setter;
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
+import com.jcraft.jsch.SftpException;
 import org.apache.commons.pool2.ObjectPool;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.pools.JschSessionPool;
-import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
-import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
+import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
-import org.springframework.batch.core.annotation.AfterWrite;
-import org.springframework.batch.core.annotation.BeforeRead;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.retry.support.RetryTemplate;
@@ -25,13 +24,12 @@ import org.springframework.retry.support.RetryTemplate;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
 
-public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
+public class SFTPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, SetPool {
 
     private final int pipeSize;
     Logger logger = LoggerFactory.getLogger(SFTPWriter.class);
@@ -43,15 +41,6 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
     private JschSessionPool connectionPool;
     private Session session;
     private OutputStream destination;
-
-    private StepExecution stepExecution;
-    @Setter
-    private MetricsCollector metricsCollector;
-    @Getter
-    @Setter
-    private MetricCache metricCache;
-
-    private LocalDateTime readStartTime;
 
     private RetryTemplate retryTemplate;
 
@@ -137,12 +126,6 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
         throw new IOException();
     }
 
-    @BeforeRead
-    public void beforeRead() {
-        this.readStartTime = LocalDateTime.now();
-        logger.info("Before write start time {}", this.readStartTime);
-    }
-
     @Override
     public void write(List<? extends DataChunk> items) throws Exception {
 //        String fileName = Paths.get(this.dBasePath, items.get(0).getFileName()).toString();
@@ -172,11 +155,6 @@ public class SFTPWriter implements ItemWriter<DataChunk>, SetPool {
             this.connectionPool.invalidateAndCreateNewSession(this.session);
             this.session = this.connectionPool.borrowObject();
         }
-    }
-
-    @AfterWrite
-    public void afterWrite(List<? extends DataChunk> items) {
-        ODSConstants.metricsForOptimizerAndInflux(items, this.readStartTime, logger, stepExecution, metricCache, metricsCollector);
     }
 
     @Override
