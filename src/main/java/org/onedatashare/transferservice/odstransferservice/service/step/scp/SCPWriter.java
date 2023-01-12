@@ -3,15 +3,13 @@ package org.onedatashare.transferservice.odstransferservice.service.step.scp;
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.SneakyThrows;
 import org.apache.commons.pool2.ObjectPool;
-import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.pools.JschSessionPool;
+import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
 import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
@@ -20,8 +18,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
-import org.springframework.batch.core.annotation.AfterWrite;
-import org.springframework.batch.core.annotation.BeforeRead;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.core.annotation.BeforeWrite;
 import org.springframework.batch.item.ItemWriter;
@@ -30,7 +26,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
@@ -50,7 +45,8 @@ public class SCPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, S
     private InputStream inputStream;
     private byte[] socketBuffer;
 
-    public SCPWriter(EntityInfo fileInfo) {
+    public SCPWriter(EntityInfo fileInfo, MetricsCollector metricsCollector, InfluxCache influxCache, MetricCache metricCache) {
+        super(metricsCollector, influxCache, metricCache);
         this.fileInfo = fileInfo;
     }
 
@@ -63,7 +59,6 @@ public class SCPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, S
 
     @BeforeWrite
     public void beforeWrite(List<DataChunk> items) {
-        this.writeStartTime = LocalDateTime.now();
         this.open(items.get(0).getFileName(), this.fileInfo.getSize());
     }
 

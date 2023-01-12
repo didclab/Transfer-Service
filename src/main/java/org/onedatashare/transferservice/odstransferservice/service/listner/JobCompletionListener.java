@@ -19,9 +19,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.*;
 import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
 
@@ -69,7 +67,6 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
     MetricCache metricCache;
 
     private ScheduledFuture<?> future;
-    LocalDateTime startTime;
 
 
     @Override
@@ -98,8 +95,7 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
             this.optimizerEnable=false;
             this.future.cancel(true);
         }
-        startTime = LocalDateTime.now();
-        logger.info("Before Job Start LocalDateTime.now(): {}", startTime);
+        logger.info("Before Job Start LocalDateTime.now(): {}", jobExecution.getStartTime());
     }
 
     @Override
@@ -116,8 +112,12 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
                 logger.error("Failed to delete optimizer: {}", appName);
             }
         }
-        LocalDateTime endTime = LocalDateTime.now();
-        logger.info("After Job  LocalDateTime.now(): {}", endTime);
+        LocalDateTime startTime = Instant.ofEpochMilli(jobExecution.getStartTime().getTime())
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
+        LocalDateTime endTime = Instant.ofEpochMilli(jobExecution.getEndTime().getTime())
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
         logger.info("Total Job Time in seconds: {}", Duration.between(startTime, endTime).toSeconds());
     }
 }

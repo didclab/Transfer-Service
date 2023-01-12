@@ -1,24 +1,26 @@
 package org.onedatashare.transferservice.odstransferservice.service.cron;
 
 import com.google.common.util.concurrent.AtomicDouble;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.config.MeterFilter;
 import io.micrometer.influx.InfluxMeterRegistry;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
-import org.onedatashare.transferservice.odstransferservice.DataRepository.InfluxIOService;
 import org.onedatashare.transferservice.odstransferservice.constant.DataInfluxConstants;
+import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.JobMetric;
 import org.onedatashare.transferservice.odstransferservice.model.metrics.DataInflux;
-import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManager;
-import org.onedatashare.transferservice.odstransferservice.service.ConnectionBag;
 import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
 import org.onedatashare.transferservice.odstransferservice.service.PmeterParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.batch.core.explore.JobExplorer;
+import org.springframework.batch.core.launch.JobOperator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -30,24 +32,16 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
 
-/**
- * @author deepika
- */
 @Service
 @Getter
 @Setter
 public class MetricsCollector {
 
+    private AtomicLong jobId;
     private Logger log = LoggerFactory.getLogger(MetricsCollector.class);
-
-    @Autowired
-    private InfluxIOService influxIOService;
 
     @Value("${pmeter.cron.run}")
     private boolean isCronEnabled;
-
-    @Value("${job.metrics.save}")
-    private boolean isJobMetricCollectionEnabled;
 
     @Value("${spring.application.name}")
     String appName;
@@ -55,40 +49,96 @@ public class MetricsCollector {
     @Value("${ods.user}")
     String odsUser;
 
-    @Autowired
     InfluxCache influxCache;
 
-    @Autowired
-    ThreadPoolManager threadPoolManager;
-
-    @Autowired
     PmeterParser pmeterParser;
 
-    JobMetric previousParentMetric;
+    InfluxMeterRegistry influxMeterRegistry;
 
-    @Autowired
-    ConnectionBag connectionBag;
+    JobExplorer jobExplorer;
 
-    @Autowired
-    InfluxMeterRegistry registry;
+    private AtomicLong memory;
+    private AtomicLong maxMemory;
+    private AtomicLong freeMemory;
+    private AtomicLong totalBytesSent;
+    private AtomicLong jobSize;
+    private AtomicLong avgFileSize;
+    private AtomicLong pipeSize;
+    private AtomicDouble throughput;
+    private AtomicDouble readThroughput;
+    private AtomicDouble writeThroughput;
+    private AtomicLong bytesDownloaded;
+    private AtomicLong bytesUploaded;
+//    private Iterable<Tag> tags;
 
-    private AtomicLong jobSize = new AtomicLong(0L);
-    private AtomicLong avgFileSize = new AtomicLong(0L);
-    private AtomicLong pipeSize = new AtomicLong(0L);
-
-    private AtomicDouble throughput = new AtomicDouble(0L);
-    private AtomicDouble readThroughput = new AtomicDouble(0L);
-    private AtomicDouble writeThroughput = new AtomicDouble(0L);
+    public MetricsCollector(InfluxMeterRegistry influxMeterRegistry, PmeterParser pmeterParser, InfluxCache influxCache, JobExplorer jobExplorer) {
+        this.totalBytesSent = new AtomicLong();
+        this.jobSize = new AtomicLong();
+        this.avgFileSize = new AtomicLong();
+        this.pipeSize = new AtomicLong();
+        this.throughput = new AtomicDouble();
+        this.readThroughput = new AtomicDouble();
+        this.writeThroughput = new AtomicDouble();
+        this.bytesDownloaded = new AtomicLong();
+        this.bytesUploaded = new AtomicLong();
+        this.influxMeterRegistry = influxMeterRegistry;
+        this.pmeterParser = pmeterParser;
+        this.influxCache = influxCache;
+        this.jobExplorer = jobExplorer;
+        this.memory = new AtomicLong();
+        this.maxMemory = new AtomicLong();
+        this.freeMemory = new AtomicLong();
+        this.jobId = new AtomicLong();
+//        this.tags = List.of(Tag.of(DataInfluxConstants.TRANSFER_NODE_NAME, this.appName));
+        log.info("InfluxCache has size of: {}", this.influxCache.threadCache.size());
+    }
 
     @PostConstruct
     public void postConstruct() {
-        Metrics.gauge(DataInfluxConstants.AVERAGE_JOB_SIZE, avgFileSize);
-        Metrics.gauge(DataInfluxConstants.PIPELINING, pipeSize);
-        Metrics.gauge(DataInfluxConstants.JOB_SIZE, jobSize);
-        Metrics.gauge(DataInfluxConstants.THROUGHPUT, throughput);
-
-        Metrics.gauge(DataInfluxConstants.READ_THROUGHPUT, readThroughput);
-        Metrics.gauge(DataInfluxConstants.WRITE_THROUGHPUT, writeThroughput);
+        Gauge.builder(DataInfluxConstants.READ_THROUGHPUT, readThroughput, AtomicDouble::doubleValue)
+                .description("The read throughput")
+                .baseUnit("bytes")
+                .register(influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.WRITE_THROUGHPUT, writeThroughput, AtomicDouble::doubleValue)
+                .description("The write throughput")
+                .baseUnit("bytes")
+                .register(influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.THROUGHPUT, throughput, AtomicDouble::doubleValue)
+                .description("The overall throughput")
+                .baseUnit("bytes")
+                .register(influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.AVERAGE_JOB_SIZE, avgFileSize, AtomicLong::longValue)
+                .description("Average file size of the job")
+                .baseUnit("bytes")
+                .register(influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.JOB_SIZE, jobSize, AtomicLong::longValue)
+                .description("Job size in bytes")
+                .baseUnit("bytes")
+                .register(influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.PIPELINING, pipeSize, AtomicLong::longValue)
+                .description("Average Pipelining for throughput")
+                .baseUnit("threads")
+                .register(influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.BYTES_DOWNLOADED, this.bytesDownloaded, AtomicLong::longValue)
+                .description("Bytes Downloaded since last time segment")
+                .baseUnit("bytes")
+                .register(influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.BYTES_UPLOADED, this.bytesUploaded, AtomicLong::longValue)
+                .description("Bytes Uploaded since last time segment")
+                .baseUnit("bytes")
+                .register(influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.MEMORY, this.memory, AtomicLong::longValue)
+                .description("Memory used by application.")
+                .register(influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.MAX_MEMORY, this.maxMemory, AtomicLong::longValue)
+                .description("Maximum memory to be used by JVM")
+                .register(influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.FREE_MEMORY, this.freeMemory, AtomicLong::longValue)
+                .description("The memory available to be consumed")
+                .register(influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.JOB_ID, this.jobId, AtomicLong::longValue)
+                .description("The JobId associated with this dimension")
+                .register(influxMeterRegistry);
     }
 
     /**
@@ -111,61 +161,34 @@ public class MetricsCollector {
         pmeterParser.runPmeter();
         List<DataInflux> pmeterMetrics = pmeterParser.parsePmeterOutput();
         if (pmeterMetrics.size() < 1) return;
-
-        this.previousParentMetric = influxCache.someJobMetric(); //this metrics throughput is the throughput of the whole map in influxCache.
-
-        String destType = "";
-        String sourceType = "";
-        String ownerId = this.odsUser;
-
-        if (this.previousParentMetric.getStepExecution() != null) {
-            JobParameters jobParameters = this.previousParentMetric.getStepExecution().getJobParameters();
+        JobMetric currentAggregateMetric = influxCache.aggregateMetric(); //this metrics throughput is the throughput of the whole map in influxCache.
+        if (currentAggregateMetric != null) {
+            JobParameters jobParameters = currentAggregateMetric.getStepExecution().getJobParameters();
             jobSize.set(jobParameters.getLong(JOB_SIZE));
             avgFileSize.set(jobParameters.getLong(FILE_SIZE_AVG));
-            pipeSize.set(jobParameters.getLong(PIPELINING));
-            throughput.set(this.previousParentMetric.getWriteThroughput());
-
-            readThroughput.set(this.previousParentMetric.getReadThroughput());
-            writeThroughput.set(this.previousParentMetric.getWriteThroughput());
-
-            sourceType = jobParameters.getString(SOURCE_CREDENTIAL_TYPE);
-            destType = jobParameters.getString(DEST_CREDENTIAL_TYPE);
-            ownerId = jobParameters.getString(OWNER_ID);
-
-            Iterable<Tag> tags = List.of((
-                    Tag.of(DataInfluxConstants.SOURCE_TYPE, sourceType)),
-                    Tag.of(DataInfluxConstants.DESTINATION_TYPE, destType),
-                    Tag.of(DataInfluxConstants.ODS_USER, ownerId),
-                    Tag.of(DataInfluxConstants.TRANSFER_NODE_NAME, this.appName)
-            );
-            Metrics.gauge(DataInfluxConstants.JOB_ID, tags, previousParentMetric.getJobId());
+            pipeSize.set(currentAggregateMetric.getPipelining());
+            readThroughput.set(currentAggregateMetric.getReadThroughput());
+            writeThroughput.set(currentAggregateMetric.getWriteThroughput());
+            throughput.set(Math.min(readThroughput.doubleValue(), writeThroughput.doubleValue()));
+            bytesDownloaded.set(currentAggregateMetric.getReadBytes());
+            bytesUploaded.set(currentAggregateMetric.getWrittenBytes());
+//            this.tags = List.of((
+//                            Tag.of(DataInfluxConstants.SOURCE_TYPE, jobParameters.getString(SOURCE_CREDENTIAL_TYPE))),
+//                    Tag.of(DataInfluxConstants.DESTINATION_TYPE, jobParameters.getString(DEST_CREDENTIAL_TYPE)),
+//                    Tag.of(DataInfluxConstants.ODS_USER, jobParameters.getString(OWNER_ID)),
+//                    Tag.of(DataInfluxConstants.TRANSFER_NODE_NAME, this.appName),
+//                    Tag.of(DataInfluxConstants.JOB_ID, String.valueOf(currentAggregateMetric.getStepExecution().getJobExecutionId())));
+            jobId.set(currentAggregateMetric.getStepExecution().getJobExecutionId());
+            this.influxCache.clearCache();
+        }else{
+            readThroughput.set(0);
+            writeThroughput.set(0);
+            throughput.set(0);
+            bytesDownloaded.set(0);
+            bytesUploaded.set(0);
         }
-        long freeMemory = Runtime.getRuntime().freeMemory();
-        long maxMemory = Runtime.getRuntime().maxMemory();
-        long allocatedMemory = Runtime.getRuntime().totalMemory();
-        long memory = allocatedMemory - freeMemory;
-        for (DataInflux dataInflux : pmeterMetrics) {
-            dataInflux.setConcurrency(threadPoolManager.concurrencyCount()); // TODO Micrometer threadpool
-            dataInflux.setParallelism(threadPoolManager.parallelismCount()); // TODO Micrometer threadpool
-            dataInflux.setPipelining((int) pipeSize.get()); //if this is to be dynamic then we would need to adjust the clients.
-            dataInflux.setThroughput(Math.min(this.previousParentMetric.getWriteThroughput(), this.previousParentMetric.getReadThroughput()));
-            dataInflux.setDataBytesSent(this.previousParentMetric.getBytesSent());
-            dataInflux.setFreeMemory(freeMemory); // TODO - Leave it
-            dataInflux.setMaxMemory(maxMemory); // TODO - JVM properties
-            dataInflux.setAllocatedMemory(allocatedMemory); // TODO - JVM properties
-            dataInflux.setMemory(memory); // TODO - JVM properties
-            dataInflux.setJobSize(jobSize.get());
-            dataInflux.setAvgFileSize(avgFileSize.get());
-            dataInflux.setCompression(connectionBag.isCompression());
-            dataInflux.setJobId(previousParentMetric.getJobId());
-            dataInflux.setOdsUser(ownerId);
-            dataInflux.setTransferNodeName(this.appName);
-            dataInflux.setSourceType(sourceType);
-            dataInflux.setDestType(destType);
-            log.info("Pushing DataInflux {}", dataInflux);
-        }
-        influxIOService.insertDataPoints(pmeterMetrics);
-        this.influxCache.clearCache();
+        this.memory.set(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
+        this.maxMemory.set(Runtime.getRuntime().maxMemory());
+        this.freeMemory.set(Runtime.getRuntime().freeMemory());
     }
-
 }

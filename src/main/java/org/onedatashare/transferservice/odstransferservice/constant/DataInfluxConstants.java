@@ -12,6 +12,9 @@ public class DataInfluxConstants {
     public static final String CPU_ARCHITECTURE = "cpu_arch";
     public static final String PACKET_LOSS_RATE = "packet_loss_rate";
     public static final String LINK_CAPACITY = "link_capacity";
+    public static final String BYTES_DOWNLOADED = "bytesDownloaded";
+    public static final String BYTES_UPLOADED = "bytesUploaded";
+
     // TODO - remove delta
     public static final String BYTES_SENT_DELTA = "bytes_sent_delta";
     public static final String BYTES_RECEIVED_DELTA = "bytes_received_delta";
@@ -41,7 +44,7 @@ public class DataInfluxConstants {
     public static final String MAX_MEMORY = "maxMemory";
     public static final String FREE_MEMORY = "freeMemory";
     public static final String JOB_SIZE = "jobSize";
-    public static final String AVERAGE_JOB_SIZE = "avgJobSize";
+    public static final String AVERAGE_JOB_SIZE = "avgFileSize";
     public static final String TOTAL_BYTES_SENT = "totalBytesSent";
     public static final String COMPRESSION = "compression";
     public static final String ALLOCATED_MEMORY = "allocatedMemory";

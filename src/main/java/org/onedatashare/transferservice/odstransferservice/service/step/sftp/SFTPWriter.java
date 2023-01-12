@@ -11,6 +11,9 @@ import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.pools.JschSessionPool;
+import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
+import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
+import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +34,6 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
 
 public class SFTPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, SetPool {
 
-    private final int pipeSize;
     Logger logger = LoggerFactory.getLogger(SFTPWriter.class);
 
     private String dBasePath;
@@ -44,11 +46,11 @@ public class SFTPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, 
 
     private RetryTemplate retryTemplate;
 
-    public SFTPWriter(AccountEndpointCredential destCred, int pipeSize) {
+    public SFTPWriter(AccountEndpointCredential destCred, MetricsCollector metricsCollector, InfluxCache influxCache, MetricCache metricCache) {
+        super(metricsCollector, influxCache, metricCache);
         fileToChannel = new HashMap<>();
         this.destCred = destCred;
         jsch = new JSch();
-        this.pipeSize = pipeSize;
     }
 
     @BeforeStep

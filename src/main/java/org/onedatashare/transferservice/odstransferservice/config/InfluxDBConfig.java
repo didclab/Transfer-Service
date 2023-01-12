@@ -24,7 +24,7 @@ public class InfluxDBConfig {
     private String influxUri;
 
     @Bean
-    public InfluxMeterRegistry getRegistry() {
+    public InfluxMeterRegistry influxMeterRegistry() {
         InfluxConfig config = new InfluxConfig() {
             @Override
             public String org() {
@@ -53,7 +53,8 @@ public class InfluxDBConfig {
                 return null;
             }
         };
-        InfluxMeterRegistry registry = new InfluxMeterRegistry(config, Clock.SYSTEM);
+        InfluxMeterRegistry registry = InfluxMeterRegistry.builder(config)
+                        .clock(Clock.SYSTEM).build();
         Metrics.addRegistry(registry);
         return registry;
     }

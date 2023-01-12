@@ -1,6 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.pools;
 
-import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 import io.micrometer.influx.InfluxMeterRegistry;
@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
@@ -29,12 +30,18 @@ public class ThreadPoolManager {
     Logger logger = LoggerFactory.getLogger(ThreadPoolManager.class);
 
     @Autowired
-    InfluxMeterRegistry registry;
+    InfluxMeterRegistry influxMeterRegistry;
 
     @PostConstruct
     public void createMap() {
         this.executorHashmap = new HashMap<>();
         logger.info("creating executor hashmap");
+        Gauge.builder(DataInfluxConstants.CONCURRENCY, this::concurrencyCount)
+                .baseUnit("threads")
+                .register(this.influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.PARALLELISM, this::parallelismCount)
+                .baseUnit("threads")
+                .register(this.influxMeterRegistry);
     }
 
     public ThreadPoolTaskExecutor createThreadPool(int corePoolSize, String prefix) {
@@ -48,7 +55,7 @@ public class ThreadPoolManager {
         }
         Iterable<Tag> tags = List.of();
         ExecutorServiceMetrics serviceMetrics = new ExecutorServiceMetrics(executor.getThreadPoolExecutor(), executor.getThreadNamePrefix(), tags);
-        serviceMetrics.bindTo(registry);
+        serviceMetrics.bindTo(influxMeterRegistry);
 
         this.executorHashmap.put(prefix, executor);
         return executor;

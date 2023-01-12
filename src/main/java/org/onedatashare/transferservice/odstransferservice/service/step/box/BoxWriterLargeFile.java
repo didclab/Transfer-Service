@@ -7,6 +7,9 @@ import com.box.sdk.BoxFolder;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
+import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
+import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +44,8 @@ public class BoxWriterLargeFile extends ODSBaseWriter implements ItemWriter<Data
     BoxFolder boxFolder;
     Logger logger = LoggerFactory.getLogger(BoxWriterLargeFile.class);
 
-    public BoxWriterLargeFile(OAuthEndpointCredential oAuthDestCredential, EntityInfo fileInfo) {
+    public BoxWriterLargeFile(OAuthEndpointCredential oAuthDestCredential, EntityInfo fileInfo, MetricsCollector metricsCollector, InfluxCache influxCache, MetricCache metricCache) {
+        super(metricsCollector, influxCache, metricCache);
         this.boxAPIConnection = new BoxAPIConnection(oAuthDestCredential.getToken());
         this.fileInfo = fileInfo;
         this.fileMap = new HashMap<>();

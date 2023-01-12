@@ -10,6 +10,9 @@ import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.pools.S3ConnectionPool;
+import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
+import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
+import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +41,8 @@ public class AmazonS3SmallFileWriter extends ODSBaseWriter implements ItemWriter
     private String bucketName;
 
 
-    public AmazonS3SmallFileWriter(AccountEndpointCredential destCredential, EntityInfo fileInfo) {
+    public AmazonS3SmallFileWriter(AccountEndpointCredential destCredential, EntityInfo fileInfo, MetricsCollector metricsCollector, InfluxCache influxCache, MetricCache metricCache) {
+        super(metricsCollector, influxCache, metricCache);
         this.fileName = fileInfo.getId();
         this.fileInfo = fileInfo;
         this.destCredential = destCredential;

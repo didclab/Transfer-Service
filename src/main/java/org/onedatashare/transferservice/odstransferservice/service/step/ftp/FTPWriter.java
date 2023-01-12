@@ -3,9 +3,13 @@ package org.onedatashare.transferservice.odstransferservice.service.step.ftp;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.pool2.ObjectPool;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
+import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.pools.FtpConnectionPool;
+import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
+import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
+import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +29,7 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
 
 public class FTPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, SetPool {
 
+    private final EntityInfo fileInfo;
     Logger logger = LoggerFactory.getLogger(FTPWriter.class);
 
     String stepName;
@@ -35,8 +40,10 @@ public class FTPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, S
     private FTPClient client;
     private RetryTemplate retryTemplate;
 
-    public FTPWriter(AccountEndpointCredential destCred) {
+    public FTPWriter(AccountEndpointCredential destCred, EntityInfo fileInfo, MetricsCollector metricsCollector, InfluxCache influxCache, MetricCache metricCache) {
+        super(metricsCollector, influxCache, metricCache);
         this.destCred = destCred;
+        this.fileInfo = fileInfo;
     }
 
     @BeforeStep
@@ -67,11 +74,11 @@ public class FTPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, S
     }
 
     private OutputStream getStream(String fileName) throws IOException {
-        if(outputStream == null){
+        if (outputStream == null) {
             try {
-                this.outputStream = this.client.storeFileStream(this.dBasePath+"/"+fileName);
+                this.outputStream = this.client.storeFileStream(this.dBasePath + "/" + fileName);
             } catch (IOException ex) {
-                logger.error("Error in opening outputstream in FTP Writer for file : {}", fileName );
+                logger.error("Error in opening outputstream in FTP Writer for file : {}", fileName);
                 throw ex;
             }
             logger.info("Stream not present...creating OutputStream for " + fileName);

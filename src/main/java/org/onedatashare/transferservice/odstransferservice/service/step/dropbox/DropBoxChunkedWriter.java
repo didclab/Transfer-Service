@@ -8,6 +8,9 @@ import com.dropbox.core.v2.files.UploadSessionCursor;
 import lombok.SneakyThrows;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
+import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
+import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
@@ -36,7 +39,8 @@ public class DropBoxChunkedWriter extends ODSBaseWriter implements ItemWriter<Da
     private FileMetadata uploadSessionFinishUploader;
 
 
-    public DropBoxChunkedWriter(OAuthEndpointCredential credential) {
+    public DropBoxChunkedWriter(OAuthEndpointCredential credential, MetricsCollector metricsCollector, InfluxCache influxCache, MetricCache metricCache) {
+        super(metricsCollector, influxCache, metricCache);
         this.credential = credential;
     }
 

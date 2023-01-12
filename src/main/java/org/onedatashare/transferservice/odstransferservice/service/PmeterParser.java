@@ -1,9 +1,14 @@
 package org.onedatashare.transferservice.odstransferservice.service;
 
+import com.amazonaws.util.EC2MetadataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.AtomicDouble;
+import com.netflix.discovery.converters.Auto;
+import com.netflix.servo.util.ThreadCpuStats;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
+import io.micrometer.influx.InfluxMeterRegistry;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteWatchdog;
@@ -17,8 +22,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import javax.management.MXBean;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.OperatingSystemMXBean;
+import java.net.NetworkInterface;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -26,6 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Service
@@ -35,11 +45,6 @@ public class PmeterParser {
 
     Logger logger = LoggerFactory.getLogger(PmeterParser.class);
 
-    @Autowired
-    ObjectMapper pmeterMapper;
-
-//    @Value("${pmeter.home}")
-//    String pmeterHome;
 
     @Value("${pmeter.report.path}")
     String pmeterReportPath;
@@ -55,98 +60,99 @@ public class PmeterParser {
 
     @Value("${pmeter.options}")
     String pmeterOptions;
+    ObjectMapper pmeterMapper;
+
+    InfluxMeterRegistry influxMeterRegistry;
 
     private CommandLine cmdLine;
 
-    private AtomicDouble memory;
     private AtomicDouble cpuFrequencyMax;
     private AtomicDouble cpuFrequencyMin;
-    private AtomicDouble activeCoreCount;
-    private AtomicDouble bytesReceived;
-    private AtomicDouble bytesSent;
-    private AtomicDouble dropIn;
-    private AtomicDouble dropOut;
-    private AtomicDouble energyConsumed;
-    private AtomicDouble errorIn;
-    private AtomicDouble errorOut;
+    private AtomicLong bytesReceived;
+    private AtomicLong bytesSent;
+    private AtomicLong dropIn;
+    private AtomicLong dropOut;
+    private AtomicLong errorIn;
+    private AtomicLong errorOut;
     private AtomicDouble linkCapacity;
-    private AtomicDouble nicMtu;
-    private AtomicDouble nicSpeed;
-    private AtomicDouble packetLossRate;
-    private AtomicDouble packetReceived;
-    private AtomicDouble packetSent;
-    private AtomicDouble concurrency;
-    private AtomicDouble parallelism;
-    private AtomicDouble totalBytesSent;
-    private AtomicDouble maxMemory;
-    private AtomicDouble freeMemory;
-    private AtomicDouble allocatedMemory;
+    private AtomicInteger nicMtu;
+    private AtomicLong nicSpeed;
+    private AtomicLong packetReceived;
+    private AtomicLong packetSent;
+    private AtomicDouble rtt;
+    private AtomicDouble latency;
 
-    private AtomicLong rtt;
-    private AtomicLong latency;
-
-    public PmeterParser() {
-        memory = new AtomicDouble(0L);
+    public PmeterParser(ObjectMapper pmeterMapper, InfluxMeterRegistry influxMeterRegistry) {
         cpuFrequencyMax = new AtomicDouble(0L);
         cpuFrequencyMin = new AtomicDouble(0L);
-        activeCoreCount = new AtomicDouble(0L);
-        bytesReceived = new AtomicDouble(0L);
-        bytesSent = new AtomicDouble(0L);
-        dropIn = new AtomicDouble(0L);
-        dropOut = new AtomicDouble(0L);
-        energyConsumed = new AtomicDouble(0L);
-        errorIn = new AtomicDouble(0L);
-        errorOut = new AtomicDouble(0L);
+        bytesReceived = new AtomicLong(0L);
+        bytesSent = new AtomicLong(0L);
+        dropIn = new AtomicLong(0L);
+        dropOut = new AtomicLong(0L);
+        errorIn = new AtomicLong(0L);
+        errorOut = new AtomicLong(0L);
         linkCapacity = new AtomicDouble(0L);
-        nicMtu = new AtomicDouble(0L);
-        nicSpeed = new AtomicDouble(0L);
-        packetLossRate = new AtomicDouble(0L);
-        packetReceived = new AtomicDouble(0L);
-        packetSent = new AtomicDouble(0L);
-        concurrency = new AtomicDouble(0L);
-        parallelism = new AtomicDouble(0L);
-        totalBytesSent = new AtomicDouble(0L);
-        maxMemory = new AtomicDouble(0L);
-        freeMemory = new AtomicDouble(0L);
-        allocatedMemory = new AtomicDouble(0L);
-
-        rtt = new AtomicLong(0L);
-        latency = new AtomicLong(0L);
+        nicMtu = new AtomicInteger(0);
+        nicSpeed = new AtomicLong(0L);
+        packetReceived = new AtomicLong(0L);
+        packetSent = new AtomicLong(0L);
+        rtt = new AtomicDouble(0L);
+        latency = new AtomicDouble(0L);
+        this.pmeterMapper = pmeterMapper;
+        this.influxMeterRegistry = influxMeterRegistry;
     }
 
     @PostConstruct
-    public void postConstruct(){
-        CommandLine cmdLine = CommandLine.parse(
+    public void postConstruct() {
+        this.cmdLine = CommandLine.parse(
                 String.format("pmeter " + MEASURE + " %s --user %s --measure %s %s --file_name %s",
                         pmeterNic, odsUser,
                         measureCount, pmeterOptions, pmeterReportPath));
-        this.cmdLine = cmdLine;
-        logger.info(this.cmdLine.toString());
-
-        Metrics.gauge(DataInfluxConstants.MEMORY, memory);
-        Metrics.gauge(DataInfluxConstants.CPU_FREQUENCY_MAX, cpuFrequencyMax);
-        Metrics.gauge(DataInfluxConstants.CPU_FREQUENCY_MIN, cpuFrequencyMin);
-        Metrics.gauge(DataInfluxConstants.ACTIVE_CORE_COUNT, activeCoreCount);
-        Metrics.gauge(DataInfluxConstants.BYTES_RECEIVED, bytesReceived);
-        Metrics.gauge(DataInfluxConstants.BYTES_SENT, bytesSent);
-        Metrics.gauge(DataInfluxConstants.DROP_IN, dropIn);
-        Metrics.gauge(DataInfluxConstants.DROP_OUT, dropOut);
-        Metrics.gauge(DataInfluxConstants.ENERGY_CONSUMED, energyConsumed);
-        Metrics.gauge(DataInfluxConstants.ERROR_IN, errorIn);
-        Metrics.gauge(DataInfluxConstants.ERROR_OUT, errorOut);
-        Metrics.gauge(DataInfluxConstants.LINK_CAPACITY, linkCapacity);
-        Metrics.gauge(DataInfluxConstants.NIC_MTU, nicMtu);
-        Metrics.gauge(DataInfluxConstants.NIC_SPEED, nicSpeed);
-        Metrics.gauge(DataInfluxConstants.PACKET_LOSS_RATE, packetLossRate);
-        Metrics.gauge(DataInfluxConstants.PACKETS_RECEIVED, packetReceived);
-        Metrics.gauge(DataInfluxConstants.PACKETS_SENT, packetSent);
-        Metrics.gauge(DataInfluxConstants.CONCURRENCY, concurrency);
-        Metrics.gauge(DataInfluxConstants.PARALLELISM, parallelism);
-        Metrics.gauge(DataInfluxConstants.TOTAL_BYTES_SENT, totalBytesSent);
-        Metrics.gauge(DataInfluxConstants.MAX_MEMORY, maxMemory);
-        Metrics.gauge(DataInfluxConstants.FREE_MEMORY, freeMemory);
-        Metrics.gauge(DataInfluxConstants.ALLOCATED_MEMORY, allocatedMemory);
-
+        Gauge.builder(DataInfluxConstants.CPU_FREQUENCY_MAX, cpuFrequencyMax, AtomicDouble::doubleValue)
+                .baseUnit("Mhz")
+                .register(this.influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.CPU_FREQUENCY_MIN, cpuFrequencyMin, AtomicDouble::doubleValue)
+                .baseUnit("Mhz")
+                .register(this.influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.BYTES_RECEIVED, bytesReceived, AtomicLong::longValue)
+                .baseUnit("bytes")
+                .register(this.influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.BYTES_SENT, bytesSent, AtomicLong::longValue)
+                .baseUnit("bytes")
+                .register(this.influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.BYTES_SENT, bytesSent, AtomicLong::longValue)
+                .baseUnit("bytes")
+                .register(this.influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.DROP_IN, dropIn, AtomicLong::longValue)
+                .baseUnit("packets")
+                .register(this.influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.DROP_OUT, dropOut, AtomicLong::longValue)
+                .baseUnit("packets")
+                .register(this.influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.ERROR_IN, errorIn, AtomicLong::longValue)
+                .baseUnit("errors")
+                .register(this.influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.ERROR_OUT, errorOut, AtomicLong::longValue)
+                .baseUnit("errors")
+                .register(this.influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.NIC_MTU, nicMtu, AtomicInteger::intValue)
+                .baseUnit("bytes")
+                .register(this.influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.NIC_SPEED, nicSpeed, AtomicLong::longValue)
+                .baseUnit("megabits")
+                .register(this.influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.PACKETS_RECEIVED, packetReceived, AtomicLong::longValue)
+                .baseUnit("packets")
+                .register(this.influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.PACKETS_SENT, packetSent, AtomicLong::longValue)
+                .baseUnit("packets")
+                .register(this.influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.RTT, rtt, AtomicDouble::doubleValue)
+                .baseUnit("seconds")
+                .register(this.influxMeterRegistry);
+        Gauge.builder(DataInfluxConstants.LATENCY, latency, AtomicDouble::doubleValue)
+                .baseUnit("seconds")
+                .register(this.influxMeterRegistry);
     }
 
 
@@ -171,11 +177,7 @@ public class PmeterParser {
         Path path = Paths.get(pmeterReportPath);
         List<String> allLines = Files.readAllLines(path);
         List<DataInflux> ret = new ArrayList<>();
-
         for (String line : allLines) {
-            System.out.println("COMING");
-            System.out.println(line);
-
             DataInflux dataInflux = this.pmeterMapper.readValue(line, DataInflux.class);
             processLineAndUpdateInflux(dataInflux);
             ret.add(dataInflux);
@@ -186,70 +188,20 @@ public class PmeterParser {
     }
 
     private void processLineAndUpdateInflux(DataInflux dataInflux) {
-        Iterable<Tag> tags = List.of(
-                Tag.of(DataInfluxConstants.CPU_ARCHITECTURE, dataInflux.getCpuArchitecture())
-//                Tag.of(DataInfluxConstants.ODS_USER, dataInflux.getOdsUser()),
-//                Tag.of(DataInfluxConstants.TRANSFER_NODE_NAME, dataInflux.getTransferNodeName()),
-//                Tag.of(DataInfluxConstants.SOURCE_TYPE, dataInflux.getSourceType()),
-//                Tag.of(DataInfluxConstants.DESTINATION_TYPE, dataInflux.getDestType())
-        );
-
-//        Metrics.summary(DataInfluxConstants.MEMORY, tags).record(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
-
-        memory.set(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
         cpuFrequencyMax.set(dataInflux.getCpu_frequency_max());
         cpuFrequencyMin.set(dataInflux.getCpu_frequency_min());
-        activeCoreCount.set(dataInflux.getCoreCount());
         bytesReceived.set(dataInflux.getBytesReceived());
-        if (Objects.nonNull(dataInflux.getBytesSent())) {
-            bytesSent.set(dataInflux.getBytesSent());
-        }
-
-        if (Objects.nonNull(dataInflux.getDropin())) {
-            dropIn.set(dataInflux.getDropin());
-        }
-
+        bytesSent.set(dataInflux.getBytesSent());
+        dropIn.set(dataInflux.getDropin());
         dropOut.set(dataInflux.getDropout());
-        energyConsumed.set(dataInflux.getEnergyConsumed());
         errorIn.set(dataInflux.getErrin());
         errorOut.set(dataInflux.getErrout());
         linkCapacity.set(dataInflux.getLinkCapacity());
         nicMtu.set(dataInflux.getNicMtu());
         nicSpeed.set(dataInflux.getNicSpeed());
-        packetLossRate.set(dataInflux.getPacketLossRate());
         packetReceived.set(dataInflux.getPacketReceived());
         packetSent.set(dataInflux.getPacketSent());
-
-        if (Objects.nonNull(dataInflux.getConcurrency())) {
-            concurrency.set(dataInflux.getConcurrency());
-        }
-
-        if (Objects.nonNull(dataInflux.getParallelism())) {
-            parallelism.set(dataInflux.getParallelism());
-        }
-
-        if (Objects.nonNull(dataInflux.getDataBytesSent())) {
-            totalBytesSent.set(dataInflux.getDataBytesSent());
-        }
-
-        if (Objects.nonNull(dataInflux.getMaxMemory())) {
-            maxMemory.set(dataInflux.getMaxMemory());
-        }
-
-        if (Objects.nonNull(dataInflux.getFreeMemory())) {
-            freeMemory.set(dataInflux.getFreeMemory());
-        }
-
-        if (Objects.nonNull(dataInflux.getAllocatedMemory())) {
-            allocatedMemory.set(dataInflux.getAllocatedMemory());
-        }
-
-        if(Objects.nonNull(dataInflux.getRtt())) {
-            Metrics.timer(DataInfluxConstants.RTT).record(dataInflux.getRtt().longValue(), TimeUnit.MILLISECONDS);
-        }
-
-        if(Objects.nonNull(dataInflux.getLatency())) {
-            Metrics.timer(DataInfluxConstants.LATENCY).record(dataInflux.getLatency().longValue(), TimeUnit.MILLISECONDS);
-        }
+        rtt.set(dataInflux.getRtt());
+        latency.set(dataInflux.getLatency());
     }
 }

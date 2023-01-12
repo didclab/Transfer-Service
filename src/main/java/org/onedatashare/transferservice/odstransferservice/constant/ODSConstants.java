@@ -1,15 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.constant;
 
-import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
-import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
-import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
-import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
-import org.slf4j.Logger;
-import org.springframework.batch.core.StepExecution;
-
 import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.List;
 
 public class ODSConstants {
     public static final String DROPBOX_URI_SCHEME = "dropbox://";
@@ -33,7 +24,7 @@ public class ODSConstants {
     public static final String SOURCE_BASE_PATH = "sourceBasePath";
     public static final String DEST_BASE_PATH = "destBasePath";
     public static final String SOURCE = "source";
-    public static final String FILE_COUNT="fileCount";
+    public static final String FILE_COUNT = "fileCount";
     public static final String SOURCE_CREDENTIAL_ID = "sourceCredential";
     public static final String DEST_CREDENTIAL_ID = "destCredential";
     public static final String SOURCE_CREDENTIAL_TYPE = "sourceCredentialType";
@@ -68,36 +59,17 @@ public class ODSConstants {
     public static final String PIPELINING = "pipelining";
     public static final String OPTIMIZER = "optimizer";
     public static final String RETRY = "retry";
-    public static final String BYTES_READ = "bytesRead";
-    public static final String BYTES_WRITTEN = "bytesWritten";
     public static final String APP_NAME = "appName";
     public static final String STEP_POOL_PREFIX = "step";
     public static final String PARALLEL_POOL_PREFIX = "parallel";
     public static final String SEQUENTIAL_POOL_PREFIX = "sequential";
 
-
-    public static void metricsForOptimizerAndInflux(List<? extends DataChunk> items, LocalDateTime writeStartTime, Logger logger, StepExecution stepExecution, MetricCache cache, MetricsCollector metricsCollector) {
-        LocalDateTime writeEndTime = LocalDateTime.now();
-        long totalBytes = items.stream().mapToLong(DataChunk::getSize).sum();
-        addMetricsForOptimizer(items, writeStartTime, logger, stepExecution, cache, writeEndTime, totalBytes);
-        metricsCollector.getInfluxCache().addMetric(stepExecution, totalBytes, writeStartTime, writeEndTime);
-    }
-
-    private static void addMetricsForOptimizer(List<? extends DataChunk> items, LocalDateTime readStartTime, Logger logger, StepExecution stepExecution, MetricCache cache, LocalDateTime writeEndTime, long totalBytes) {
-        long timeItTookForThisList = Duration.between(readStartTime, writeEndTime).toMillis();
-        double throughput = (double) totalBytes / timeItTookForThisList;
-        throughput = throughput * 1000;
-        logger.info("Thread name {} Total bytes {} with total time {} gives throughput {} bits/seconds", Thread.currentThread(), totalBytes, (timeItTookForThisList*1000), (throughput*8));
-        cache.addMetric(Thread.currentThread().getName(), throughput, stepExecution, items.size());
-    }
-
-    public static void metricsForOptimizerAndInflux(DataChunk chunk, LocalDateTime startTime, Logger logger, StepExecution stepExecution, MetricCache cache, MetricsCollector metricsCollector) {
-        LocalDateTime endTime = LocalDateTime.now();
-        long timeItTookForThisList = Duration.between(startTime, endTime).toSeconds();
-        double throughput = (double) chunk.getSize() / timeItTookForThisList;
-        throughput = throughput * 1000;
-        logger.info("Thread name {} Total bytes {} with total time {} gives throughput {} bytes per second and pipelining {}", Thread.currentThread(), chunk.getSize(), timeItTookForThisList, throughput, stepExecution.getCommitCount());
-//        cache.addMetric(Thread.currentThread().getName(), throughput, stepExecution, pipeLining);
-        metricsCollector.getInfluxCache().addMetric(stepExecution, chunk.getSize(), startTime, endTime, InfluxCache.ThroughputType.READER);
+    public static double computeThroughput(long totalBytes, Duration duration) {
+        //use milliseconds by default but if milliseconds arent big enough then use nano seconds
+        double megabits = totalBytes * 0.000008; //bytes to mb
+        if(duration.toMillis() <= 1){
+            return (megabits / duration.toNanos()) * 1000000000f; //working with nanoseconds and there are 1000000000 nanoseconds in a second
+        }
+        return (megabits / duration.toMillis()) * 1000f; //multiplied by 1000f for milli's to seconds
     }
 }
