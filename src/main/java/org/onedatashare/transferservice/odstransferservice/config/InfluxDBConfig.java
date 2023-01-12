@@ -1,61 +1,38 @@
 package org.onedatashare.transferservice.odstransferservice.config;
 
-import io.micrometer.core.instrument.Clock;
-import io.micrometer.core.instrument.Metrics;
-import io.micrometer.influx.InfluxConfig;
-import io.micrometer.influx.InfluxMeterRegistry;
-import org.jetbrains.annotations.NotNull;
+import com.influxdb.client.InfluxDBClient;
+import com.influxdb.client.InfluxDBClientFactory;
+import com.influxdb.client.InfluxDBClientOptions;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class InfluxDBConfig {
-    @Value("${management.metrics.export.influx.org}")
+    @Value("${ods.influx.org}")
     private String influxOrg;
 
-    @Value("${management.metrics.export.influx.db}")
+    @Value("${ods.influx.bucket}")
     private String influxBucket;
 
-    @Value("${management.metrics.export.influx.token}")
+    @Value("${ods.influx.token}")
     private String influxToken;
 
-    @Value("${management.metrics.export.influx.uri}")
+    @Value("${ods.influx.uri}")
     private String influxUri;
 
+    @Value("${spring.application.name}")
+    private String appName;
+
     @Bean
-    public InfluxMeterRegistry influxMeterRegistry() {
-        InfluxConfig config = new InfluxConfig() {
-            @Override
-            public String org() {
-                return influxOrg;
-            }
-
-            @NotNull
-            @Override
-            public String bucket() {
-                return influxBucket;
-            }
-
-            @Override
-            public String token() {
-                return influxToken;
-            }
-
-            @NotNull
-            @Override
-            public String uri() {
-                return influxUri;
-            }
-
-            @Override
-            public String get(@NotNull String k) {
-                return null;
-            }
-        };
-        InfluxMeterRegistry registry = InfluxMeterRegistry.builder(config)
-                        .clock(Clock.SYSTEM).build();
-        Metrics.addRegistry(registry);
-        return registry;
+    public InfluxDBClient influxClient() {
+        InfluxDBClientOptions influxDBClientOptions = InfluxDBClientOptions.builder()
+                .url(this.influxUri)
+                .org(this.influxOrg)
+                .bucket(this.influxBucket)
+                .authenticateToken(this.influxToken.toCharArray())
+                .addDefaultTag("APP_NAME", this.appName)
+                .build();
+        return InfluxDBClientFactory.create(influxDBClientOptions);
     }
 }

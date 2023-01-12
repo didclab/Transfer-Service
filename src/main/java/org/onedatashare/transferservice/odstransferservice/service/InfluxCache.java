@@ -5,14 +5,11 @@ import org.onedatashare.transferservice.odstransferservice.model.JobMetric;
 import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.batch.core.Job;
 import org.springframework.batch.core.StepExecution;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.DoubleSummaryStatistics;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.PIPELINING;
@@ -30,9 +27,6 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
 public class InfluxCache {
 
     public ConcurrentHashMap<Long, JobMetric> threadCache; //stores a JobMetric that represents everything that thread has processed for the step. Thus each JobMetric is an aggregate of what has happened
-
-    @Value("${job.metrics.save}")
-    private boolean isJobMetricCollectionEnabled;
 
     ThreadPoolManager threadPoolManager;
 
@@ -89,11 +83,11 @@ public class InfluxCache {
      * @return An Aggregate JobMetric which is the average or sum depending on the property of all the values in the pool
      */
     public JobMetric aggregateMetric() {
-        if(this.threadCache.size() < 1) return null;
+        if (this.threadCache.size() < 1) return null;
 
         JobMetric agg = new JobMetric();
         //need to find earliest start and latest late time for both read and write.
-        for(JobMetric value : this.threadCache.values()){
+        for (JobMetric value : this.threadCache.values()) {
             long readTotalBytes = agg.getReadBytes() + value.getReadBytes();
             agg.setReadBytes(readTotalBytes);
             long writeTotalBytes = agg.getWrittenBytes() + value.getWrittenBytes();
@@ -107,49 +101,49 @@ public class InfluxCache {
             LocalDateTime valueReadStartTime = value.getReadStartTime();
             LocalDateTime aggReadStartTime = agg.getReadStartTime();
             //readStartTime gets set by the earliest readStartTime that is not null.
-            if(aggReadStartTime == null && valueReadStartTime != null){
+            if (aggReadStartTime == null && valueReadStartTime != null) {
                 agg.setReadStartTime(valueReadStartTime);
-            }else if(aggReadStartTime != null && valueReadStartTime != null) {
-                if(valueReadStartTime.isBefore(aggReadStartTime)){
+            } else if (aggReadStartTime != null && valueReadStartTime != null) {
+                if (valueReadStartTime.isBefore(aggReadStartTime)) {
                     agg.setReadStartTime(valueReadStartTime);
                 }
             }
             //readEndTime
             LocalDateTime valueReadEndTime = value.getReadEndTime();
             LocalDateTime aggReadEndTime = agg.getReadEndTime();
-            if(aggReadEndTime == null && valueReadEndTime != null){
+            if (aggReadEndTime == null && valueReadEndTime != null) {
                 agg.setReadEndTime(valueReadEndTime);
-            }else if(aggReadEndTime != null && valueReadEndTime != null){
-                if(valueReadEndTime.isAfter(aggReadEndTime)){
+            } else if (aggReadEndTime != null && valueReadEndTime != null) {
+                if (valueReadEndTime.isAfter(aggReadEndTime)) {
                     agg.setReadEndTime(valueReadEndTime);
                 }
             }
             //Write Start Time comparing
             LocalDateTime valueWriteStartTime = value.getWriteStartTime();
             LocalDateTime aggWriteStartTime = agg.getWriteStartTime();
-            if(aggWriteStartTime == null && valueWriteStartTime != null){
+            if (aggWriteStartTime == null && valueWriteStartTime != null) {
                 agg.setWriteStartTime(valueWriteStartTime);
-            }else if(aggWriteStartTime != null && valueWriteStartTime != null) {
-                if(valueWriteStartTime.isBefore(aggWriteStartTime)){
+            } else if (aggWriteStartTime != null && valueWriteStartTime != null) {
+                if (valueWriteStartTime.isBefore(aggWriteStartTime)) {
                     agg.setWriteStartTime(valueWriteStartTime);
                 }
             }
             LocalDateTime valueWriteEndTime = value.getWriteEndTime();
             LocalDateTime aggWriteEndTime = agg.getWriteEndTime();
-            if(aggWriteEndTime == null && valueWriteEndTime != null){
+            if (aggWriteEndTime == null && valueWriteEndTime != null) {
                 agg.setWriteEndTime(valueWriteEndTime);
-            }else if(aggWriteEndTime != null && valueWriteEndTime != null) {
-                if(valueWriteEndTime.isAfter(aggWriteEndTime)){
+            } else if (aggWriteEndTime != null && valueWriteEndTime != null) {
+                if (valueWriteEndTime.isAfter(aggWriteEndTime)) {
                     agg.setWriteEndTime(valueWriteEndTime);
                 }
             }
 
         }
-        if(agg.getReadStartTime() != null && agg.getReadEndTime() != null){
+        if (agg.getReadStartTime() != null && agg.getReadEndTime() != null) {
             double readThroughput = ODSConstants.computeThroughput(agg.getReadBytes(), Duration.between(agg.getReadStartTime(), agg.getReadEndTime()));
             agg.setReadThroughput(readThroughput);
         }
-        if(agg.getWriteStartTime() != null && agg.getWriteEndTime() != null ){
+        if (agg.getWriteStartTime() != null && agg.getWriteEndTime() != null) {
             double writeThroughput = ODSConstants.computeThroughput(agg.getWrittenBytes(), Duration.between(agg.getWriteStartTime(), agg.getWriteEndTime()));
             agg.setWriteThroughput(writeThroughput);
         }

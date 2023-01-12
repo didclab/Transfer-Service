@@ -1,23 +1,15 @@
 package org.onedatashare.transferservice.odstransferservice.pools;
 
-import io.micrometer.core.instrument.Gauge;
-import io.micrometer.core.instrument.Tag;
-import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
-import io.micrometer.influx.InfluxMeterRegistry;
 import lombok.Getter;
-import org.onedatashare.transferservice.odstransferservice.constant.DataInfluxConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
@@ -29,19 +21,9 @@ public class ThreadPoolManager {
 
     Logger logger = LoggerFactory.getLogger(ThreadPoolManager.class);
 
-    @Autowired
-    InfluxMeterRegistry influxMeterRegistry;
-
     @PostConstruct
     public void createMap() {
         this.executorHashmap = new HashMap<>();
-        logger.info("creating executor hashmap");
-        Gauge.builder(DataInfluxConstants.CONCURRENCY, this::concurrencyCount)
-                .baseUnit("threads")
-                .register(this.influxMeterRegistry);
-        Gauge.builder(DataInfluxConstants.PARALLELISM, this::parallelismCount)
-                .baseUnit("threads")
-                .register(this.influxMeterRegistry);
     }
 
     public ThreadPoolTaskExecutor createThreadPool(int corePoolSize, String prefix) {
@@ -53,10 +35,6 @@ public class ThreadPoolManager {
         if (this.executorHashmap == null) {
             this.executorHashmap = new HashMap<>();
         }
-        Iterable<Tag> tags = List.of();
-        ExecutorServiceMetrics serviceMetrics = new ExecutorServiceMetrics(executor.getThreadPoolExecutor(), executor.getThreadNamePrefix(), tags);
-        serviceMetrics.bindTo(influxMeterRegistry);
-
         this.executorHashmap.put(prefix, executor);
         return executor;
     }

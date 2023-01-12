@@ -45,7 +45,6 @@ import org.springframework.batch.core.step.builder.SimpleStepBuilder;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
@@ -53,7 +52,6 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -182,12 +180,12 @@ public class JobControl extends DefaultBatchConfigurer {
                 VfsWriter vfsWriter = new VfsWriter(request.getDestination().getVfsDestCredential(), fileInfo, this.metricsCollector, this.influxCache, this.metricCache);
                 return vfsWriter;
             case sftp:
-                SFTPWriter sftpWriter = new SFTPWriter(request.getDestination().getVfsDestCredential(),this.metricsCollector, this.influxCache, this.metricCache);
+                SFTPWriter sftpWriter = new SFTPWriter(request.getDestination().getVfsDestCredential(), this.metricsCollector, this.influxCache, this.metricCache);
                 sftpWriter.setPool(connectionBag.getSftpWriterPool());
                 sftpWriter.setRetryTemplate(retryTemplateForReaderAndWriter);
                 return sftpWriter;
             case ftp:
-                FTPWriter ftpWriter = new FTPWriter(request.getDestination().getVfsDestCredential(), fileInfo ,this.metricsCollector, this.influxCache, this.metricCache);
+                FTPWriter ftpWriter = new FTPWriter(request.getDestination().getVfsDestCredential(), fileInfo, this.metricsCollector, this.influxCache, this.metricCache);
                 ftpWriter.setPool(connectionBag.getFtpWriterPool());
                 ftpWriter.setRetryTemplate(retryTemplateForReaderAndWriter);
                 return ftpWriter;

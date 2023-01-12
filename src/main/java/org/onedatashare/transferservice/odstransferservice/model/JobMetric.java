@@ -16,7 +16,6 @@ public class JobMetric {
     private Integer concurrency; //the concurrency pool at time of reading or writing
     private Integer parallelism; //The parallelism pool size at time of reading or writing
     private Integer pipelining; //pipeSize used.
-    private long totalTime;//readStartTime to writeEndTime.
     private LocalDateTime writeStartTime;
     private LocalDateTime writeEndTime;
     private Double writeThroughput; //the write out throughput
@@ -34,7 +33,6 @@ public class JobMetric {
         this.writeThroughput = 0.0;
         this.readThroughput = 0.0;
         this.stepExecution = null;
-        this.totalTime = 0;
         this.writtenBytes = 0L;
         this.readBytes = 0L;
     }

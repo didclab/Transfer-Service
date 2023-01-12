@@ -44,7 +44,7 @@ public class DataInfluxConstants {
     public static final String MAX_MEMORY = "maxMemory";
     public static final String FREE_MEMORY = "freeMemory";
     public static final String JOB_SIZE = "jobSize";
-    public static final String AVERAGE_JOB_SIZE = "avgFileSize";
+    public static final String AVERAGE_FILE_SIZE = "avgFileSize";
     public static final String TOTAL_BYTES_SENT = "totalBytesSent";
     public static final String COMPRESSION = "compression";
     public static final String ALLOCATED_MEMORY = "allocatedMemory";
@@ -53,4 +53,6 @@ public class DataInfluxConstants {
     public static final String READ_THROUGHPUT = "read_throughput";
     public static final String WRITE_THROUGHPUT = "write_throughput";
 
+    public static final String SOURCE_CRED_ID = "sourceCredentialId";
+    public static final String DESTINATION_CRED_IT = "destinationCredentialId";
 }
