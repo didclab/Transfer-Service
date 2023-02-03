@@ -16,7 +16,6 @@ import org.springframework.batch.core.StepExecution;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 
 @ExtendWith(MockitoExtension.class)
 public class InfluxCacheTest {
@@ -132,8 +131,8 @@ public class InfluxCacheTest {
         JobMetric metric = testObj.threadCache.get(testThreadId);
         Assertions.assertEquals(metric.getReadStartTime(), startTime);
         Assertions.assertEquals(metric.getReadEndTime(), endTime2);
-        Assertions.assertEquals(metric.getReadBytes(), totalBytes+totalBytes2);
-        Assertions.assertEquals(metric.getReadThroughput(), ODSConstants.computeThroughput(totalBytes+totalBytes2, Duration.between(startTime, endTime2)));
+        Assertions.assertEquals(metric.getReadBytes(), totalBytes + totalBytes2);
+        Assertions.assertEquals(metric.getReadThroughput(), ODSConstants.computeThroughput(totalBytes + totalBytes2, Duration.between(startTime, endTime2)));
         Assertions.assertEquals(metric.getConcurrency(), 1);
         Assertions.assertEquals(metric.getParallelism(), 1);
         Assertions.assertEquals(metric.getPipelining(), 1);
@@ -141,7 +140,7 @@ public class InfluxCacheTest {
     }
 
     @Test
-    public void testAddTwoWriteMetricsOneThread(){
+    public void testAddTwoWriteMetricsOneThread() {
         Mockito.when(mockedThreadPoolManager.concurrencyCount()).thenReturn(1);
         Mockito.when(mockedThreadPoolManager.parallelismCount()).thenReturn(1);
         Mockito.when(mockedStepExecution.getJobParameters().getLong(ODSConstants.PIPELINING)).thenReturn(1L);
@@ -161,8 +160,8 @@ public class InfluxCacheTest {
         JobMetric metric = testObj.threadCache.get(testThreadId);
         Assertions.assertEquals(metric.getWriteStartTime(), startTime);
         Assertions.assertEquals(metric.getWriteEndTime(), endTime2);
-        Assertions.assertEquals(metric.getWrittenBytes(), totalBytes+totalBytes2);
-        Assertions.assertEquals(metric.getWriteThroughput(), ODSConstants.computeThroughput(totalBytes+totalBytes2, Duration.between(startTime, endTime2)));
+        Assertions.assertEquals(metric.getWrittenBytes(), totalBytes + totalBytes2);
+        Assertions.assertEquals(metric.getWriteThroughput(), ODSConstants.computeThroughput(totalBytes + totalBytes2, Duration.between(startTime, endTime2)));
         Assertions.assertEquals(metric.getConcurrency(), 1);
         Assertions.assertEquals(metric.getParallelism(), 1);
         Assertions.assertEquals(metric.getPipelining(), 1);
@@ -170,7 +169,7 @@ public class InfluxCacheTest {
     }
 
     @Test
-    public void testAddOneReadAndOneWriteMetricOneThread(){
+    public void testAddOneReadAndOneWriteMetricOneThread() {
         Mockito.when(mockedThreadPoolManager.concurrencyCount()).thenReturn(1);
         Mockito.when(mockedThreadPoolManager.parallelismCount()).thenReturn(1);
         Mockito.when(mockedStepExecution.getJobParameters().getLong(ODSConstants.PIPELINING)).thenReturn(1L);
@@ -205,7 +204,7 @@ public class InfluxCacheTest {
     }
 
     @Test
-    public void testAddOneReadAndOneWriteMetricsTwoDifferentThreads(){
+    public void testAddOneReadAndOneWriteMetricsTwoDifferentThreads() {
         Mockito.when(mockedThreadPoolManager.concurrencyCount()).thenReturn(1);
         Mockito.when(mockedThreadPoolManager.parallelismCount()).thenReturn(1);
         Mockito.when(mockedStepExecution.getJobParameters().getLong(ODSConstants.PIPELINING)).thenReturn(1L);
@@ -219,7 +218,7 @@ public class InfluxCacheTest {
         LocalDateTime startTime2 = LocalDateTime.now();
         LocalDateTime endTime2 = LocalDateTime.now();
         long totalBytes2 = 1000;
-        long testThreadId2 = testThreadId +1;
+        long testThreadId2 = testThreadId + 1;
         testObj.addMetric(testThreadId2, mockedStepExecution, totalBytes2, startTime2, endTime2, InfluxCache.ThroughputType.WRITER);
         Assertions.assertEquals(2, testObj.threadCache.size()); //there is only 1 thread per entry
 
@@ -239,7 +238,7 @@ public class InfluxCacheTest {
     }
 
     @Test
-    public void testAddTwoReadTwoThreadTwoWriteTwoThreads(){
+    public void testAddTwoReadTwoThreadTwoWriteTwoThreads() {
         Mockito.when(mockedThreadPoolManager.concurrencyCount()).thenReturn(1);
         Mockito.when(mockedThreadPoolManager.parallelismCount()).thenReturn(1);
         Mockito.when(mockedStepExecution.getJobParameters().getLong(ODSConstants.PIPELINING)).thenReturn(1L);
@@ -253,7 +252,7 @@ public class InfluxCacheTest {
         LocalDateTime startTime2 = LocalDateTime.now();
         LocalDateTime endTime2 = LocalDateTime.now();
         long totalBytes2 = 1000;
-        long testThreadId2 = testThreadId +1;
+        long testThreadId2 = testThreadId + 1;
         testObj.addMetric(testThreadId2, mockedStepExecution, totalBytes2, startTime2, endTime2, InfluxCache.ThroughputType.WRITER);
         Assertions.assertEquals(2, testObj.threadCache.size()); //there is only 1 thread per entry
 
@@ -274,14 +273,14 @@ public class InfluxCacheTest {
     }
 
     @Test
-    public void testRunAggWithEmptyThreadCache(){
+    public void testRunAggWithEmptyThreadCache() {
         testObj = new InfluxCache(mockedThreadPoolManager);
         JobMetric jobMetric = testObj.aggregateMetric();
         Assertions.assertNull(jobMetric);
     }
 
     @Test
-    public void testRunAggWithOneObject(){
+    public void testRunAggWithOneObject() {
         Mockito.when(mockedThreadPoolManager.concurrencyCount()).thenReturn(1);
         Mockito.when(mockedThreadPoolManager.parallelismCount()).thenReturn(1);
         Mockito.when(mockedStepExecution.getJobParameters().getLong(ODSConstants.PIPELINING)).thenReturn(1L);
@@ -298,7 +297,7 @@ public class InfluxCacheTest {
     }
 
     @Test
-    public void testRunAggWithTwoThreadsTwoMetricEach(){
+    public void testRunAggWithTwoThreadsTwoMetricEach() {
         Mockito.when(mockedThreadPoolManager.concurrencyCount()).thenReturn(1);
         Mockito.when(mockedThreadPoolManager.parallelismCount()).thenReturn(1);
         Mockito.when(mockedStepExecution.getJobParameters().getLong(ODSConstants.PIPELINING)).thenReturn(1L);
@@ -313,16 +312,16 @@ public class InfluxCacheTest {
         LocalDateTime startTime2 = LocalDateTime.now();
         LocalDateTime endTime2 = LocalDateTime.now();
         long totalBytes2 = 1000;
-        testObj.addMetric(testThreadId+1, mockedStepExecution, totalBytes2, startTime2, endTime2, InfluxCache.ThroughputType.READER);
-        testObj.addMetric(testThreadId+1, mockedStepExecution, totalBytes2, startTime2, endTime2, InfluxCache.ThroughputType.WRITER);
+        testObj.addMetric(testThreadId + 1, mockedStepExecution, totalBytes2, startTime2, endTime2, InfluxCache.ThroughputType.READER);
+        testObj.addMetric(testThreadId + 1, mockedStepExecution, totalBytes2, startTime2, endTime2, InfluxCache.ThroughputType.WRITER);
         Assertions.assertEquals(2, testObj.threadCache.size()); //there is only 1 thread per entry
 
         JobMetric realAgg = testObj.aggregateMetric();
 
-        Assertions.assertEquals(mockedStepExecution,realAgg.getStepExecution());
-        Assertions.assertEquals(totalBytes+totalBytes2, realAgg.getReadBytes());
-        Assertions.assertEquals(ODSConstants.computeThroughput(totalBytes+totalBytes2, Duration.between(startTime, endTime2)), realAgg.getReadThroughput());
-        Assertions.assertEquals(ODSConstants.computeThroughput(totalBytes+totalBytes2, Duration.between(startTime, endTime2)), realAgg.getWriteThroughput());
-        Assertions.assertEquals(totalBytes+totalBytes2, realAgg.getWrittenBytes());
+        Assertions.assertEquals(mockedStepExecution, realAgg.getStepExecution());
+        Assertions.assertEquals(totalBytes + totalBytes2, realAgg.getReadBytes());
+        Assertions.assertEquals(ODSConstants.computeThroughput(totalBytes + totalBytes2, Duration.between(startTime, endTime2)), realAgg.getReadThroughput());
+        Assertions.assertEquals(ODSConstants.computeThroughput(totalBytes + totalBytes2, Duration.between(startTime, endTime2)), realAgg.getWriteThroughput());
+        Assertions.assertEquals(totalBytes + totalBytes2, realAgg.getWrittenBytes());
     }
 }

@@ -1,10 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.sftp;
 
-import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
-import com.jcraft.jsch.SftpException;
+import com.jcraft.jsch.*;
 import org.apache.commons.pool2.ObjectPool;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
@@ -12,7 +8,6 @@ import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.pools.JschSessionPool;
 import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
-import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.slf4j.Logger;
@@ -46,8 +41,8 @@ public class SFTPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, 
 
     private RetryTemplate retryTemplate;
 
-    public SFTPWriter(AccountEndpointCredential destCred, MetricsCollector metricsCollector, InfluxCache influxCache, MetricCache metricCache) {
-        super(metricsCollector, influxCache, metricCache);
+    public SFTPWriter(AccountEndpointCredential destCred, MetricsCollector metricsCollector, InfluxCache influxCache) {
+        super(metricsCollector, influxCache);
         fileToChannel = new HashMap<>();
         this.destCred = destCred;
         jsch = new JSch();
@@ -85,10 +80,6 @@ public class SFTPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, 
             channelSftp.setBulkRequests(Integer.parseInt(this.stepExecution.getJobParameters().getString(ODSConstants.PIPELINING))); //Not very sure if this should be set to the pipelining parameter or not I would assume so
             channelSftp.connect();
             this.cdIntoDir(channelSftp, this.dBasePath);
-//            ChannelSftp channelSftp = SftpUtility.createConnection(jsch, destCred);
-//            if(!cdIntoDir(channelSftp, dBasePath)){
-//                SftpUtility.mkdir(channelSftp, dBasePath);
-//            }
             fileToChannel.put(fileName, channelSftp);
         } catch (JSchException e) {
             e.printStackTrace();
@@ -132,13 +123,12 @@ public class SFTPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, 
     public void write(List<? extends DataChunk> items) throws Exception {
 //        String fileName = Paths.get(this.dBasePath, items.get(0).getFileName()).toString();
         String fileName = Paths.get(items.get(0).getFileName()).toString();
-        List<? extends DataChunk> itemsToProcess = items;
         this.retryTemplate.execute((c) -> {
             try {
                 if (this.destination == null) {
                     this.destination = getStream(fileName);
                 }
-                for (DataChunk b : itemsToProcess) {
+                for (DataChunk b : items) {
                     logger.info("Current chunk in SFTP Writer " + b.toString());
                     destination.write(b.getData());
                 }

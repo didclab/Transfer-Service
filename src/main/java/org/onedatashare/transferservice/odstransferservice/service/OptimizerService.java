@@ -33,11 +33,8 @@ public class OptimizerService {
         headers.setContentType(MediaType.APPLICATION_JSON);
     }
 
-    public Optimizer inputToOptimizerBlocking(OptimizerInputRequest optimizerInputRequest) throws RestClientException {
-        optimizerInputRequest.setNodeId(this.appName);
-        logger.info("Sending OptimizerInputRequest {}", optimizerInputRequest);
-        HttpEntity<OptimizerInputRequest> inputRequestHttpEntity = new HttpEntity<>(optimizerInputRequest, this.headers);
-        return this.optimizerTemplate.postForObject("/optimizer/input", inputRequestHttpEntity, Optimizer.class);
+    public Optimizer getNextApplicationTupleToUse() throws RestClientException {
+        return this.optimizerTemplate.getForObject("/optimizer/nextparams", Optimizer.class);
     }
 
     public void createOptimizerBlocking(OptimizerCreateRequest optimizerCreateRequest) throws RestClientException {
@@ -55,6 +52,6 @@ public class OptimizerService {
         } catch (RestClientException e){
             logger.error("Failed to Delete optimizer. {}", optimizerDeleteRequest);
         }
-        logger.info("Deleted {}", optimizerDeleteRequest.toString());
+        logger.info("Deleted {}", optimizerDeleteRequest);
     }
 }

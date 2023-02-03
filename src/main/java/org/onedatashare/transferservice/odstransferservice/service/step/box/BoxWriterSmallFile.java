@@ -8,7 +8,6 @@ import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
-import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.slf4j.Logger;
@@ -35,8 +34,8 @@ public class BoxWriterSmallFile extends ODSBaseWriter implements ItemWriter<Data
     private String fileName;
     Logger logger = LoggerFactory.getLogger(BoxWriterSmallFile.class);
 
-    public BoxWriterSmallFile(OAuthEndpointCredential credential, EntityInfo fileInfo, MetricsCollector metricsCollector, InfluxCache influxCache, MetricCache metricCache) {
-        super(metricsCollector, influxCache, metricCache);
+    public BoxWriterSmallFile(OAuthEndpointCredential credential, EntityInfo fileInfo, MetricsCollector metricsCollector, InfluxCache influxCache) {
+        super(metricsCollector, influxCache);
         this.boxAPIConnection = new BoxAPIConnection(credential.getToken());
         this.fileInfo = fileInfo;
         this.fileMap = new HashMap<>();

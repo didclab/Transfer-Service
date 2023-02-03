@@ -33,6 +33,11 @@ public class DataInfluxConstants {
     public static final String P_METER_END_TIME = "pmeter_end_time";
     public static final String LATENCY = "latency";
     public static final String RTT = "rtt";
+    public static final String SOURCE_RTT = "source_rtt";
+    public static final String SOURCE_LATENCY = "source_latency";
+
+    public static final String DEST_LATENCY = "destination_latency";
+    public static final String DESTINATION_RTT = "destination_rtt";
     public static final String ERROR_IN = "errin";
     public static final String ERROR_OUT = "errout";
     public static final String JOB_ID = "jobId";

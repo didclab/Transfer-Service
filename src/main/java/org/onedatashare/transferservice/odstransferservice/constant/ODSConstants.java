@@ -19,7 +19,8 @@ public class ODSConstants {
     public static final String FILE_ID = "file_id";
     public static final String TIME = "time";
     public static final String SOURCE_ACCOUNT_ID_PASS = "sourceAccountIdPass";
-    public static final String SOURCE_URI = "sourceURI";
+    public static final String SOURCE_HOST = "sourceURI";
+    public static final String SOURCE_PORT = "sourcePort";
     public static final String DESTINATION_ACCOUNT_ID_PASS = "destinationAccountIdPass";
     public static final String SOURCE_BASE_PATH = "sourceBasePath";
     public static final String DEST_BASE_PATH = "destBasePath";
@@ -29,7 +30,8 @@ public class ODSConstants {
     public static final String DEST_CREDENTIAL_ID = "destCredential";
     public static final String SOURCE_CREDENTIAL_TYPE = "sourceCredentialType";
     public static final String DEST_CREDENTIAL_TYPE = "destCredentialType";
-    public static final String DEST_URI = "destURI";
+    public static final String DEST_HOST = "destURI";
+    public static final String DEST_PORT = "destPort";
     public static final String INFO_LIST = "infoList";
     public static final String PRIORITY = "priority";
     public static final String CHUNK_SIZE = "chunkSize";

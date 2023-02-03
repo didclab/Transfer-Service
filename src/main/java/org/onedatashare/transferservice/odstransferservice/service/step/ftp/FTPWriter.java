@@ -8,7 +8,6 @@ import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.pools.FtpConnectionPool;
 import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
-import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.slf4j.Logger;
@@ -40,16 +39,16 @@ public class FTPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, S
     private FTPClient client;
     private RetryTemplate retryTemplate;
 
-    public FTPWriter(AccountEndpointCredential destCred, EntityInfo fileInfo, MetricsCollector metricsCollector, InfluxCache influxCache, MetricCache metricCache) {
-        super(metricsCollector, influxCache, metricCache);
+    public FTPWriter(AccountEndpointCredential destCred, EntityInfo fileInfo, MetricsCollector metricsCollector, InfluxCache influxCache) {
+        super(metricsCollector, influxCache);
         this.destCred = destCred;
         this.fileInfo = fileInfo;
+        this.outputStream = null;
     }
 
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
         logger.info("Inside FTP beforeStep");
-        outputStream = null;
         dBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
         stepName = stepExecution.getStepName();
         try {
@@ -74,17 +73,7 @@ public class FTPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, S
     }
 
     private OutputStream getStream(String fileName) throws IOException {
-        if (outputStream == null) {
-            try {
-                this.outputStream = this.client.storeFileStream(this.dBasePath + "/" + fileName);
-            } catch (IOException ex) {
-                logger.error("Error in opening outputstream in FTP Writer for file : {}", fileName);
-                throw ex;
-            }
-            logger.info("Stream not present...creating OutputStream for " + fileName);
-            //ftpDest();
-        }
-        return this.outputStream;
+        return this.client.storeFileStream(this.dBasePath + "/" + fileName);
     }
 
 
@@ -106,11 +95,9 @@ public class FTPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, S
             } catch (IOException ex) {
                 this.outputStream = null;
                 this.invalidateAndCreateNewClient();
-                throw ex;
             }
             return null;
         });
-
     }
 
     @Override

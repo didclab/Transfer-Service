@@ -93,8 +93,6 @@ public class JobControl extends DefaultBatchConfigurer {
     MetricsCollector metricsCollector;
 
     @Autowired
-    MetricCache metricCache;
-    @Autowired
     InfluxCache influxCache;
 
     @Autowired
@@ -177,41 +175,41 @@ public class JobControl extends DefaultBatchConfigurer {
     protected ItemWriter<DataChunk> getRightWriter(EndpointType type, EntityInfo fileInfo) {
         switch (type) {
             case vfs:
-                VfsWriter vfsWriter = new VfsWriter(request.getDestination().getVfsDestCredential(), fileInfo, this.metricsCollector, this.influxCache, this.metricCache);
+                VfsWriter vfsWriter = new VfsWriter(request.getDestination().getVfsDestCredential(), fileInfo, this.metricsCollector, this.influxCache);
                 return vfsWriter;
             case sftp:
-                SFTPWriter sftpWriter = new SFTPWriter(request.getDestination().getVfsDestCredential(), this.metricsCollector, this.influxCache, this.metricCache);
+                SFTPWriter sftpWriter = new SFTPWriter(request.getDestination().getVfsDestCredential(), this.metricsCollector, this.influxCache);
                 sftpWriter.setPool(connectionBag.getSftpWriterPool());
                 sftpWriter.setRetryTemplate(retryTemplateForReaderAndWriter);
                 return sftpWriter;
             case ftp:
-                FTPWriter ftpWriter = new FTPWriter(request.getDestination().getVfsDestCredential(), fileInfo, this.metricsCollector, this.influxCache, this.metricCache);
+                FTPWriter ftpWriter = new FTPWriter(request.getDestination().getVfsDestCredential(), fileInfo, this.metricsCollector, this.influxCache);
                 ftpWriter.setPool(connectionBag.getFtpWriterPool());
                 ftpWriter.setRetryTemplate(retryTemplateForReaderAndWriter);
                 return ftpWriter;
             case s3:
                 if (fileInfo.getSize() < TWENTY_MB) {
-                    AmazonS3SmallFileWriter amazonS3SmallFileWriter = new AmazonS3SmallFileWriter(request.getDestination().getVfsDestCredential(), fileInfo, this.metricsCollector, this.influxCache, this.metricCache);
+                    AmazonS3SmallFileWriter amazonS3SmallFileWriter = new AmazonS3SmallFileWriter(request.getDestination().getVfsDestCredential(), fileInfo, this.metricsCollector, this.influxCache);
                     amazonS3SmallFileWriter.setPool(connectionBag.getS3WriterPool());
                     return amazonS3SmallFileWriter;
                 } else {
-                    AmazonS3LargeFileWriter amazonS3LargeFileWriter = new AmazonS3LargeFileWriter(request.getDestination().getVfsDestCredential(), fileInfo, this.metricsCollector, this.influxCache, this.metricCache);
+                    AmazonS3LargeFileWriter amazonS3LargeFileWriter = new AmazonS3LargeFileWriter(request.getDestination().getVfsDestCredential(), fileInfo, this.metricsCollector, this.influxCache);
                     amazonS3LargeFileWriter.setPool(connectionBag.getS3WriterPool());
                     return amazonS3LargeFileWriter;
                 }
             case box:
                 if (fileInfo.getSize() < TWENTY_MB) {
-                    BoxWriterSmallFile boxWriterSmallFile = new BoxWriterSmallFile(request.getDestination().getOauthDestCredential(), fileInfo, this.metricsCollector, this.influxCache, this.metricCache);
+                    BoxWriterSmallFile boxWriterSmallFile = new BoxWriterSmallFile(request.getDestination().getOauthDestCredential(), fileInfo, this.metricsCollector, this.influxCache);
                     return boxWriterSmallFile;
                 } else {
-                    BoxWriterLargeFile boxWriterLargeFile = new BoxWriterLargeFile(request.getDestination().getOauthDestCredential(), fileInfo, this.metricsCollector, this.influxCache, this.metricCache);
+                    BoxWriterLargeFile boxWriterLargeFile = new BoxWriterLargeFile(request.getDestination().getOauthDestCredential(), fileInfo, this.metricsCollector, this.influxCache);
                     return boxWriterLargeFile;
                 }
             case dropbox:
-                DropBoxChunkedWriter dropBoxChunkedWriter = new DropBoxChunkedWriter(request.getDestination().getOauthDestCredential(), this.metricsCollector, this.influxCache, this.metricCache);
+                DropBoxChunkedWriter dropBoxChunkedWriter = new DropBoxChunkedWriter(request.getDestination().getOauthDestCredential(), this.metricsCollector, this.influxCache);
                 return dropBoxChunkedWriter;
             case scp:
-                SCPWriter scpWriter = new SCPWriter(fileInfo, this.metricsCollector, this.influxCache, this.metricCache);
+                SCPWriter scpWriter = new SCPWriter(fileInfo, this.metricsCollector, this.influxCache);
                 scpWriter.setPool(connectionBag.getSftpWriterPool());
                 return scpWriter;
         }

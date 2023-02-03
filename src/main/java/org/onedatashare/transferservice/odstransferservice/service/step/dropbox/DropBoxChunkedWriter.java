@@ -39,8 +39,8 @@ public class DropBoxChunkedWriter extends ODSBaseWriter implements ItemWriter<Da
     private FileMetadata uploadSessionFinishUploader;
 
 
-    public DropBoxChunkedWriter(OAuthEndpointCredential credential, MetricsCollector metricsCollector, InfluxCache influxCache, MetricCache metricCache) {
-        super(metricsCollector, influxCache, metricCache);
+    public DropBoxChunkedWriter(OAuthEndpointCredential credential, MetricsCollector metricsCollector, InfluxCache influxCache) {
+        super(metricsCollector, influxCache);
         this.credential = credential;
     }
 

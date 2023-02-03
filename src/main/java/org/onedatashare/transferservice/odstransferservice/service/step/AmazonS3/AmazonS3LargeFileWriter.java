@@ -9,7 +9,6 @@ import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.pools.S3ConnectionPool;
 import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
-import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
@@ -28,7 +27,6 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
 
 
 public class AmazonS3LargeFileWriter extends ODSBaseWriter implements ItemWriter<DataChunk> {
-
     private final String bucketName;
     Logger logger = LoggerFactory.getLogger(AmazonS3LargeFileWriter.class);
     private AWSMultiPartMetaData metaData;
@@ -41,8 +39,8 @@ public class AmazonS3LargeFileWriter extends ODSBaseWriter implements ItemWriter
     private S3ConnectionPool pool;
 
     //The ClientConfiguration options are the tcp options we can tune.
-    public AmazonS3LargeFileWriter(AccountEndpointCredential destCredential, EntityInfo fileInfo, MetricsCollector metricsCollector, InfluxCache influxCache, MetricCache metricCache) {
-        super(metricsCollector, influxCache, metricCache);
+    public AmazonS3LargeFileWriter(AccountEndpointCredential destCredential, EntityInfo fileInfo, MetricsCollector metricsCollector, InfluxCache influxCache) {
+        super(metricsCollector, influxCache);
         this.fileInfo = fileInfo;
         this.firstPass = false;
         String[] temp = destCredential.getUri().split(":::");

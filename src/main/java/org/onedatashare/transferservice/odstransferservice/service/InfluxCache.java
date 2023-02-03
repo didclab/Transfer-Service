@@ -87,11 +87,11 @@ public class InfluxCache {
 
         JobMetric agg = new JobMetric();
         //need to find earliest start and latest late time for both read and write.
+        long readTotalBytes = 0L;
+        long writtenTotalBytes = 0L;
         for (JobMetric value : this.threadCache.values()) {
-            long readTotalBytes = agg.getReadBytes() + value.getReadBytes();
-            agg.setReadBytes(readTotalBytes);
-            long writeTotalBytes = agg.getWrittenBytes() + value.getWrittenBytes();
-            agg.setWrittenBytes(writeTotalBytes);
+            readTotalBytes += value.getReadBytes();
+            writtenTotalBytes += value.getWrittenBytes();
 
             agg.setStepExecution(value.getStepExecution());
             agg.setConcurrency(value.getConcurrency());
@@ -139,6 +139,8 @@ public class InfluxCache {
             }
 
         }
+        agg.setReadBytes(readTotalBytes);
+        agg.setWrittenBytes(writtenTotalBytes);
         if (agg.getReadStartTime() != null && agg.getReadEndTime() != null) {
             double readThroughput = ODSConstants.computeThroughput(agg.getReadBytes(), Duration.between(agg.getReadStartTime(), agg.getReadEndTime()));
             agg.setReadThroughput(readThroughput);

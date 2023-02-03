@@ -1,6 +1,5 @@
 package org.onedatashare.transferservice.odstransferservice.service.cron;
 
-import com.influxdb.client.write.Point;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -9,6 +8,7 @@ import org.onedatashare.transferservice.odstransferservice.model.JobMetric;
 import org.onedatashare.transferservice.odstransferservice.model.metrics.DataInflux;
 import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.InfluxIOService;
 import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
+import org.onedatashare.transferservice.odstransferservice.service.LatencyRtt;
 import org.onedatashare.transferservice.odstransferservice.service.PmeterParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +21,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
 
 @Service
@@ -45,13 +47,13 @@ public class MetricsCollector {
 
     PmeterParser pmeterParser;
 
-    JobExplorer jobExplorer;
+    private LatencyRtt latencyRtt;
 
-    public MetricsCollector(PmeterParser pmeterParser, InfluxCache influxCache, JobExplorer jobExplorer, InfluxIOService influxIOService) {
+    public MetricsCollector(PmeterParser pmeterParser, InfluxCache influxCache, InfluxIOService influxIOService, LatencyRtt latencyRtt) {
         this.pmeterParser = pmeterParser;
         this.influxCache = influxCache;
-        this.jobExplorer = jobExplorer;
         this.influxIOService = influxIOService;
+        this.latencyRtt = latencyRtt;
     }
 
     /**
@@ -79,17 +81,25 @@ public class MetricsCollector {
         long usedMemory = totalMem - freeMem;
         long maxMem = Runtime.getRuntime().maxMemory();
         JobMetric currentAggregateMetric = influxCache.aggregateMetric(); //this metrics throughput is the throughput of the whole map in influxCache.
-        DataInflux lastPmeterData = pmeterMetrics.get(pmeterMetrics.size()-1);
+        DataInflux lastPmeterData = pmeterMetrics.get(pmeterMetrics.size() - 1);
         lastPmeterData.setAllocatedMemory(totalMem);
         lastPmeterData.setMemory(usedMemory);
         lastPmeterData.setFreeMemory(freeMem);
         lastPmeterData.setMaxMemory(maxMem);
         lastPmeterData.setCoreCount(Runtime.getRuntime().availableProcessors());
-        lastPmeterData.setOdsUser(this.odsUser);
         lastPmeterData.setTransferNodeName(this.appName);
         if (currentAggregateMetric != null) {
             StepExecution stepExecution = currentAggregateMetric.getStepExecution();
             JobParameters jobParameters = stepExecution.getJobParameters();
+            lastPmeterData.setOdsUser(jobParameters.getString(OWNER_ID));
+            //Getting & setting source/destination RTT/
+            double sourceRtt = this.latencyRtt.rttCompute(jobParameters.getString(SOURCE_HOST), jobParameters.getLong(SOURCE_PORT).intValue());
+            double destRtt = this.latencyRtt.rttCompute(jobParameters.getString(DEST_HOST), jobParameters.getLong(DEST_PORT).intValue());
+            lastPmeterData.setSourceRtt(sourceRtt);
+            lastPmeterData.setSourceLatency(sourceRtt/2);
+            lastPmeterData.setDestinationRtt(destRtt);
+            lastPmeterData.setDestLatency(destRtt/2);
+            //application level parameters
             lastPmeterData.setConcurrency(currentAggregateMetric.getConcurrency());
             lastPmeterData.setParallelism(currentAggregateMetric.getParallelism());
             lastPmeterData.setPipelining(currentAggregateMetric.getPipelining());

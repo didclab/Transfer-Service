@@ -85,6 +85,18 @@ public class DataInflux {
     @Column(name = RTT)
     private Double rtt;
 
+    @Column(name = SOURCE_RTT)
+    private Double sourceRtt;
+
+    @Column(name = SOURCE_LATENCY)
+    private Double sourceLatency;
+
+    @Column(name = DESTINATION_RTT)
+    private Double destinationRtt;
+
+    @Column(name = DEST_LATENCY)
+    private Double destLatency;
+
     @JsonProperty(value = ERROR_IN)
     @Column(name = ERROR_IN)
     private Long errin;

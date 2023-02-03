@@ -2,7 +2,6 @@ package org.onedatashare.transferservice.odstransferservice.service.DatabaseServ
 
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.WriteApi;
-import com.influxdb.client.WriteApiBlocking;
 import com.influxdb.client.domain.Bucket;
 import com.influxdb.client.domain.WritePrecision;
 import com.influxdb.exceptions.InfluxException;
@@ -30,8 +29,9 @@ public class InfluxIOService {
     String org;
 
     private static final Logger LOG = LoggerFactory.getLogger(InfluxIOService.class);
+    private WriteApi writeApi;
 
-    public InfluxIOService(InfluxDBClient influxDBClient){
+    public InfluxIOService(InfluxDBClient influxDBClient) {
         this.influxDBClient = influxDBClient;
     }
 
@@ -45,11 +45,11 @@ public class InfluxIOService {
             } catch (UnprocessableEntityException ignored) {
             }
         }
+        this.writeApi = this.influxDBClient.getWriteApi();
     }
 
 
     public void insertDataPoint(DataInflux point) {
-        WriteApi writeApi = this.influxDBClient.getWriteApi();
         try {
             writeApi.writeMeasurement(WritePrecision.MS, point);
         } catch (InfluxException exception) {

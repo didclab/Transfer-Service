@@ -10,7 +10,6 @@ import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.pools.JschSessionPool;
 import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
-import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.slf4j.Logger;
@@ -45,8 +44,8 @@ public class SCPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, S
     private InputStream inputStream;
     private byte[] socketBuffer;
 
-    public SCPWriter(EntityInfo fileInfo, MetricsCollector metricsCollector, InfluxCache influxCache, MetricCache metricCache) {
-        super(metricsCollector, influxCache, metricCache);
+    public SCPWriter(EntityInfo fileInfo, MetricsCollector metricsCollector, InfluxCache influxCache) {
+        super(metricsCollector, influxCache);
         this.fileInfo = fileInfo;
     }
 
