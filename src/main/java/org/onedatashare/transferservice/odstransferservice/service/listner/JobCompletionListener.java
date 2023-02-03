@@ -5,7 +5,6 @@ import org.onedatashare.transferservice.odstransferservice.model.optimizer.Optim
 import org.onedatashare.transferservice.odstransferservice.model.optimizer.OptimizerDeleteRequest;
 import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManager;
 import org.onedatashare.transferservice.odstransferservice.service.ConnectionBag;
-import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.OptimizerCron;
 import org.onedatashare.transferservice.odstransferservice.service.OptimizerService;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
@@ -20,9 +19,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 
 import java.time.Duration;
-import java.time.LocalDate;
+import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.Optional;
+import java.time.ZoneId;
 import java.util.concurrent.ScheduledFuture;
 
 
@@ -65,41 +64,36 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
     @Value("${transfer.service.pipelining}")
     int maxPipe;
 
-    @Autowired
-    MetricCache metricCache;
-
     private ScheduledFuture<?> future;
-    LocalDateTime startTime;
 
 
     @Override
     public void beforeJob(JobExecution jobExecution) {
         logger.info("*****Job Execution start Time***** : {}", jobExecution.getStartTime());
         String optimizerType = jobExecution.getJobParameters().getString(ODSConstants.OPTIMIZER);
-        if(optimizerType == null){
+        if (optimizerType == null) {
             this.optimizerEnable = false;
             return;
-        }else if(optimizerType.isEmpty()){
+        } else if (optimizerType.isEmpty()) {
             this.optimizerEnable = false;
             return;
-        }else if(!optimizerType.equals("BO") && !optimizerType.equals("VDA2C")){
+        } else if (!optimizerType.equals("BO") && !optimizerType.equals("VDA2C")) {
             this.optimizerEnable = false;
             return;
         }
         long fileCount = jobExecution.getJobParameters().getLong(ODSConstants.FILE_COUNT);
         OptimizerCreateRequest createRequest = new OptimizerCreateRequest(appName, maxConc, maxParallel, maxPipe, optimizerType, fileCount);
-        try{
+        try {
             optimizerService.createOptimizerBlocking(createRequest);
             this.future = optimizerTaskScheduler.scheduleWithFixedDelay(optimizerCron, interval);
             logger.info("Starting optimizer thread: {}", optimizerType);
             this.optimizerEnable = true;
-        } catch (RestClientException e){
+        } catch (RestClientException e) {
             logger.error("Failed to create the optimizer: {}", createRequest);
-            this.optimizerEnable=false;
+            this.optimizerEnable = false;
             this.future.cancel(true);
         }
-        startTime = LocalDateTime.now();
-        logger.info("Before Job Start LocalDateTime.now(): {}", startTime);
+        logger.info("Before Job Start LocalDateTime.now(): {}", jobExecution.getStartTime());
     }
 
     @Override
@@ -107,17 +101,20 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
         logger.info("*****Job Execution End Time**** : {}", jobExecution.getEndTime());
         connectionBag.closePools();
         threadPoolManager.clearJobPool();
-        if(this.optimizerEnable){
-            try{
+        if (this.optimizerEnable) {
+            try {
                 optimizerService.deleteOptimizerBlocking(new OptimizerDeleteRequest(appName));
                 this.future.cancel(true);
-                metricCache.clearCache();
-            } catch (RestClientException e){
+            } catch (RestClientException e) {
                 logger.error("Failed to delete optimizer: {}", appName);
             }
         }
-        LocalDateTime endTime = LocalDateTime.now();
-        logger.info("After Job  LocalDateTime.now(): {}", endTime);
+        LocalDateTime startTime = Instant.ofEpochMilli(jobExecution.getStartTime().getTime())
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
+        LocalDateTime endTime = Instant.ofEpochMilli(jobExecution.getEndTime().getTime())
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
         logger.info("Total Job Time in seconds: {}", Duration.between(startTime, endTime).toSeconds());
     }
 }

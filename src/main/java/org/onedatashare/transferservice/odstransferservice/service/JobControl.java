@@ -16,8 +16,8 @@ import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3
 import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxWriterLargeFile;
 import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxWriterSmallFile;
-import org.onedatashare.transferservice.odstransferservice.service.step.dropbox.DropBoxReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.dropbox.DropBoxChunkedWriter;
+import org.onedatashare.transferservice.odstransferservice.service.step.dropbox.DropBoxReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.http.HttpReader;
@@ -45,7 +45,6 @@ import org.springframework.batch.core.step.builder.SimpleStepBuilder;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
@@ -53,7 +52,6 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,9 +70,6 @@ public class JobControl extends DefaultBatchConfigurer {
     public TransferJobRequest request;
 
     Logger logger = LoggerFactory.getLogger(JobControl.class);
-
-    @Value("${spring.application.name}")
-    String appName;
 
     @Autowired
     ThreadPoolManager threadPoolManager;
@@ -98,13 +93,14 @@ public class JobControl extends DefaultBatchConfigurer {
     MetricsCollector metricsCollector;
 
     @Autowired
-    MetricCache metricCache;
+    InfluxCache influxCache;
 
     @Autowired
     RetryTemplate retryTemplateForReaderAndWriter;
 
     @Autowired
     JobRepository roachRepository;
+
 
     @Lazy
     @Bean
@@ -115,9 +111,7 @@ public class JobControl extends DefaultBatchConfigurer {
         return jobLauncher;
     }
 
-
     private List<Flow> createConcurrentFlow(List<EntityInfo> infoList, String basePath) {
-        List<Flow> flows = new ArrayList<>();
         if (this.request.getSource().getType().equals(EndpointType.vfs)) {
             infoList = vfsExpander.expandDirectory(infoList, basePath, this.request.getChunkSize());
             logger.info("File list: {}", infoList);
@@ -137,10 +131,8 @@ public class JobControl extends DefaultBatchConfigurer {
                     .writer(getRightWriter(request.getDestination().getType(), file));
             child.throttleLimit(32); //this value might allow concurrency to be dynamic.
             logger.info("Creating step with id {} ", idForStep);
-//            flows.add(new FlowBuilder<Flow>(basePath + idForStep).start(child.build()).build());
             return new FlowBuilder<Flow>(basePath + idForStep).start(child.build()).build();
         }).collect(Collectors.toList());
-//        return flows;
     }
 
     protected AbstractItemCountingItemStreamItemReader<DataChunk> getRightReader(EndpointType type, EntityInfo fileInfo) {
@@ -183,60 +175,42 @@ public class JobControl extends DefaultBatchConfigurer {
     protected ItemWriter<DataChunk> getRightWriter(EndpointType type, EntityInfo fileInfo) {
         switch (type) {
             case vfs:
-                VfsWriter vfsWriter = new VfsWriter(request.getDestination().getVfsDestCredential(), fileInfo);
-                vfsWriter.setMetricsCollector(metricsCollector);
-                vfsWriter.setMetricCache(metricCache);
+                VfsWriter vfsWriter = new VfsWriter(request.getDestination().getVfsDestCredential(), fileInfo, this.metricsCollector, this.influxCache);
                 return vfsWriter;
             case sftp:
-                SFTPWriter sftpWriter = new SFTPWriter(request.getDestination().getVfsDestCredential(), request.getOptions().getPipeSize());
+                SFTPWriter sftpWriter = new SFTPWriter(request.getDestination().getVfsDestCredential(), this.metricsCollector, this.influxCache);
                 sftpWriter.setPool(connectionBag.getSftpWriterPool());
-                sftpWriter.setMetricsCollector(metricsCollector);
-                sftpWriter.setMetricCache(metricCache);
                 sftpWriter.setRetryTemplate(retryTemplateForReaderAndWriter);
                 return sftpWriter;
             case ftp:
-                FTPWriter ftpWriter = new FTPWriter(request.getDestination().getVfsDestCredential());
+                FTPWriter ftpWriter = new FTPWriter(request.getDestination().getVfsDestCredential(), fileInfo, this.metricsCollector, this.influxCache);
                 ftpWriter.setPool(connectionBag.getFtpWriterPool());
-                ftpWriter.setMetricsCollector(metricsCollector);
-                ftpWriter.setMetricCache(metricCache);
                 ftpWriter.setRetryTemplate(retryTemplateForReaderAndWriter);
                 return ftpWriter;
             case s3:
                 if (fileInfo.getSize() < TWENTY_MB) {
-                    AmazonS3SmallFileWriter amazonS3SmallFileWriter = new AmazonS3SmallFileWriter(request.getDestination().getVfsDestCredential(), fileInfo);
-                    amazonS3SmallFileWriter.setMetricCache(this.metricCache);
-                    amazonS3SmallFileWriter.setMetricsCollector(metricsCollector);
+                    AmazonS3SmallFileWriter amazonS3SmallFileWriter = new AmazonS3SmallFileWriter(request.getDestination().getVfsDestCredential(), fileInfo, this.metricsCollector, this.influxCache);
                     amazonS3SmallFileWriter.setPool(connectionBag.getS3WriterPool());
                     return amazonS3SmallFileWriter;
                 } else {
-                    AmazonS3LargeFileWriter amazonS3LargeFileWriter = new AmazonS3LargeFileWriter(request.getDestination().getVfsDestCredential(), fileInfo);
-                    amazonS3LargeFileWriter.setMetricCache(this.metricCache);
-                    amazonS3LargeFileWriter.setMetricsCollector(metricsCollector);
+                    AmazonS3LargeFileWriter amazonS3LargeFileWriter = new AmazonS3LargeFileWriter(request.getDestination().getVfsDestCredential(), fileInfo, this.metricsCollector, this.influxCache);
                     amazonS3LargeFileWriter.setPool(connectionBag.getS3WriterPool());
                     return amazonS3LargeFileWriter;
                 }
             case box:
                 if (fileInfo.getSize() < TWENTY_MB) {
-                    BoxWriterSmallFile boxWriterSmallFile = new BoxWriterSmallFile(request.getDestination().getOauthDestCredential(), fileInfo);
-                    boxWriterSmallFile.setMetricsCollector(metricsCollector);
-                    boxWriterSmallFile.setMetricCache(metricCache);
+                    BoxWriterSmallFile boxWriterSmallFile = new BoxWriterSmallFile(request.getDestination().getOauthDestCredential(), fileInfo, this.metricsCollector, this.influxCache);
                     return boxWriterSmallFile;
                 } else {
-                    BoxWriterLargeFile boxWriterLargeFile = new BoxWriterLargeFile(request.getDestination().getOauthDestCredential(), fileInfo);
-                    boxWriterLargeFile.setMetricsCollector(metricsCollector);
-                    boxWriterLargeFile.setMetricCache(metricCache);
+                    BoxWriterLargeFile boxWriterLargeFile = new BoxWriterLargeFile(request.getDestination().getOauthDestCredential(), fileInfo, this.metricsCollector, this.influxCache);
                     return boxWriterLargeFile;
                 }
             case dropbox:
-                DropBoxChunkedWriter dropBoxChunkedWriter = new DropBoxChunkedWriter(request.getDestination().getOauthDestCredential());
-                dropBoxChunkedWriter.setMetricsCollector(metricsCollector);
-                dropBoxChunkedWriter.setMetricCache(metricCache);
+                DropBoxChunkedWriter dropBoxChunkedWriter = new DropBoxChunkedWriter(request.getDestination().getOauthDestCredential(), this.metricsCollector, this.influxCache);
                 return dropBoxChunkedWriter;
             case scp:
-                SCPWriter scpWriter = new SCPWriter(fileInfo);
+                SCPWriter scpWriter = new SCPWriter(fileInfo, this.metricsCollector, this.influxCache);
                 scpWriter.setPool(connectionBag.getSftpWriterPool());
-                scpWriter.setMetricsCollector(metricsCollector);
-                scpWriter.setMetricCache(metricCache);
                 return scpWriter;
         }
         return null;

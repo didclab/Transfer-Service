@@ -5,33 +5,29 @@ import com.dropbox.core.v2.DbxClientV2;
 import com.dropbox.core.v2.files.CommitInfo;
 import com.dropbox.core.v2.files.FileMetadata;
 import com.dropbox.core.v2.files.UploadSessionCursor;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.SneakyThrows;
-import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
 import org.onedatashare.transferservice.odstransferservice.service.MetricCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
+import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
-import org.springframework.batch.core.annotation.AfterWrite;
-import org.springframework.batch.core.annotation.BeforeRead;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemWriter;
 
 import java.io.ByteArrayInputStream;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
 
-public class DropBoxChunkedWriter implements ItemWriter<DataChunk> {
+public class DropBoxChunkedWriter extends ODSBaseWriter implements ItemWriter<DataChunk> {
 
     private final OAuthEndpointCredential credential;
     private String destinationPath;
@@ -39,19 +35,12 @@ public class DropBoxChunkedWriter implements ItemWriter<DataChunk> {
     String sessionId;
     private UploadSessionCursor cursor;
     Logger logger = LoggerFactory.getLogger(DropBoxChunkedWriter.class);
-    private StepExecution stepExecution;
-    @Setter
-    private MetricsCollector metricsCollector;
-    @Getter
-    @Setter
-    private MetricCache metricCache;
-
-    private LocalDateTime readStartTime;
     private String fileName;
     private FileMetadata uploadSessionFinishUploader;
 
 
-    public DropBoxChunkedWriter(OAuthEndpointCredential credential) {
+    public DropBoxChunkedWriter(OAuthEndpointCredential credential, MetricsCollector metricsCollector, InfluxCache influxCache) {
+        super(metricsCollector, influxCache);
         this.credential = credential;
     }
 
@@ -85,16 +74,4 @@ public class DropBoxChunkedWriter implements ItemWriter<DataChunk> {
         }
         this.fileName= items.get(0).getFileName();
     }
-
-    @BeforeRead
-    public void beforeRead() {
-        this.readStartTime = LocalDateTime.now();
-        logger.info("Before write start time {}", this.readStartTime);
-    }
-
-    @AfterWrite
-    public void afterWrite(List<? extends DataChunk> items) {
-        ODSConstants.metricsForOptimizerAndInflux(items, this.readStartTime, logger, stepExecution, metricCache, metricsCollector);
-    }
-
 }

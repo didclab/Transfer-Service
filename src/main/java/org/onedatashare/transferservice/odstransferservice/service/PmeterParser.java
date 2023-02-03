@@ -8,7 +8,6 @@ import org.apache.commons.exec.PumpStreamHandler;
 import org.onedatashare.transferservice.odstransferservice.model.metrics.DataInflux;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -28,11 +27,6 @@ public class PmeterParser {
 
     Logger logger = LoggerFactory.getLogger(PmeterParser.class);
 
-    @Autowired
-    ObjectMapper pmeterMapper;
-
-//    @Value("${pmeter.home}")
-//    String pmeterHome;
 
     @Value("${pmeter.report.path}")
     String pmeterReportPath;
@@ -48,17 +42,21 @@ public class PmeterParser {
 
     @Value("${pmeter.options}")
     String pmeterOptions;
+    ObjectMapper pmeterMapper;
+
 
     private CommandLine cmdLine;
 
+    public PmeterParser(ObjectMapper pmeterMapper) {
+        this.pmeterMapper = pmeterMapper;
+    }
+
     @PostConstruct
-    public void postConstruct(){
-        CommandLine cmdLine = CommandLine.parse(
+    public void postConstruct() {
+        this.cmdLine = CommandLine.parse(
                 String.format("pmeter " + MEASURE + " %s --user %s --measure %s %s --file_name %s",
                         pmeterNic, odsUser,
                         measureCount, pmeterOptions, pmeterReportPath));
-        this.cmdLine = cmdLine;
-        logger.info(this.cmdLine.toString());
     }
 
 

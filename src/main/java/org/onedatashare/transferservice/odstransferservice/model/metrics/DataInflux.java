@@ -1,184 +1,148 @@
 package org.onedatashare.transferservice.odstransferservice.model.metrics;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.influxdb.annotations.Column;
 import com.influxdb.annotations.Measurement;
 import lombok.Data;
-import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
+import static org.onedatashare.transferservice.odstransferservice.constant.DataInfluxConstants.*;
 
 @Data
 @Measurement(name = "transfer_data")
 @JsonIgnoreProperties(ignoreUnknown = true)
-@Component
 public class DataInflux {
 
-    @JsonProperty(value = "interface")
-    @Column(name = "interface")
+    @JsonProperty(value = NETWORK_INTERFACE)
+    @Column(name = NETWORK_INTERFACE)
     private String networkInterface;
 
-    @JsonProperty(value = "ods_user")
-    @Column(name = "ods_user", tag = true)
+    @JsonProperty(value = ODS_USER)
+    @Column(name = ODS_USER, tag = true)
     private String odsUser;
 
-    @JsonProperty(value = "transfer_node_name")
-    @Column(name = "transfer_node_name")
+    @JsonProperty(value = TRANSFER_NODE_NAME)
+    @Column(name = TRANSFER_NODE_NAME, tag = true)
     private String transferNodeName;
 
-    @JsonProperty(value = "active_core_count")
-    @Column(name = "active_core_count")
-    private Double coreCount;
+    @JsonProperty(value = ACTIVE_CORE_COUNT)
+    @Column(name = ACTIVE_CORE_COUNT)
+    private Integer coreCount;
 
-    @JsonProperty(value = "cpu_frequency_max")
-    @Column(name = "cpu_frequency_max")
+    @JsonProperty(value = CPU_FREQUENCY_MAX)
+    @Column(name = CPU_FREQUENCY_MAX)
     private Double cpu_frequency_max;
 
-    @JsonProperty(value = "cpu_frequency_current")
-    @Column(name = "cpu_frequency_current")
+    @JsonProperty(value = CPU_FREQUENCY_CURRENT)
+    @Column(name = CPU_FREQUENCY_CURRENT)
     private Double cpu_frequency_current;
 
-    @JsonProperty(value = "cpu_frequency_min")
-    @Column(name = "cpu_frequency_min")
+    @JsonProperty(value = CPU_FREQUENCY_MIN)
+    @Column(name = CPU_FREQUENCY_MIN)
     private Double cpu_frequency_min;
 
-
-    @JsonProperty(value = "energy_consumed")
-    @Column(name = "energy_consumed")
-    private Double energyConsumed;
-
-    @JsonProperty(value = "cpu_arch")
-    @Column(name = "cpu_arch")
+    @JsonProperty(value = CPU_ARCHITECTURE)
+    @Column(name = CPU_ARCHITECTURE)
     private String cpuArchitecture;
 
-    @JsonProperty(value = "packet_loss_rate")
-    @Column(name = "packet_loss_rate")
+    @JsonProperty(value = PACKET_LOSS_RATE)
+    @Column(name = PACKET_LOSS_RATE)
     private Double packetLossRate;
-
-    @JsonProperty(value = "link_capacity")
-    @Column(name = "link_capacity")
-    private Double linkCapacity;
-
-    /* Delta values*/
-    @Column(name = "bytes_sent_delta")
-    private Long bytesSentDelta;
-
-    @Column(name = "bytes_received_delta")
-    private Long bytesReceivedDelta;
-
-    @Column(name = "packets_sent_delta")
-    private Long packetsSentDelta;
-
-    @Column(name = "packets_received_delta")
-    private Long packetsReceivedDelta;
-
     //NIC values
-
-    @JsonProperty(value = "bytes_sent")
-    @Column(name = "bytes_sent")
+    @JsonProperty(value = BYTES_SENT)
+    @Column( name = BYTES_SENT)
     private Long bytesSent;
 
-    @JsonProperty(value = "bytes_recv")
-    @Column(name = "bytes_recv")
+    @JsonProperty(value = BYTES_RECEIVED)
+    @Column(name = BYTES_RECEIVED)
     private Long bytesReceived;
 
-    @JsonProperty(value = "packets_sent")
-    @Column(name = "packets_sent")
+    @JsonProperty(value = PACKETS_SENT)
+    @Column(name = PACKETS_SENT)
     private Long packetSent;
 
-    @JsonProperty(value = "packets_recv")
-    @Column(name = "packets_recv")
+    @JsonProperty(value = PACKETS_RECEIVED)
+    @Column(name = PACKETS_RECEIVED)
     private Long packetReceived;
 
-    @JsonProperty(value = "dropin")
-    @Column(name = "dropin")
-    private Double dropin;
+    @JsonProperty(value = DROP_IN)
+    @Column(name = DROP_IN)
+    private Long dropin;
 
-    @JsonProperty(value = "dropout")
-    @Column(name = "dropout")
-    private Double dropout;
+    @JsonProperty(value = DROP_OUT)
+    @Column(name = DROP_OUT)
+    private Long dropout;
 
-    @JsonProperty(value = "nic_speed")
-    @Column(name = "nic_speed")
-    private Double nicSpeed;
+    @JsonProperty(value = NIC_MTU)
+    @Column(name = NIC_MTU)
+    private Integer nicMtu;
 
-    @JsonProperty(value = "nic_mtu")
-    @Column(name = "nic_mtu")
-    private Double nicMtu;
-
-    //2022-06-01 10:41:15.123591
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
-    @JsonProperty(value = "start_time")
-    @Column(name = "pmeter_start_time")
-    private LocalDateTime startTime;
-
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
-    @JsonProperty(value = "end_time")
-    @Column(name = "pmeter_end_time")
-    private LocalDateTime endTime;
-
-    @JsonProperty(value = "latency")
-    @Column(name = "latency")
+    @JsonProperty(value = LATENCY)
+    @Column(name = LATENCY)
     private Double latency;
 
-    @JsonProperty(value = "rtt")
-    @Column(name = "rtt")
+    @JsonProperty(value = RTT)
+    @Column(name = RTT)
     private Double rtt;
 
-    @JsonProperty(value = "errin")
-    @Column(name = "errin")
-    private Double errin;
+    @Column(name = SOURCE_RTT)
+    private Double sourceRtt;
 
-    @JsonProperty(value = "errout")
-    @Column(name = "errout")
-    private Double errout;
+    @Column(name = SOURCE_LATENCY)
+    private Double sourceLatency;
+
+    @Column(name = DESTINATION_RTT)
+    private Double destinationRtt;
+
+    @Column(name = DEST_LATENCY)
+    private Double destLatency;
+
+    @JsonProperty(value = ERROR_IN)
+    @Column(name = ERROR_IN)
+    private Long errin;
+
+    @JsonProperty(value = ERROR_OUT)
+    @Column(name = ERROR_OUT)
+    private Long errout;
 
     //Job Values
-
-    @Column(name = "jobId")
+    @Column(name = JOB_ID, tag = true)
     private Long jobId;
-
-    @Column(name = "throughput")
-    private Double throughput;
-
-    @Column(name = "concurrency")
+    @Column(name = READ_THROUGHPUT)
+    private Double readThroughput;
+    @Column(name = WRITE_THROUGHPUT)
+    private Double writeThroughput;
+    @Column(name=BYTES_UPLOADED)
+    private Long bytesWritten;
+    @Column(name = BYTES_DOWNLOADED)
+    private Long bytesRead;
+    @Column(name = CONCURRENCY)
     private Integer concurrency;
 
-    @Column(name = "parallelism")
+    @Column(name = PARALLELISM)
     private Integer parallelism;
-
-    @Column(name = "pipelining")
+    @Column(name = PIPELINING)
     private Integer pipelining;
-
-    @Column(name = "memory")
+    @Column(name = MEMORY)
     private Long memory;
-
-    @Column(name = "maxMemory")
+    @Column(name = MAX_MEMORY)
     private Long maxMemory;
-
-    @Column(name = "freeMemory")
+    @Column(name = FREE_MEMORY)
     private Long freeMemory;
-
-    @Column(name = "jobSize")
+    @Column(name = ALLOCATED_MEMORY)
+    private Long allocatedMemory;
+    @Column(name = JOB_SIZE)
     private Long jobSize;
-
-    @Column(name = "avgJobSize")
+    @Column(name = AVERAGE_FILE_SIZE)
     private Long avgFileSize;
 
-    @Column(name = "totalBytesSent")
-    private Long dataBytesSent;
-
-    @Column(name = "compression")
-    private Boolean compression;
-
-    @Column(name = "allocatedMemory")
-    private Long allocatedMemory;
-
-    @Column(name = "sourceType")
+    @Column(name = SOURCE_TYPE, tag = true)
     private String sourceType;
+    @Column(name = SOURCE_CRED_ID, tag = true)
+    private String sourceCredId;
 
-    @Column(name = "destType")
+    @Column(name = DESTINATION_TYPE, tag = true)
     private String destType;
+    @Column(name  = DESTINATION_CRED_IT, tag = true)
+    private String destCredId;
 }

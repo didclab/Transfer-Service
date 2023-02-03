@@ -3,44 +3,39 @@ package org.onedatashare.transferservice.odstransferservice.service.cron;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
-import org.onedatashare.transferservice.odstransferservice.DataRepository.InfluxIOService;
+import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.JobMetric;
 import org.onedatashare.transferservice.odstransferservice.model.metrics.DataInflux;
-import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManager;
-import org.onedatashare.transferservice.odstransferservice.service.ConnectionBag;
+import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.InfluxIOService;
 import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
+import org.onedatashare.transferservice.odstransferservice.service.LatencyRtt;
 import org.onedatashare.transferservice.odstransferservice.service.PmeterParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.JobParameters;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.batch.core.StepExecution;
+import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
 
-/**
- * @author deepika
- */
 @Service
 @Getter
 @Setter
 public class MetricsCollector {
 
-    private Logger log = LoggerFactory.getLogger(MetricsCollector.class);
-
-    @Autowired
     private InfluxIOService influxIOService;
+    private AtomicLong jobId;
+    private Logger log = LoggerFactory.getLogger(MetricsCollector.class);
 
     @Value("${pmeter.cron.run}")
     private boolean isCronEnabled;
-
-    @Value("${job.metrics.save}")
-    private boolean isJobMetricCollectionEnabled;
 
     @Value("${spring.application.name}")
     String appName;
@@ -48,20 +43,18 @@ public class MetricsCollector {
     @Value("${ods.user}")
     String odsUser;
 
-    @Autowired
     InfluxCache influxCache;
 
-    @Autowired
-    ThreadPoolManager threadPoolManager;
-
-    @Autowired
     PmeterParser pmeterParser;
 
-    JobMetric previousParentMetric;
+    private LatencyRtt latencyRtt;
 
-    @Autowired
-    ConnectionBag connectionBag;
-
+    public MetricsCollector(PmeterParser pmeterParser, InfluxCache influxCache, InfluxIOService influxIOService, LatencyRtt latencyRtt) {
+        this.pmeterParser = pmeterParser;
+        this.influxCache = influxCache;
+        this.influxIOService = influxIOService;
+        this.latencyRtt = latencyRtt;
+    }
 
     /**
      * This is not blocking to the transfer job as this is getting run by the thread that is processing the CRON.
@@ -83,49 +76,49 @@ public class MetricsCollector {
         pmeterParser.runPmeter();
         List<DataInflux> pmeterMetrics = pmeterParser.parsePmeterOutput();
         if (pmeterMetrics.size() < 1) return;
+        long freeMem = Runtime.getRuntime().freeMemory();
+        long totalMem = Runtime.getRuntime().totalMemory();
+        long usedMemory = totalMem - freeMem;
+        long maxMem = Runtime.getRuntime().maxMemory();
+        JobMetric currentAggregateMetric = influxCache.aggregateMetric(); //this metrics throughput is the throughput of the whole map in influxCache.
+        DataInflux lastPmeterData = pmeterMetrics.get(pmeterMetrics.size() - 1);
+        lastPmeterData.setAllocatedMemory(totalMem);
+        lastPmeterData.setMemory(usedMemory);
+        lastPmeterData.setFreeMemory(freeMem);
+        lastPmeterData.setMaxMemory(maxMem);
+        lastPmeterData.setCoreCount(Runtime.getRuntime().availableProcessors());
+        lastPmeterData.setTransferNodeName(this.appName);
+        if (currentAggregateMetric != null) {
+            StepExecution stepExecution = currentAggregateMetric.getStepExecution();
+            JobParameters jobParameters = stepExecution.getJobParameters();
+            lastPmeterData.setOdsUser(jobParameters.getString(OWNER_ID));
+            //Getting & setting source/destination RTT/
+            double sourceRtt = this.latencyRtt.rttCompute(jobParameters.getString(SOURCE_HOST), jobParameters.getLong(SOURCE_PORT).intValue());
+            double destRtt = this.latencyRtt.rttCompute(jobParameters.getString(DEST_HOST), jobParameters.getLong(DEST_PORT).intValue());
+            lastPmeterData.setSourceRtt(sourceRtt);
+            lastPmeterData.setSourceLatency(sourceRtt/2);
+            lastPmeterData.setDestinationRtt(destRtt);
+            lastPmeterData.setDestLatency(destRtt/2);
+            //application level parameters
+            lastPmeterData.setConcurrency(currentAggregateMetric.getConcurrency());
+            lastPmeterData.setParallelism(currentAggregateMetric.getParallelism());
+            lastPmeterData.setPipelining(currentAggregateMetric.getPipelining());
+            //JobMetric stuff
+            lastPmeterData.setReadThroughput(currentAggregateMetric.getReadThroughput());
+            lastPmeterData.setWriteThroughput(currentAggregateMetric.getWriteThroughput());
+            lastPmeterData.setBytesRead(currentAggregateMetric.getReadBytes());
+            lastPmeterData.setBytesWritten(currentAggregateMetric.getWrittenBytes());
+            lastPmeterData.setDestType(jobParameters.getString(ODSConstants.DEST_CREDENTIAL_TYPE));
+            lastPmeterData.setDestCredId(jobParameters.getString(ODSConstants.DEST_CREDENTIAL_ID));
+            lastPmeterData.setSourceType(jobParameters.getString(ODSConstants.SOURCE_CREDENTIAL_TYPE));
+            lastPmeterData.setSourceCredId(jobParameters.getString(ODSConstants.SOURCE_CREDENTIAL_ID));
 
-        this.previousParentMetric = influxCache.someJobMetric(); //this metrics throughput is the throughput of the whole map in influxCache.
-        long jobSize = 0L;
-        long avgFileSize = 0L;
-        long pipeSize = 0L;
-        String destType = "";
-        String sourceType = "";
-        String ownerId = this.odsUser;
-        if (this.previousParentMetric.getStepExecution() != null) {
-            JobParameters jobParameters = this.previousParentMetric.getStepExecution().getJobParameters();
-            jobSize = jobParameters.getLong(JOB_SIZE);
-            avgFileSize = jobParameters.getLong(FILE_SIZE_AVG);
-            pipeSize = jobParameters.getLong(PIPELINING);
-            sourceType = jobParameters.getString(SOURCE_CREDENTIAL_TYPE);
-            destType = jobParameters.getString(DEST_CREDENTIAL_TYPE);
-            ownerId = jobParameters.getString(OWNER_ID);
+            lastPmeterData.setJobId(stepExecution.getJobExecutionId());
+            lastPmeterData.setJobSize(jobParameters.getLong(ODSConstants.JOB_SIZE));
+            lastPmeterData.setAvgFileSize(jobParameters.getLong(ODSConstants.FILE_SIZE_AVG));
+            lastPmeterData.setOdsUser(jobParameters.getString(ODSConstants.OWNER_ID));
+            this.influxCache.clearCache();
         }
-        long freeMemory = Runtime.getRuntime().freeMemory();
-        long maxMemory = Runtime.getRuntime().maxMemory();
-        long allocatedMemory = Runtime.getRuntime().totalMemory();
-        long memory = allocatedMemory - freeMemory;
-        for (DataInflux dataInflux : pmeterMetrics) {
-            dataInflux.setConcurrency(threadPoolManager.concurrencyCount());
-            dataInflux.setParallelism(threadPoolManager.parallelismCount());
-            dataInflux.setPipelining((int) pipeSize); //if this is to be dynamic then we would need to adjust the clients.
-            dataInflux.setThroughput(this.previousParentMetric.getThroughput());
-            dataInflux.setDataBytesSent(this.previousParentMetric.getBytesSent());
-            dataInflux.setFreeMemory(freeMemory);
-            dataInflux.setMaxMemory(maxMemory);
-            dataInflux.setAllocatedMemory(allocatedMemory);
-            dataInflux.setMemory(memory);
-            dataInflux.setJobSize(jobSize);
-            dataInflux.setAvgFileSize(avgFileSize);
-            dataInflux.setCompression(connectionBag.isCompression());
-            dataInflux.setJobId(previousParentMetric.getJobId());
-            dataInflux.setOdsUser(ownerId);
-            dataInflux.setTransferNodeName(this.appName);
-            dataInflux.setSourceType(sourceType);
-            dataInflux.setDestType(destType);
-            log.info("Pushing DataInflux {}", dataInflux.toString());
-        }
-        influxIOService.insertDataPoints(pmeterMetrics);
-        this.influxCache.clearCache();
+        influxIOService.insertDataPoint(lastPmeterData);
     }
-
 }
