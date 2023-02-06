@@ -45,7 +45,7 @@ public class InfluxIOService {
             } catch (UnprocessableEntityException ignored) {
             }
         }
-        this.writeApi = this.influxDBClient.getWriteApi();
+        this.writeApi = this.influxDBClient.makeWriteApi();
     }
 
 
