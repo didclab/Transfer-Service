@@ -24,7 +24,6 @@ public class ThreadPoolManager {
     @PostConstruct
     public void createMap() {
         this.executorHashmap = new HashMap<>();
-        logger.info("creating executor hashmap");
     }
 
     public ThreadPoolTaskExecutor createThreadPool(int corePoolSize, String prefix) {

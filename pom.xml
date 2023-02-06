@@ -46,7 +46,7 @@
         <dependency>
             <groupId>com.influxdb</groupId>
             <artifactId>influxdb-client-java</artifactId>
-            <version>3.1.0</version>
+            <version>6.7.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -126,16 +126,6 @@
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-s3</artifactId>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>io.micrometer</groupId>-->
-<!--            <artifactId>micrometer-core</artifactId>-->
-<!--            <version>1.9.3</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>io.micrometer</groupId>-->
-<!--            <artifactId>micrometer-registry-influx</artifactId>-->
-<!--            <version>1.9.3</version>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>

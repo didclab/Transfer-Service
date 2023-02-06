@@ -12,6 +12,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 @Service
@@ -32,14 +33,11 @@ public class OptimizerService {
         headers.setContentType(MediaType.APPLICATION_JSON);
     }
 
-    public Optimizer inputToOptimizerBlocking(OptimizerInputRequest optimizerInputRequest) {
-        optimizerInputRequest.setNodeId(this.appName);
-        logger.info("Sending OptimizerInputRequest {}", optimizerInputRequest);
-        HttpEntity<OptimizerInputRequest> inputRequestHttpEntity = new HttpEntity<>(optimizerInputRequest, this.headers);
-        return this.optimizerTemplate.postForObject("/optimizer/input", inputRequestHttpEntity, Optimizer.class);
+    public Optimizer getNextApplicationTupleToUse() throws RestClientException {
+        return this.optimizerTemplate.getForObject("/optimizer/parameters", Optimizer.class);
     }
 
-    public void createOptimizerBlocking(OptimizerCreateRequest optimizerCreateRequest) {
+    public void createOptimizerBlocking(OptimizerCreateRequest optimizerCreateRequest) throws RestClientException {
         optimizerCreateRequest.setNodeId(this.appName);
         logger.info("Sending OptimizerCreateRequest {}", optimizerCreateRequest);
         HttpEntity<OptimizerCreateRequest> createRequestHttpEntity = new HttpEntity<>(optimizerCreateRequest, this.headers);
@@ -49,7 +47,11 @@ public class OptimizerService {
 
     public void deleteOptimizerBlocking(OptimizerDeleteRequest optimizerDeleteRequest) {
         optimizerDeleteRequest.setNodeId(this.appName);
-        this.optimizerTemplate.postForObject("/optimizer/delete", new HttpEntity<>(optimizerDeleteRequest, this.headers), Void.class);
-        logger.info("Deleted {}", optimizerDeleteRequest.toString());
+        try {
+            this.optimizerTemplate.postForObject("/optimizer/delete", new HttpEntity<>(optimizerDeleteRequest, this.headers), Void.class);
+        } catch (RestClientException e){
+            logger.error("Failed to Delete optimizer. {}", optimizerDeleteRequest);
+        }
+        logger.info("Deleted {}", optimizerDeleteRequest);
     }
 }

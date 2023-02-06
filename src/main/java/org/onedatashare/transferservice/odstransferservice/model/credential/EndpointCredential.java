@@ -11,18 +11,4 @@ public class EndpointCredential{
         this.accountId = accountId;
     }
 
-    public AccountEndpointCredential getAccountCredential(EndpointCredential endpointCredential){
-        if(endpointCredential instanceof  AccountEndpointCredential){
-            return (AccountEndpointCredential) endpointCredential;
-        }else{
-            return null;
-        }
-    }
-    public OAuthEndpointCredential getOAuthCredential(EndpointCredential endpointCredential){
-        if(endpointCredential instanceof OAuthEndpointCredential){
-            return (OAuthEndpointCredential) endpointCredential;
-        }else{
-            return null;
-        }
-    }
 }

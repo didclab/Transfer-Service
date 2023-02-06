@@ -54,8 +54,6 @@ public class RabbitMQConsumer {
     @RabbitListener(queues = "#{userQueue}")
     public void consumeDefaultMessage(final Message message) {
         String jsonStr = new String(message.getBody());
-        System.out.println("Message received");// + jsonStr);
-
         Gson g = new Gson();
         TransferJobRequest request = g.fromJson(jsonStr, TransferJobRequest.class);
         logger.info(request.toString());
