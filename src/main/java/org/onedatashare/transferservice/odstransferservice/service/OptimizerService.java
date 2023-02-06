@@ -34,7 +34,7 @@ public class OptimizerService {
     }
 
     public Optimizer getNextApplicationTupleToUse() throws RestClientException {
-        return this.optimizerTemplate.getForObject("/optimizer/nextparams", Optimizer.class);
+        return this.optimizerTemplate.getForObject("/optimizer/parameters", Optimizer.class);
     }
 
     public void createOptimizerBlocking(OptimizerCreateRequest optimizerCreateRequest) throws RestClientException {
