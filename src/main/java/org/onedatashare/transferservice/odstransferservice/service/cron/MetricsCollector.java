@@ -93,8 +93,14 @@ public class MetricsCollector {
             JobParameters jobParameters = stepExecution.getJobParameters();
             lastPmeterData.setOdsUser(jobParameters.getString(OWNER_ID));
             //Getting & setting source/destination RTT/
-            double sourceRtt = this.latencyRtt.rttCompute(jobParameters.getString(SOURCE_HOST), jobParameters.getLong(SOURCE_PORT).intValue());
-            double destRtt = this.latencyRtt.rttCompute(jobParameters.getString(DEST_HOST), jobParameters.getLong(DEST_PORT).intValue());
+            double sourceRtt = 0.0;
+            if(!jobParameters.getString(SOURCE_CREDENTIAL_TYPE).equals("vfs")){
+                sourceRtt = this.latencyRtt.rttCompute(jobParameters.getString(SOURCE_HOST), jobParameters.getLong(SOURCE_PORT).intValue());
+            }
+            double destRtt = 0.0;
+            if(!jobParameters.getString(DEST_CREDENTIAL_TYPE).equals("vfs")) {
+                destRtt = this.latencyRtt.rttCompute(jobParameters.getString(DEST_HOST), jobParameters.getLong(DEST_PORT).intValue());
+            }
             lastPmeterData.setSourceRtt(sourceRtt);
             lastPmeterData.setSourceLatency(sourceRtt/2);
             lastPmeterData.setDestinationRtt(destRtt);
@@ -117,8 +123,8 @@ public class MetricsCollector {
             lastPmeterData.setJobSize(jobParameters.getLong(ODSConstants.JOB_SIZE));
             lastPmeterData.setAvgFileSize(jobParameters.getLong(ODSConstants.FILE_SIZE_AVG));
             lastPmeterData.setOdsUser(jobParameters.getString(ODSConstants.OWNER_ID));
-            this.influxCache.clearCache();
         }
+        this.influxCache.clearCache();
         influxIOService.insertDataPoint(lastPmeterData);
     }
 }
