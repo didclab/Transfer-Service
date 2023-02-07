@@ -26,7 +26,6 @@ public class VfsWriter extends ODSBaseWriter implements ItemWriter<DataChunk> {
 
     Logger logger = LoggerFactory.getLogger(VfsWriter.class);
     AccountEndpointCredential destCredential;
-    String fileName;
     FileChannel fileChannel;
     String destinationPath;
     Path filePath;
@@ -43,10 +42,9 @@ public class VfsWriter extends ODSBaseWriter implements ItemWriter<DataChunk> {
     public void beforeStep(StepExecution stepExecution) throws IOException {
         this.destinationPath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
         assert this.destinationPath != null;
-        this.filePath = Paths.get(this.destinationPath, this.fileInfo.getId());
+        this.filePath = Paths.get(this.destinationPath);
         this.stepExecution = stepExecution;
-        prepareFile();
-        this.fileChannel = FileChannel.open(this.filePath, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+        prepareDirectories();
     }
 
     @AfterStep
@@ -55,7 +53,7 @@ public class VfsWriter extends ODSBaseWriter implements ItemWriter<DataChunk> {
         return stepExecution.getExitStatus();
     }
 
-    public void prepareFile() {
+    public void prepareDirectories() {
         try {
             Files.createDirectories(Paths.get(this.destinationPath));
         } catch (FileAlreadyExistsException fileAlreadyExistsException) {
@@ -67,8 +65,12 @@ public class VfsWriter extends ODSBaseWriter implements ItemWriter<DataChunk> {
 
     @Override
     public void write(List<? extends DataChunk> items) throws Exception {
-        this.fileName = items.get(0).getFileName();
-        this.filePath = Paths.get(this.filePath.toString(), this.fileName);
+        Path path = Paths.get(this.destinationPath, items.get(0).getFileName());
+        if(!path.toString().equals(this.filePath.toString())){
+            this.fileChannel = FileChannel.open(path, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+            this.filePath = path;
+        }
+        logger.info("VfsWriter file Path: {}", this.filePath);
         for (int i = 0; i < items.size(); i++) {
             DataChunk chunk = items.get(i);
             int bytesWritten = this.fileChannel.write(ByteBuffer.wrap(chunk.getData()), chunk.getStartPosition());
