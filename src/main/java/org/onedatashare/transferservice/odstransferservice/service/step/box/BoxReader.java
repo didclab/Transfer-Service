@@ -61,6 +61,7 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
         filePartitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
         this.boxAPIConnection = new BoxAPIConnection(credential.getToken());
         this.currentFile = new BoxFile(this.boxAPIConnection, this.fileInfo.getId());
+        this.currentFile.getInfo("name");
         this.boxAPIConnection.setMaxRetryAttempts(this.retry);
     }
 
