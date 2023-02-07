@@ -7,6 +7,7 @@ import com.influxdb.annotations.Measurement;
 import lombok.Data;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.DataInfluxConstants.*;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.CHUNK_SIZE;
 
 @Data
 @Measurement(name = "transfer_data")
@@ -145,4 +146,7 @@ public class DataInflux {
     private String destType;
     @Column(name  = DESTINATION_CRED_IT, tag = true)
     private String destCredId;
+
+    @Column(name = CHUNK_SIZE)
+    private Long chunksize;
 }

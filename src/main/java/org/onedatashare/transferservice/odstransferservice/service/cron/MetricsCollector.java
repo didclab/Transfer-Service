@@ -109,6 +109,7 @@ public class MetricsCollector {
             lastPmeterData.setConcurrency(currentAggregateMetric.getConcurrency());
             lastPmeterData.setParallelism(currentAggregateMetric.getParallelism());
             lastPmeterData.setPipelining(currentAggregateMetric.getPipelining());
+            lastPmeterData.setChunksize(currentAggregateMetric.getChunkSize());
             //JobMetric stuff
             lastPmeterData.setReadThroughput(currentAggregateMetric.getReadThroughput());
             lastPmeterData.setWriteThroughput(currentAggregateMetric.getWriteThroughput());

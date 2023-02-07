@@ -24,6 +24,7 @@ public class JobMetric {
     private LocalDateTime readEndTime;
     private long readBytes; //number of bytes read in
     private Double readThroughput; //the read in throughput
+    private Long chunkSize;
 
     public JobMetric() {
         this.threadId = -1;
@@ -35,6 +36,7 @@ public class JobMetric {
         this.stepExecution = null;
         this.writtenBytes = 0L;
         this.readBytes = 0L;
+        this.chunkSize = 0L;
     }
     public boolean isDefault() {
         return this.stepExecution != null;

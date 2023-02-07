@@ -45,7 +45,7 @@ public class InfluxCache {
         this.threadCache = new ConcurrentHashMap<>();
     }
 
-    public void addMetric(long threadId, StepExecution stepExecution, long totalBytes, LocalDateTime startTime, LocalDateTime endTime, ThroughputType type) {
+    public void addMetric(long threadId, StepExecution stepExecution, long totalBytes, LocalDateTime startTime, LocalDateTime endTime, ThroughputType type, Long chunkSize) {
         JobMetric prevMetric = this.threadCache.get(threadId);
         if (prevMetric == null) {
             prevMetric = new JobMetric();
@@ -54,6 +54,7 @@ public class InfluxCache {
             prevMetric.setConcurrency(threadPoolManager.concurrencyCount());
             prevMetric.setParallelism(threadPoolManager.parallelismCount());
             prevMetric.setPipelining(stepExecution.getJobParameters().getLong(PIPELINING).intValue());
+            prevMetric.setChunkSize(chunkSize);
             this.threadCache.put(threadId, prevMetric);
         }
         if (type == ThroughputType.READER) {
@@ -97,7 +98,7 @@ public class InfluxCache {
             agg.setConcurrency(value.getConcurrency());
             agg.setParallelism(value.getParallelism());
             agg.setPipelining(value.getPipelining());
-
+            agg.setChunkSize(value.getChunkSize());
             LocalDateTime valueReadStartTime = value.getReadStartTime();
             LocalDateTime aggReadStartTime = agg.getReadStartTime();
             //readStartTime gets set by the earliest readStartTime that is not null.

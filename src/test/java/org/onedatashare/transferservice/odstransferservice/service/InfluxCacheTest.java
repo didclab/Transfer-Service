@@ -82,7 +82,7 @@ public class InfluxCacheTest {
         InfluxCache.ThroughputType type = InfluxCache.ThroughputType.READER;
         JobMetric expectedMetric = this.buildReadExpectedMetric(startTime, endTime, testThreadId, totalBytes, cc, pp, p);
 
-        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, type);
+        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, type, 0L);
         Assertions.assertEquals(1, testObj.threadCache.size());
 
         //now test the quality of that 1 object
@@ -102,7 +102,7 @@ public class InfluxCacheTest {
         InfluxCache.ThroughputType type = InfluxCache.ThroughputType.WRITER;
         JobMetric expectedMetric = buildWriteExpectedMetrics(startTime, endTime, testThreadId, totalBytes, cc, pp, p);
 
-        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, type);
+        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, type,0L);
         Assertions.assertEquals(1, testObj.threadCache.size());
 
         //now test the quality of that 1 object
@@ -119,12 +119,12 @@ public class InfluxCacheTest {
         LocalDateTime endTime = LocalDateTime.now();
         long testThreadId = Thread.currentThread().getId(), totalBytes = 100;
         int cc = 1, pp = 1, p = 1;
-        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, InfluxCache.ThroughputType.READER);
+        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, InfluxCache.ThroughputType.READER,0L);
         LocalDateTime startTime2 = LocalDateTime.now();
         LocalDateTime endTime2 = LocalDateTime.now();
 
         long totalBytes2 = 1000;
-        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes2, startTime2, endTime2, InfluxCache.ThroughputType.READER);
+        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes2, startTime2, endTime2, InfluxCache.ThroughputType.READER,0L);
         Assertions.assertEquals(1, testObj.threadCache.size()); //there is only 1 thread per entry
 
         //now test the quality of the one read object
@@ -148,12 +148,12 @@ public class InfluxCacheTest {
         LocalDateTime startTime = LocalDateTime.now();
         LocalDateTime endTime = LocalDateTime.now();
         long testThreadId = Thread.currentThread().getId(), totalBytes = 100;
-        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, InfluxCache.ThroughputType.WRITER);
+        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, InfluxCache.ThroughputType.WRITER,0L);
 
         LocalDateTime startTime2 = LocalDateTime.now();
         LocalDateTime endTime2 = LocalDateTime.now();
         long totalBytes2 = 1000;
-        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes2, startTime2, endTime2, InfluxCache.ThroughputType.WRITER);
+        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes2, startTime2, endTime2, InfluxCache.ThroughputType.WRITER,0L);
         Assertions.assertEquals(1, testObj.threadCache.size()); //there is only 1 thread per entry
 
         //now test the quality of the one read object
@@ -177,12 +177,12 @@ public class InfluxCacheTest {
         LocalDateTime startTime = LocalDateTime.now();
         LocalDateTime endTime = LocalDateTime.now();
         long testThreadId = Thread.currentThread().getId(), totalBytes = 100;
-        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, InfluxCache.ThroughputType.READER);
+        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, InfluxCache.ThroughputType.READER,0L);
 
         LocalDateTime startTime2 = LocalDateTime.now();
         LocalDateTime endTime2 = LocalDateTime.now();
         long totalBytes2 = 1000;
-        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes2, startTime2, endTime2, InfluxCache.ThroughputType.WRITER);
+        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes2, startTime2, endTime2, InfluxCache.ThroughputType.WRITER,0L);
         Assertions.assertEquals(1, testObj.threadCache.size()); //there is only 1 thread per entry
 
         //now test the quality of the one read object
@@ -212,14 +212,14 @@ public class InfluxCacheTest {
         LocalDateTime startTime = LocalDateTime.now();
         LocalDateTime endTime = LocalDateTime.now();
         long testThreadId = Thread.currentThread().getId(), totalBytes = 100;
-        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, InfluxCache.ThroughputType.READER);
+        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, InfluxCache.ThroughputType.READER,0L);
         Assertions.assertEquals(1, testObj.threadCache.size());
 
         LocalDateTime startTime2 = LocalDateTime.now();
         LocalDateTime endTime2 = LocalDateTime.now();
         long totalBytes2 = 1000;
         long testThreadId2 = testThreadId + 1;
-        testObj.addMetric(testThreadId2, mockedStepExecution, totalBytes2, startTime2, endTime2, InfluxCache.ThroughputType.WRITER);
+        testObj.addMetric(testThreadId2, mockedStepExecution, totalBytes2, startTime2, endTime2, InfluxCache.ThroughputType.WRITER,0L);
         Assertions.assertEquals(2, testObj.threadCache.size()); //there is only 1 thread per entry
 
         JobMetric thread1Metric = this.testObj.threadCache.get(testThreadId);
@@ -246,14 +246,14 @@ public class InfluxCacheTest {
         LocalDateTime startTime = LocalDateTime.now();
         LocalDateTime endTime = LocalDateTime.now();
         long testThreadId = Thread.currentThread().getId(), totalBytes = 100;
-        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, InfluxCache.ThroughputType.READER);
+        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, InfluxCache.ThroughputType.READER,0L);
         Assertions.assertEquals(1, testObj.threadCache.size());
 
         LocalDateTime startTime2 = LocalDateTime.now();
         LocalDateTime endTime2 = LocalDateTime.now();
         long totalBytes2 = 1000;
         long testThreadId2 = testThreadId + 1;
-        testObj.addMetric(testThreadId2, mockedStepExecution, totalBytes2, startTime2, endTime2, InfluxCache.ThroughputType.WRITER);
+        testObj.addMetric(testThreadId2, mockedStepExecution, totalBytes2, startTime2, endTime2, InfluxCache.ThroughputType.WRITER,0L);
         Assertions.assertEquals(2, testObj.threadCache.size()); //there is only 1 thread per entry
 
         JobMetric thread1Metric = this.testObj.threadCache.get(testThreadId);
@@ -288,7 +288,7 @@ public class InfluxCacheTest {
         LocalDateTime startTime = LocalDateTime.now();
         LocalDateTime endTime = LocalDateTime.now();
         long testThreadId = Thread.currentThread().getId(), totalBytes = 100;
-        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, InfluxCache.ThroughputType.READER);
+        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, InfluxCache.ThroughputType.READER,0L);
 
         JobMetric jobMetric = testObj.aggregateMetric();
         JobMetric expectedMetric = this.buildReadExpectedMetric(startTime, endTime, testThreadId, totalBytes, 1, 1, 1);
@@ -305,15 +305,15 @@ public class InfluxCacheTest {
         LocalDateTime startTime = LocalDateTime.now();
         LocalDateTime endTime = LocalDateTime.now();
         long testThreadId = Thread.currentThread().getId(), totalBytes = 100;
-        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, InfluxCache.ThroughputType.READER);
-        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, InfluxCache.ThroughputType.WRITER);
+        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, InfluxCache.ThroughputType.READER,0L);
+        testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, InfluxCache.ThroughputType.WRITER,0L);
         Assertions.assertEquals(1, testObj.threadCache.size());
 
         LocalDateTime startTime2 = LocalDateTime.now();
         LocalDateTime endTime2 = LocalDateTime.now();
         long totalBytes2 = 1000;
-        testObj.addMetric(testThreadId + 1, mockedStepExecution, totalBytes2, startTime2, endTime2, InfluxCache.ThroughputType.READER);
-        testObj.addMetric(testThreadId + 1, mockedStepExecution, totalBytes2, startTime2, endTime2, InfluxCache.ThroughputType.WRITER);
+        testObj.addMetric(testThreadId + 1, mockedStepExecution, totalBytes2, startTime2, endTime2, InfluxCache.ThroughputType.READER,0L);
+        testObj.addMetric(testThreadId + 1, mockedStepExecution, totalBytes2, startTime2, endTime2, InfluxCache.ThroughputType.WRITER,0L);
         Assertions.assertEquals(2, testObj.threadCache.size()); //there is only 1 thread per entry
 
         JobMetric realAgg = testObj.aggregateMetric();
