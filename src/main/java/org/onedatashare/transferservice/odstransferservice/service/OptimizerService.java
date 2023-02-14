@@ -1,9 +1,7 @@
 package org.onedatashare.transferservice.odstransferservice.service;
 
-import org.onedatashare.transferservice.odstransferservice.model.optimizer.Optimizer;
 import org.onedatashare.transferservice.odstransferservice.model.optimizer.OptimizerCreateRequest;
 import org.onedatashare.transferservice.odstransferservice.model.optimizer.OptimizerDeleteRequest;
-import org.onedatashare.transferservice.odstransferservice.model.optimizer.OptimizerInputRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,10 +31,6 @@ public class OptimizerService {
         headers.setContentType(MediaType.APPLICATION_JSON);
     }
 
-    public Optimizer getNextApplicationTupleToUse() throws RestClientException {
-        return this.optimizerTemplate.getForObject("/optimizer/parameters", Optimizer.class);
-    }
-
     public void createOptimizerBlocking(OptimizerCreateRequest optimizerCreateRequest) throws RestClientException {
         optimizerCreateRequest.setNodeId(this.appName);
         logger.info("Sending OptimizerCreateRequest {}", optimizerCreateRequest);
@@ -49,7 +43,7 @@ public class OptimizerService {
         optimizerDeleteRequest.setNodeId(this.appName);
         try {
             this.optimizerTemplate.postForObject("/optimizer/delete", new HttpEntity<>(optimizerDeleteRequest, this.headers), Void.class);
-        } catch (RestClientException e){
+        } catch (RestClientException e) {
             logger.error("Failed to Delete optimizer. {}", optimizerDeleteRequest);
         }
         logger.info("Deleted {}", optimizerDeleteRequest);
