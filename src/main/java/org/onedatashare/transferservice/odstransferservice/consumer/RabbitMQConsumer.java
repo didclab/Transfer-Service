@@ -1,7 +1,9 @@
 package org.onedatashare.transferservice.odstransferservice.consumer;
 
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
@@ -54,6 +56,8 @@ public class RabbitMQConsumer {
         this.crudService = crudService;
         this.threadPoolManager = threadPoolManager;
         this.objectMapper = new ObjectMapper();
+        this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        this.objectMapper.setDefaultPropertyInclusion(JsonInclude.Include.ALWAYS);
     }
 
     @RabbitListener(queues = "#{userQueue}")
@@ -62,7 +66,7 @@ public class RabbitMQConsumer {
         logger.info("Message recv: {}", jsonStr);
         try {
             TransferJobRequest request = objectMapper.readValue(jsonStr, TransferJobRequest.class);
-            logger.info(request.toString());
+            logger.info("Job Recieved: {}",request.toString());
             if (request.getSource().getType().equals(EndpointType.vfs)) {
                 List<EntityInfo> fileExpandedList = vfsExpander.expandDirectory(request.getSource().getInfoList(), request.getSource().getParentInfo().getPath(), request.getChunkSize());
                 request.getSource().setInfoList(new ArrayList<>(fileExpandedList));
@@ -77,13 +81,12 @@ public class RabbitMQConsumer {
                 e.printStackTrace();
             }
         } catch (JsonProcessingException e) {
-            logger.info("Failed to parse jsonStr:{} to TransferJobRequest.java", jsonStr);
+            logger.debug("Failed to parse jsonStr:{} to TransferJobRequest.java", jsonStr);
         }
         try {
             TransferApplicationParams params = objectMapper.readValue(jsonStr, TransferApplicationParams.class);
             logger.info("Parsed TransferApplicationParams:{}", params);
             this.threadPoolManager.applyOptimizer(params.getConcurrency(), params.getParallelism());
-            return;
         } catch (JsonProcessingException e) {
             logger.info("Did not apply transfer params due to parsing message failure");
             e.printStackTrace();

@@ -1,5 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;

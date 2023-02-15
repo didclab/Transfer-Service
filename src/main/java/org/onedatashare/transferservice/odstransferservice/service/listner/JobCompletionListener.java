@@ -60,11 +60,12 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
         long fileCount = jobExecution.getJobParameters().getLong(ODSConstants.FILE_COUNT);
         String optimizerType = jobExecution.getJobParameters().getString(ODSConstants.OPTIMIZER);
         if(optimizerType != null){
-            OptimizerCreateRequest createRequest = new OptimizerCreateRequest(appName, maxConc, maxParallel, maxPipe, optimizerType, fileCount);
-            optimizerService.createOptimizerBlocking(createRequest);
-            this.optimizerEnable = true;
+            if(!optimizerType.equals("None")) {
+                OptimizerCreateRequest createRequest = new OptimizerCreateRequest(appName, maxConc, maxParallel, maxPipe, optimizerType, fileCount);
+                optimizerService.createOptimizerBlocking(createRequest);
+                this.optimizerEnable = true;
+            }
         }
-        logger.info("Before Job Start LocalDateTime.now(): {}", jobExecution.getStartTime());
     }
 
     @Override
