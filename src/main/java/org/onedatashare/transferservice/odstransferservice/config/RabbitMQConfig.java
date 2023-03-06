@@ -7,7 +7,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 @Configuration
 public class RabbitMQConfig {
@@ -21,6 +23,15 @@ public class RabbitMQConfig {
     @Value("${ods.rabbitmq.routingkey}")
     String routingKey;
 
+    @Value("${ods.rabbitmq.dead-letter-exchange}")
+    private String deadLetterExchange;
+
+    @Value("${ods.rabbitmq.dead-letter-routing-key}")
+    private String deadLetterRoutingKey;
+
+    @Value("${ods.rabbitmq.dead-letter-queue}")
+    private String deadLetterQueueName;
+
     @Bean
     public Gson gson() {
         GsonBuilder builder = new GsonBuilder()
@@ -30,12 +41,27 @@ public class RabbitMQConfig {
 
     @Bean
     Queue userQueue(){
-        //String name, boolean durable, boolean exclusive, boolean autoDelete
+     //   Map<String, Object> args = new HashMap<>();
+//        args.put("x-dead-letter-exchange", deadLetterExchange);
+//        args.put("x-dead-letter-routing-key", deadLetterRoutingKey);
+//        //String name, boolean durable, boolean exclusive, boolean autoDelete, args
         return new Queue(this.queueName, true, false, false);
     }
 
     @Bean
+    public Queue deadLetterQueue() {
+        return new Queue(this.deadLetterQueueName, true,false, false);
+    }
+
+
+    @Bean
     public DirectExchange exchange(){
+        return new DirectExchange(exchange);
+    }
+
+
+    @Bean
+    public DirectExchange deadLetterExchange(){
         return new DirectExchange(exchange);
     }
 
@@ -44,5 +70,13 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(userQueue)
                 .to(exchange)
                 .with(routingKey);
+    }
+
+
+    @Bean
+    public Binding deadLetterBinding(){
+        return BindingBuilder.bind(deadLetterQueue())
+                .to(deadLetterExchange())
+                .with(deadLetterRoutingKey);
     }
 }

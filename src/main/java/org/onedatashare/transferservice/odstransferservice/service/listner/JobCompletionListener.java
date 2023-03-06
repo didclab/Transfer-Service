@@ -1,16 +1,21 @@
 package org.onedatashare.transferservice.odstransferservice.service.listner;
 
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
+import org.onedatashare.transferservice.odstransferservice.model.DeadLetterQueueData;
 import org.onedatashare.transferservice.odstransferservice.model.optimizer.OptimizerCreateRequest;
 import org.onedatashare.transferservice.odstransferservice.model.optimizer.OptimizerDeleteRequest;
 import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManager;
 import org.onedatashare.transferservice.odstransferservice.service.ConnectionBag;
+import org.onedatashare.transferservice.odstransferservice.service.DeadLetterQueueService;
 import org.onedatashare.transferservice.odstransferservice.service.OptimizerService;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.core.AmqpTemplate;
+import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.listener.JobExecutionListenerSupport;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -44,6 +49,17 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
     @Value("${transfer.service.pipelining}")
     int maxPipe;
     boolean optimizerEnable;
+
+    DeadLetterQueueService deadLetterQueueService;
+
+    @Value("${ods.rabbitmq.dead-letter-exchange}")
+    private String deadLetterExchange;
+
+    @Value("${ods.rabbitmq.dead-letter-routing-key}")
+    private String deadLetterRoutingKey;
+
+    @Autowired
+    AmqpTemplate rmqTemplate;
 
     public JobCompletionListener(ThreadPoolManager threadPoolManager, OptimizerService optimizerService, MetricsCollector metricsCollector, ConnectionBag connectionBag) {
         this.threadPoolManager = threadPoolManager;
@@ -83,6 +99,10 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
         if(this.optimizerEnable){
             this.optimizerService.deleteOptimizerBlocking(new OptimizerDeleteRequest(appName));
             this.optimizerEnable = false;
+        }
+        if(jobExecution.getExitStatus().equals(ExitStatus.FAILED)){
+            DeadLetterQueueData failedMessage = deadLetterQueueService.getDataFromJobExecution(jobExecution.getJobParameters(), jobExecution.getFailureExceptions());
+            rmqTemplate.convertAndSend(deadLetterExchange,deadLetterRoutingKey,failedMessage);
         }
     }
 }
