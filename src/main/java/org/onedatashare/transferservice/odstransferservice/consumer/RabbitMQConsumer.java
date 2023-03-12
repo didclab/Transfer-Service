@@ -23,23 +23,19 @@ import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.awt.*;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class RabbitMQConsumer {
 
-    private final ObjectMapper  objectMapper;
+    private final ObjectMapper objectMapper;
     private final ThreadPoolManager threadPoolManager;
     Logger logger = LoggerFactory.getLogger(RabbitMQConsumer.class);
 
@@ -80,7 +76,7 @@ public class RabbitMQConsumer {
         this.deadLetterQueueService = deadLetterQueueService;
     }
 
-    //Can be used in future for processing the messages from DeadLetterQueue
+    //Uncomment and use in future for processing the messages from DeadLetterQueue
 //    @RabbitListener(queues = "ods.dead-letter-queue")
 //    public void handleFailedMessage( Message message) {
 //        Object payload = new SimpleMessageConverter().fromMessage(message);
