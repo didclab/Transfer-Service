@@ -77,7 +77,7 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
         long fileCount = jobExecution.getJobParameters().getLong(ODSConstants.FILE_COUNT);
         String optimizerType = jobExecution.getJobParameters().getString(ODSConstants.OPTIMIZER);
         if(optimizerType != null){
-            if(!optimizerType.equals("None")) {
+            if(!optimizerType.equals("None") && !optimizerType.isEmpty()) {
                 OptimizerCreateRequest createRequest = new OptimizerCreateRequest(appName, maxConc, maxParallel, maxPipe, optimizerType, fileCount);
                 optimizerService.createOptimizerBlocking(createRequest);
                 this.optimizerEnable = true;
