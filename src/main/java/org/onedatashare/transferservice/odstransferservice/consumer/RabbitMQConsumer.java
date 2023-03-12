@@ -76,10 +76,17 @@ public class RabbitMQConsumer {
         this.objectMapper.setDefaultPropertyInclusion(JsonInclude.Include.ALWAYS);
     }
 
+    @RabbitListener(queues = "ods.dead-letter-queue")
+    public void handleFailedMessage(String failedMessage) {
+        // handle failed message here
+    }
+
     @RabbitListener(queues = "#{userQueue}")
     public void consumeDefaultMessage(final Message message) {
         String jsonStr = new String(message.getBody());
         logger.info("Message recv: {}", jsonStr);
+        JobParameters parameters = null;
+        List <Throwable> failureException = new ArrayList<>();
         try {
             TransferJobRequest request = objectMapper.readValue(jsonStr, TransferJobRequest.class);
             logger.info("Job Recieved: {}",request.toString());
@@ -88,15 +95,17 @@ public class RabbitMQConsumer {
                 request.getSource().setInfoList(new ArrayList<>(fileExpandedList));
             }
             try {
-                JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);
+                 parameters = jobParamService.translate(new JobParametersBuilder(), request);
                 crudService.insertBeforeTransfer(request);
                 jc.setRequest(request);
                 asyncJobLauncher.run(jc.concurrentJobDefinition(), parameters);
                 return;
             } catch (Exception e) {
+                failureException.add(e);
                 e.printStackTrace();
             }
         } catch (JsonProcessingException e) {
+            failureException.add(e);
             logger.debug("Failed to parse jsonStr:{} to TransferJobRequest.java", jsonStr);
         }
         try {
@@ -105,7 +114,8 @@ public class RabbitMQConsumer {
             this.threadPoolManager.applyOptimizer(params.getConcurrency(), params.getParallelism());
         } catch (JsonProcessingException e) {
             logger.info("Did not apply transfer params due to parsing message failure");
-            DeadLetterQueueData failedMessage = deadLetterQueueService.getDataFromMesaage(message, e);
+            failureException.add(e);
+            DeadLetterQueueData failedMessage = deadLetterQueueService.convertDataToDLQ( parameters, failureException, null);
             rmqTemplate.convertAndSend(deadLetterExchange,deadLetterRoutingKey,failedMessage);
             e.printStackTrace();
         }
