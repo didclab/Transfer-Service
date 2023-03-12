@@ -50,24 +50,24 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
     int maxPipe;
     boolean optimizerEnable;
 
-    @Autowired
     DeadLetterQueueService deadLetterQueueService;
 
-    @Value("${ods.rabbitmq.dead-letter-exchange}")
+    @Value("${ods.rabbitmq.exchange}")
     private String deadLetterExchange;
 
     @Value("${ods.rabbitmq.dead-letter-routing-key}")
     private String deadLetterRoutingKey;
 
-    @Autowired
     AmqpTemplate rmqTemplate;
 
-    public JobCompletionListener(ThreadPoolManager threadPoolManager, OptimizerService optimizerService, MetricsCollector metricsCollector, ConnectionBag connectionBag) {
+    public JobCompletionListener(ThreadPoolManager threadPoolManager, OptimizerService optimizerService, MetricsCollector metricsCollector, ConnectionBag connectionBag, AmqpTemplate rmqTemplate, DeadLetterQueueService deadLetterQueueService) {
         this.threadPoolManager = threadPoolManager;
         this.optimizerService = optimizerService;
         this.metricsCollector = metricsCollector;
         this.connectionBag = connectionBag;
         this.optimizerEnable = false;
+        this.rmqTemplate = rmqTemplate;
+        this.deadLetterQueueService = deadLetterQueueService;
     }
 
 
@@ -101,7 +101,8 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
             this.optimizerService.deleteOptimizerBlocking(new OptimizerDeleteRequest(appName));
             this.optimizerEnable = false;
         }
-        if(jobExecution.getExitStatus().getExitCode()== "FAILED"){
+        String exitCode = jobExecution.getExitStatus().getExitCode();
+        if(!exitCode.equals("EXECUTING") && !exitCode.equals("COMPLETED")){
             DeadLetterQueueData failedMessage = deadLetterQueueService.convertDataToDLQ(jobExecution.getJobParameters(), jobExecution.getFailureExceptions(), jobExecution.getStepExecutions());
             rmqTemplate.convertAndSend(deadLetterExchange,deadLetterRoutingKey,failedMessage);
         }
