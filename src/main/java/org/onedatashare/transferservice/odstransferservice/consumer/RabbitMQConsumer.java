@@ -23,6 +23,7 @@ import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
@@ -30,13 +31,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.awt.*;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class RabbitMQConsumer {
 
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper  objectMapper;
     private final ThreadPoolManager threadPoolManager;
     Logger logger = LoggerFactory.getLogger(RabbitMQConsumer.class);
 
@@ -54,16 +57,15 @@ public class RabbitMQConsumer {
 
     DeadLetterQueueService deadLetterQueueService;
 
-    @Value("${ods.rabbitmq.dead-letter-exchange}")
+    @Value("${ods.rabbitmq.exchange}")
     private String deadLetterExchange;
 
     @Value("${ods.rabbitmq.dead-letter-routing-key}")
     private String deadLetterRoutingKey;
 
-    @Autowired
     AmqpTemplate rmqTemplate;
 
-    public RabbitMQConsumer(VfsExpander vfsExpander, Queue userQueue, JobParamService jobParamService, JobLauncher asyncJobLauncher, JobControl jc, CrudService crudService, ThreadPoolManager threadPoolManager) {
+    public RabbitMQConsumer(VfsExpander vfsExpander, Queue userQueue, JobParamService jobParamService, JobLauncher asyncJobLauncher, JobControl jc, CrudService crudService, ThreadPoolManager threadPoolManager, AmqpTemplate rmqTemplate, DeadLetterQueueService deadLetterQueueService) {
         this.vfsExpander = vfsExpander;
         this.userQueue = userQueue;
         this.jobParamService = jobParamService;
@@ -74,12 +76,18 @@ public class RabbitMQConsumer {
         this.objectMapper = new ObjectMapper();
         this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.objectMapper.setDefaultPropertyInclusion(JsonInclude.Include.ALWAYS);
+        this.rmqTemplate = rmqTemplate;
+        this.deadLetterQueueService = deadLetterQueueService;
     }
 
-    @RabbitListener(queues = "ods.dead-letter-queue")
-    public void handleFailedMessage(String failedMessage) {
-        // handle failed message here
-    }
+    //Can be used in future for processing the messages from DeadLetterQueue
+//    @RabbitListener(queues = "ods.dead-letter-queue")
+//    public void handleFailedMessage( Message message) {
+//        Object payload = new SimpleMessageConverter().fromMessage(message);
+//        if (payload instanceof DeadLetterQueueData) {
+//            DeadLetterQueueData myObject = (DeadLetterQueueData) payload;
+//        }
+//    }
 
     @RabbitListener(queues = "#{userQueue}")
     public void consumeDefaultMessage(final Message message) {
