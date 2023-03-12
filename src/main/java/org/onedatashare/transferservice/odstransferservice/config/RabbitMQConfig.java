@@ -23,9 +23,6 @@ public class RabbitMQConfig {
     @Value("${ods.rabbitmq.routingkey}")
     String routingKey;
 
-    @Value("${ods.rabbitmq.dead-letter-exchange}")
-    private String deadLetterExchange;
-
     @Value("${ods.rabbitmq.dead-letter-routing-key}")
     private String deadLetterRoutingKey;
 
@@ -41,9 +38,6 @@ public class RabbitMQConfig {
 
     @Bean
     Queue userQueue(){
-     //   Map<String, Object> args = new HashMap<>();
-//        args.put("x-dead-letter-exchange", deadLetterExchange);
-//        args.put("x-dead-letter-routing-key", deadLetterRoutingKey);
 //        //String name, boolean durable, boolean exclusive, boolean autoDelete, args
         return new Queue(this.queueName, true, false, false);
     }
@@ -59,12 +53,6 @@ public class RabbitMQConfig {
         return new DirectExchange(exchange);
     }
 
-
-    @Bean
-    public DirectExchange deadLetterExchange(){
-        return new DirectExchange(exchange);
-    }
-
     @Bean
     public Binding binding(DirectExchange exchange, Queue userQueue){
         return BindingBuilder.bind(userQueue)
@@ -74,9 +62,9 @@ public class RabbitMQConfig {
 
 
     @Bean
-    public Binding deadLetterBinding(){
-        return BindingBuilder.bind(deadLetterQueue())
-                .to(deadLetterExchange())
+    public Binding deadLetterBinding(DirectExchange exchange, Queue deadLetterQueue){
+        return BindingBuilder.bind(deadLetterQueue)
+                .to(exchange)
                 .with(deadLetterRoutingKey);
     }
 }
