@@ -53,13 +53,11 @@ public class VfsWriter extends ODSBaseWriter implements ItemWriter<DataChunk> {
         return stepExecution.getExitStatus();
     }
 
-    public void prepareDirectories() {
+    public void prepareDirectories() throws IOException{
         try {
             Files.createDirectories(Paths.get(this.destinationPath));
         } catch (FileAlreadyExistsException fileAlreadyExistsException) {
             logger.warn("Already have the file with this path \t" + this.filePath.toString());
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
