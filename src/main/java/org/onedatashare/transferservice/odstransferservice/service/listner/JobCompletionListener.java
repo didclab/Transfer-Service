@@ -1,14 +1,17 @@
 package org.onedatashare.transferservice.odstransferservice.service.listner;
 
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
+import org.onedatashare.transferservice.odstransferservice.model.DeadLetterQueueData;
 import org.onedatashare.transferservice.odstransferservice.model.optimizer.OptimizerCreateRequest;
 import org.onedatashare.transferservice.odstransferservice.model.optimizer.OptimizerDeleteRequest;
 import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManager;
 import org.onedatashare.transferservice.odstransferservice.service.ConnectionBag;
+import org.onedatashare.transferservice.odstransferservice.service.DeadLetterQueueService;
 import org.onedatashare.transferservice.odstransferservice.service.OptimizerService;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.listener.JobExecutionListenerSupport;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,12 +48,24 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
     int maxPipe;
     boolean optimizerEnable;
 
-    public JobCompletionListener(ThreadPoolManager threadPoolManager, OptimizerService optimizerService, MetricsCollector metricsCollector, ConnectionBag connectionBag) {
+    DeadLetterQueueService deadLetterQueueService;
+
+    @Value("${ods.rabbitmq.exchange}")
+    private String deadLetterExchange;
+
+    @Value("${ods.rabbitmq.dead-letter-routing-key}")
+    private String deadLetterRoutingKey;
+
+    AmqpTemplate rmqTemplate;
+
+    public JobCompletionListener(ThreadPoolManager threadPoolManager, OptimizerService optimizerService, MetricsCollector metricsCollector, ConnectionBag connectionBag, AmqpTemplate rmqTemplate, DeadLetterQueueService deadLetterQueueService) {
         this.threadPoolManager = threadPoolManager;
         this.optimizerService = optimizerService;
         this.metricsCollector = metricsCollector;
         this.connectionBag = connectionBag;
         this.optimizerEnable = false;
+        this.rmqTemplate = rmqTemplate;
+        this.deadLetterQueueService = deadLetterQueueService;
     }
 
 
@@ -60,7 +75,7 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
         long fileCount = jobExecution.getJobParameters().getLong(ODSConstants.FILE_COUNT);
         String optimizerType = jobExecution.getJobParameters().getString(ODSConstants.OPTIMIZER);
         if(optimizerType != null){
-            if(!optimizerType.equals("None")) {
+            if(!optimizerType.equals("None") && !optimizerType.isEmpty()) {
                 OptimizerCreateRequest createRequest = new OptimizerCreateRequest(appName, maxConc, maxParallel, maxPipe, optimizerType, fileCount);
                 optimizerService.createOptimizerBlocking(createRequest);
                 this.optimizerEnable = true;
@@ -83,6 +98,11 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
         if(this.optimizerEnable){
             this.optimizerService.deleteOptimizerBlocking(new OptimizerDeleteRequest(appName));
             this.optimizerEnable = false;
+        }
+        String exitCode = jobExecution.getExitStatus().getExitCode();
+        if(!exitCode.equals("EXECUTING") && !exitCode.equals("COMPLETED")){
+            DeadLetterQueueData failedMessage = deadLetterQueueService.convertDataToDLQ(jobExecution.getJobParameters(), jobExecution.getFailureExceptions(), jobExecution.getStepExecutions());
+            rmqTemplate.convertAndSend(deadLetterExchange,deadLetterRoutingKey,failedMessage);
         }
     }
 }

@@ -21,6 +21,12 @@ public class RabbitMQConfig {
     @Value("${ods.rabbitmq.routingkey}")
     String routingKey;
 
+    @Value("${ods.rabbitmq.dead-letter-routing-key}")
+    private String deadLetterRoutingKey;
+
+    @Value("${ods.rabbitmq.dead-letter-queue}")
+    private String deadLetterQueueName;
+
     @Bean
     public Gson gson() {
         GsonBuilder builder = new GsonBuilder()
@@ -35,6 +41,12 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public Queue deadLetterQueue() {
+        return new Queue(this.deadLetterQueueName, true,false, false);
+    }
+
+
+    @Bean
     public DirectExchange exchange(){
         return new DirectExchange(exchange);
     }
@@ -44,5 +56,13 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(userQueue)
                 .to(exchange)
                 .with(routingKey);
+    }
+
+
+    @Bean
+    public Binding deadLetterBinding(DirectExchange exchange, Queue deadLetterQueue){
+        return BindingBuilder.bind(deadLetterQueue)
+                .to(exchange)
+                .with(deadLetterRoutingKey);
     }
 }
