@@ -50,6 +50,7 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
     int maxPipe;
     boolean optimizerEnable;
 
+    @Autowired
     DeadLetterQueueService deadLetterQueueService;
 
     @Value("${ods.rabbitmq.dead-letter-exchange}")
@@ -100,8 +101,8 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
             this.optimizerService.deleteOptimizerBlocking(new OptimizerDeleteRequest(appName));
             this.optimizerEnable = false;
         }
-        if(jobExecution.getExitStatus().equals(ExitStatus.FAILED)){
-            DeadLetterQueueData failedMessage = deadLetterQueueService.getDataFromJobExecution(jobExecution.getJobParameters(), jobExecution.getFailureExceptions());
+        if(jobExecution.getExitStatus().getExitCode()== "FAILED"){
+            DeadLetterQueueData failedMessage = deadLetterQueueService.convertDataToDLQ(jobExecution.getJobParameters(), jobExecution.getFailureExceptions(), jobExecution.getStepExecutions());
             rmqTemplate.convertAndSend(deadLetterExchange,deadLetterRoutingKey,failedMessage);
         }
     }
