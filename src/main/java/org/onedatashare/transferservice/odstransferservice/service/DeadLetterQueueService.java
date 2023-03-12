@@ -1,8 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.onedatashare.transferservice.odstransferservice.model.DeadLetterQueueData;
-import org.springframework.amqp.core.Message;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.stereotype.Service;
