@@ -129,8 +129,7 @@ public class JobControl extends DefaultBatchConfigurer {
             }
             child.reader(getRightReader(request.getSource().getType(), file))
                     .writer(getRightWriter(request.getDestination().getType(), file));
-            child.throttleLimit(32); //this value might allow concurrency to be dynamic.
-            logger.info("Creating step with id {} ", idForStep);
+            child.throttleLimit(32);
             return new FlowBuilder<Flow>(basePath + idForStep).start(child.build()).build();
         }).collect(Collectors.toList());
     }
@@ -219,12 +218,19 @@ public class JobControl extends DefaultBatchConfigurer {
     public Job concurrentJobDefinition() {
         connectionBag.preparePools(this.request);
         List<Flow> flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getParentInfo().getPath());
+        logger.info("Created flows");
         setRetryPolicy();
         Flow[] fl = new Flow[flows.size()];
-        Flow f = new FlowBuilder<SimpleFlow>("splitFlow").split(this.threadPoolManager.stepTaskExecutor(this.request.getOptions().getConcurrencyThreadCount())).add(flows.toArray(fl))
+        Flow f = new FlowBuilder<SimpleFlow>("splitFlow")
+                .split(this.threadPoolManager.stepTaskExecutor(this.request.getOptions().getConcurrencyThreadCount()))
+                .add(flows.toArray(fl))
                 .build();
-        return jobBuilderFactory.get(request.getOwnerId()).listener(jobCompletionListener)
-                .incrementer(new RunIdIncrementer()).start(f).build().build();
+        logger.info("Created new splitFLow, {} before the return of the concurrentJobDef()", f);
+        return jobBuilderFactory
+                .get(request.getOwnerId())
+                .listener(jobCompletionListener)
+                .incrementer(new RunIdIncrementer())
+                .start(f).build().build();
     }
 
     private void setRetryPolicy() {

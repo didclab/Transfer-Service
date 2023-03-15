@@ -40,7 +40,6 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
     Boolean range;
     AccountEndpointCredential sourceCred;
     Boolean compressable;
-    Boolean compress;
     private String uri;
 
 
@@ -56,7 +55,6 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
         JobParameters params = stepExecution.getJobExecution().getJobParameters();
         this.sBasePath = params.getString(SOURCE_BASE_PATH);
         this.filePartitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
-        this.compress = this.httpConnectionPool.getCompress();
         this.fileName = fileInfo.getId();
         this.uri = sourceCred.getUri() + Paths.get(fileInfo.getPath()).toString();
     }
@@ -65,24 +63,23 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
     protected DataChunk doRead() throws IOException, InterruptedException {
         FilePart filePart = this.filePartitioner.nextPart();
         if (filePart == null) return null;
-        byte[] bodyArray;
-        if(compress && compressable) {
-            bodyArray = compressMode(uri, filePart, range);
+        HttpRequest request;
+        if(this.httpConnectionPool.getCompress() && compressable) {
+            request = compressMode(uri, filePart, range);
+        } else{
+            request = rangeMode(uri, filePart, range);
         }
-        else{
-            bodyArray = rangeMode(uri, filePart, range);
-        }
-        DataChunk chunk = ODSUtility.makeChunk(bodyArray.length, bodyArray, filePart.getStart(), Long.valueOf(filePart.getPartIdx()).intValue(), this.fileName);
+        HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+        DataChunk chunk = ODSUtility.makeChunk(response.body().length, response.body(), filePart.getStart(), Long.valueOf(filePart.getPartIdx()).intValue(), this.fileName);
         logger.info(chunk.toString());
         return chunk;
     }
 
-    @SneakyThrows
     @Override
-    protected void doOpen() {
+    protected void doOpen() throws InterruptedException, IOException {
         this.client = this.httpConnectionPool.borrowObject();
-        String uri = Paths.get(fileInfo.getPath()).toString();
-        uri = sourceCred.getUri() + uri;
+        String filePath = Paths.get(fileInfo.getPath()).toString();
+        uri = sourceCred.getUri() + filePath;
         HttpRequest request = HttpRequest.newBuilder()
                 .GET()
                 .uri(URI.create(uri)) //make http a string constant as well
@@ -92,7 +89,6 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
         HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
         range = response.statusCode() == 206;
         compressable = response.headers().allValues(ODSConstants.CONTENT_ENCODING).size() != 0;
-        if(compressable && compress) this.fileName = this.fileName + ".gzip";
     }
 
     @Override
@@ -105,7 +101,7 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
         this.httpConnectionPool = (HttpConnectionPool) connectionPool;
     }
 
-    public byte[] compressMode(String uri, FilePart filePart, boolean valid) throws IOException, InterruptedException {
+    public HttpRequest compressMode(String uri, FilePart filePart, boolean valid) {
         HttpRequest request = HttpRequest.newBuilder()
                 .GET()
                 .uri(URI.create(uri))
@@ -113,18 +109,16 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
                 .setHeader(valid ? ODSConstants.RANGE : ODSConstants.AccessControlExposeHeaders,
                            valid ? String.format(ODSConstants.byteRange,filePart.getStart(), filePart.getEnd()) : ODSConstants.ContentRange)
                 .build();
-        HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
-        return response.body();
+        return request;
     }
 
-    public byte[] rangeMode(String uri, FilePart filePart, boolean valid) throws IOException, InterruptedException {
+    public HttpRequest rangeMode(String uri, FilePart filePart, boolean valid) {
         HttpRequest request = HttpRequest.newBuilder()
                 .GET()
                 .uri(URI.create(uri))
                 .setHeader(valid ? ODSConstants.RANGE : ODSConstants.AccessControlExposeHeaders,
                            valid ? String.format(ODSConstants.byteRange,filePart.getStart(), filePart.getEnd()) : ODSConstants.ContentRange)
                 .build();
-        HttpResponse<byte[]> response = this.client.send(request, HttpResponse.BodyHandlers.ofByteArray());
-        return response.body();
+        return request;
     }
 }

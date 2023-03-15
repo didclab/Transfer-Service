@@ -80,7 +80,11 @@ public class ThreadPoolManager {
     }
 
     public ThreadPoolTaskExecutor stepTaskExecutor(int threadCount) {
-        return this.createThreadPool(threadCount, STEP_POOL_PREFIX);
+        ThreadPoolTaskExecutor te = this.executorHashmap.get(STEP_POOL_PREFIX);
+        if (te == null) {
+            return this.createThreadPool(threadCount, STEP_POOL_PREFIX);
+        }
+        return te;
     }
 
     public ThreadPoolTaskExecutor parallelThreadPool(int threadCount, String fileName) {

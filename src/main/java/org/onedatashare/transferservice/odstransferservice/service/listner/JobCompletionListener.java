@@ -56,12 +56,12 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
 
     @Override
     public void beforeJob(JobExecution jobExecution) {
-        logger.info("*****Job Execution start Time***** : {}", jobExecution.getStartTime());
+        logger.info("*****Job Execution start Time***** : {} with jobId={}", jobExecution.getStartTime(),jobExecution.getJobId());
         long fileCount = jobExecution.getJobParameters().getLong(ODSConstants.FILE_COUNT);
         String optimizerType = jobExecution.getJobParameters().getString(ODSConstants.OPTIMIZER);
         if(optimizerType != null){
-            if(!optimizerType.equals("None")) {
-                OptimizerCreateRequest createRequest = new OptimizerCreateRequest(appName, maxConc, maxParallel, maxPipe, optimizerType, fileCount);
+            if(!optimizerType.equals("None") && !optimizerType.isEmpty()) {
+                OptimizerCreateRequest createRequest = new OptimizerCreateRequest(appName, maxConc, maxParallel, maxPipe, optimizerType, fileCount, jobExecution.getJobId());
                 optimizerService.createOptimizerBlocking(createRequest);
                 this.optimizerEnable = true;
             }

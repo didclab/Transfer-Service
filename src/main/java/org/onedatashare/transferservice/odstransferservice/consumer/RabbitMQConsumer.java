@@ -4,7 +4,6 @@ package org.onedatashare.transferservice.odstransferservice.consumer;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
@@ -22,7 +21,11 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.JobParametersInvalidException;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
+import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
+import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -66,30 +69,25 @@ public class RabbitMQConsumer {
         logger.info("Message recv: {}", jsonStr);
         try {
             TransferJobRequest request = objectMapper.readValue(jsonStr, TransferJobRequest.class);
-            logger.info("Job Recieved: {}",request.toString());
+            logger.info("Job Recieved: {}", request.toString());
             if (request.getSource().getType().equals(EndpointType.vfs)) {
                 List<EntityInfo> fileExpandedList = vfsExpander.expandDirectory(request.getSource().getInfoList(), request.getSource().getParentInfo().getPath(), request.getChunkSize());
                 request.getSource().setInfoList(new ArrayList<>(fileExpandedList));
             }
-            try {
-                JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);
-                crudService.insertBeforeTransfer(request);
-                jc.setRequest(request);
-                asyncJobLauncher.run(jc.concurrentJobDefinition(), parameters);
-                return;
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        } catch (JsonProcessingException e) {
+            JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);
+            crudService.insertBeforeTransfer(request);
+            jc.setRequest(request);
+            asyncJobLauncher.run(jc.concurrentJobDefinition(), parameters);
+            return;
+        } catch (Exception e) {
             logger.debug("Failed to parse jsonStr:{} to TransferJobRequest.java", jsonStr);
         }
         try {
             TransferApplicationParams params = objectMapper.readValue(jsonStr, TransferApplicationParams.class);
             logger.info("Parsed TransferApplicationParams:{}", params);
             this.threadPoolManager.applyOptimizer(params.getConcurrency(), params.getParallelism());
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             logger.info("Did not apply transfer params due to parsing message failure");
-            e.printStackTrace();
         }
     }
 }

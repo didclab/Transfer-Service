@@ -36,7 +36,7 @@ public class OptimizerService {
         logger.info("Sending OptimizerCreateRequest {}", optimizerCreateRequest);
         HttpEntity<OptimizerCreateRequest> createRequestHttpEntity = new HttpEntity<>(optimizerCreateRequest, this.headers);
         logger.info(createRequestHttpEntity.getBody().toString());
-        this.optimizerTemplate.postForObject("/optimizer/create", createRequestHttpEntity, Void.class);
+        this.optimizerTemplate.postForLocation("/optimizer/create", createRequestHttpEntity, Void.class);
     }
 
     public void deleteOptimizerBlocking(OptimizerDeleteRequest optimizerDeleteRequest) {
