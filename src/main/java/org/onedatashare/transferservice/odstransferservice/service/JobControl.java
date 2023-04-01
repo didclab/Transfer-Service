@@ -20,6 +20,9 @@ import org.onedatashare.transferservice.odstransferservice.service.step.dropbox.
 import org.onedatashare.transferservice.odstransferservice.service.step.dropbox.DropBoxReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPWriter;
+import org.onedatashare.transferservice.odstransferservice.service.step.googleDrive.GDriveReader;
+import org.onedatashare.transferservice.odstransferservice.service.step.googleDrive.GDriveResumableWriter;
+import org.onedatashare.transferservice.odstransferservice.service.step.googleDrive.GDriveSimpleWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.http.HttpReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.scp.SCPReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.scp.SCPWriter;
@@ -58,6 +61,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.FIVE_MB;
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.TWENTY_MB;
 
 
@@ -167,6 +171,9 @@ public class JobControl extends DefaultBatchConfigurer {
                 SCPReader reader = new SCPReader(fileInfo);
                 reader.setPool(connectionBag.getSftpReaderPool());
                 return reader;
+            case gdrive:
+                GDriveReader dDriveReader = new GDriveReader(request.getSource().getOauthSourceCredential(), fileInfo);
+                return dDriveReader;
         }
         return null;
     }
@@ -211,6 +218,15 @@ public class JobControl extends DefaultBatchConfigurer {
                 SCPWriter scpWriter = new SCPWriter(fileInfo, this.metricsCollector, this.influxCache);
                 scpWriter.setPool(connectionBag.getSftpWriterPool());
                 return scpWriter;
+            case gdrive:
+                if(fileInfo.getSize() < FIVE_MB){
+                    GDriveSimpleWriter writer = new GDriveSimpleWriter(request.getDestination().getOauthDestCredential(),fileInfo);
+                    return writer;
+                }else{
+                    GDriveResumableWriter writer = new GDriveResumableWriter(request.getDestination().getOauthDestCredential(),fileInfo);
+                    writer.setPool(connectionBag.getGoogleDriveWriterPool());
+                    return writer;
+                }
         }
         return null;
     }

@@ -41,6 +41,7 @@ public class ODSConstants {
     public static final int TRANSFER_SLICE_SIZE = 1 << 20;
     public static final int FIVE_MB = 5 * 1024 * 1024;
     public static final int TWENTY_MB = 20 * 1024 * 1024;
+    public static final int GOOGLE_DRIVE_MIN_BYTES = 262144;
     public static final String RANGE = "Range";
     public static final String byteRange = "bytes=%s-%s";
     public static final String AccessControlExposeHeaders = "Access-Control-Expose-Headers";
