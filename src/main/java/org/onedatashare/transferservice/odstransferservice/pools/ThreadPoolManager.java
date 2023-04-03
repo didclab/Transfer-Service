@@ -87,6 +87,14 @@ public class ThreadPoolManager {
         return te;
     }
 
+    public ThreadPoolTaskExecutor parallelThreadPool(int threadCount){
+        ThreadPoolTaskExecutor te = this.executorHashmap.get(PARALLEL_POOL_PREFIX);
+        if(te == null){
+            te = this.createThreadPool(threadCount, PARALLEL_POOL_PREFIX);
+        }
+        return te;
+    }
+
     public ThreadPoolTaskExecutor parallelThreadPool(int threadCount, String fileName) {
         return this.createThreadPool(threadCount, new StringBuilder().append(fileName).append("-").append(PARALLEL_POOL_PREFIX).toString());
     }

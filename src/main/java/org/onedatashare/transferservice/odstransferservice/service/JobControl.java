@@ -49,6 +49,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -116,6 +117,7 @@ public class JobControl extends DefaultBatchConfigurer {
             infoList = vfsExpander.expandDirectory(infoList, basePath, this.request.getChunkSize());
             logger.info("File list: {}", infoList);
         }
+        int parallelThreadCount = request.getOptions().getConcurrencyThreadCount() * request.getOptions().getParallelThreadCount();//total parallel threads
         return infoList.stream().map(file -> {
             String idForStep = "";
             if (!file.getId().isEmpty()) {
@@ -125,7 +127,7 @@ public class JobControl extends DefaultBatchConfigurer {
             }
             SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(idForStep).<DataChunk, DataChunk>chunk(this.request.getOptions().getPipeSize());
             if (ODSUtility.fullyOptimizableProtocols.contains(this.request.getSource().getType()) && ODSUtility.fullyOptimizableProtocols.contains(this.request.getDestination().getType()) && this.request.getOptions().getParallelThreadCount() > 0) {
-                child.taskExecutor(this.threadPoolManager.parallelThreadPool(request.getOptions().getParallelThreadCount(), idForStep));
+                child.taskExecutor(this.threadPoolManager.parallelThreadPool(parallelThreadCount));
             }
             child.reader(getRightReader(request.getSource().getType(), file))
                     .writer(getRightWriter(request.getDestination().getType(), file));

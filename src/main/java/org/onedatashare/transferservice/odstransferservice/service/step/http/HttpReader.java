@@ -25,6 +25,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Paths;
+import java.util.concurrent.ExecutionException;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SOURCE_BASE_PATH;
 
@@ -55,21 +56,23 @@ public class HttpReader extends AbstractItemCountingItemStreamItemReader<DataChu
         JobParameters params = stepExecution.getJobExecution().getJobParameters();
         this.sBasePath = params.getString(SOURCE_BASE_PATH);
         this.filePartitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
-        this.fileName = fileInfo.getId();
+        this.fileName = Paths.get(fileInfo.getId()).getFileName().toString();
+        logger.info("Thread={} is reading in fileName={} fileId={}",Thread.currentThread().getName(), this.fileName,this.fileInfo.getId());
         this.uri = sourceCred.getUri() + Paths.get(fileInfo.getPath()).toString();
     }
 
     @Override
-    protected DataChunk doRead() throws IOException, InterruptedException {
+    protected DataChunk doRead() throws InterruptedException, ExecutionException {
         FilePart filePart = this.filePartitioner.nextPart();
         if (filePart == null) return null;
         HttpRequest request;
         if(this.httpConnectionPool.getCompress() && compressable) {
             request = compressMode(uri, filePart, range);
-        } else{
+        } else {
             request = rangeMode(uri, filePart, range);
         }
-        HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+//        HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+        HttpResponse<byte[]> response = client.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray()).get();
         DataChunk chunk = ODSUtility.makeChunk(response.body().length, response.body(), filePart.getStart(), Long.valueOf(filePart.getPartIdx()).intValue(), this.fileName);
         logger.info(chunk.toString());
         return chunk;

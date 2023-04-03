@@ -5,12 +5,10 @@ import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.model.TransferOptions;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
-import org.onedatashare.transferservice.odstransferservice.pools.FtpConnectionPool;
-import org.onedatashare.transferservice.odstransferservice.pools.HttpConnectionPool;
-import org.onedatashare.transferservice.odstransferservice.pools.JschSessionPool;
-import org.onedatashare.transferservice.odstransferservice.pools.S3ConnectionPool;
+import org.onedatashare.transferservice.odstransferservice.pools.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -35,6 +33,9 @@ public class ConnectionBag {
     boolean writerMade;
     boolean compression;
     private TransferOptions transferOptions;
+
+    @Autowired
+    ThreadPoolManager threadPoolManager;
 
     public ConnectionBag() {
         readerMade = false;
@@ -77,7 +78,7 @@ public class ConnectionBag {
         if (request.getSource().getType().equals(EndpointType.http)) {
             readerMade = true;
             readerType = EndpointType.http;
-            this.createHttpReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount(), request.getChunkSize());
+            this.createHttpReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount()* request.getOptions().getParallelThreadCount(), request.getChunkSize());
         }
         if (request.getSource().getType().equals(EndpointType.s3)) {
             readerMade = true;
@@ -160,9 +161,10 @@ public class ConnectionBag {
     }
 
     public void createHttpReaderPool(AccountEndpointCredential credential, int connectionCount, int chunkSize) {
-        this.httpReaderPool = new HttpConnectionPool(credential, chunkSize);
+        this.httpReaderPool = new HttpConnectionPool(credential, chunkSize, this.threadPoolManager);
         this.httpReaderPool.setCompress(false);
         this.httpReaderPool.addObjects(connectionCount);
+        this.httpReaderPool.addObject();
         this.compression = false;
     }
 
