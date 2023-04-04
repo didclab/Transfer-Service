@@ -128,7 +128,7 @@ public class JobControl extends DefaultBatchConfigurer {
             }
             SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(idForStep).<DataChunk, DataChunk>chunk(this.request.getOptions().getPipeSize());
             if (ODSUtility.fullyOptimizableProtocols.contains(this.request.getSource().getType()) && ODSUtility.fullyOptimizableProtocols.contains(this.request.getDestination().getType()) && this.request.getOptions().getParallelThreadCount() > 0) {
-                child.taskExecutor(this.threadPoolManager.parallelThreadPool(parallelThreadCount));
+                child.taskExecutor(this.threadPoolManager.parallelThreadPool(parallelThreadCount, file.getPath()));
             }
             child.reader(getRightReader(request.getSource().getType(), file))
                     .writer(getRightWriter(request.getDestination().getType(), file));
