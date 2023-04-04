@@ -118,7 +118,7 @@ public class JobControl extends DefaultBatchConfigurer {
             infoList = vfsExpander.expandDirectory(infoList, basePath, this.request.getChunkSize());
             logger.info("File list: {}", infoList);
         }
-        int parallelThreadCount = request.getOptions().getConcurrencyThreadCount() * request.getOptions().getParallelThreadCount();//total parallel threads
+        int parallelThreadCount = request.getOptions().getParallelThreadCount();//total parallel threads
         return infoList.stream().map(file -> {
             String idForStep = "";
             if (!file.getId().isEmpty()) {
