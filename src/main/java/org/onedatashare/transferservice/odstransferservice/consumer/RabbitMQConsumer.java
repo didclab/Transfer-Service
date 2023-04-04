@@ -2,7 +2,6 @@ package org.onedatashare.transferservice.odstransferservice.consumer;
 
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
@@ -10,7 +9,6 @@ import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.model.optimizer.TransferApplicationParams;
 import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManager;
-import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.CrudService;
 import org.onedatashare.transferservice.odstransferservice.service.JobControl;
 import org.onedatashare.transferservice.odstransferservice.service.JobParamService;
 import org.onedatashare.transferservice.odstransferservice.service.VfsExpander;
@@ -21,11 +19,7 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
-import org.springframework.batch.core.JobParametersInvalidException;
 import org.springframework.batch.core.launch.JobLauncher;
-import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
-import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
-import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -44,19 +38,16 @@ public class RabbitMQConsumer {
 
     JobParamService jobParamService;
 
-    CrudService crudService;
-
     Queue userQueue;
 
     VfsExpander vfsExpander;
 
-    public RabbitMQConsumer(VfsExpander vfsExpander, Queue userQueue, JobParamService jobParamService, JobLauncher asyncJobLauncher, JobControl jc, CrudService crudService, ThreadPoolManager threadPoolManager) {
+    public RabbitMQConsumer(VfsExpander vfsExpander, Queue userQueue, JobParamService jobParamService, JobLauncher asyncJobLauncher, JobControl jc, ThreadPoolManager threadPoolManager) {
         this.vfsExpander = vfsExpander;
         this.userQueue = userQueue;
         this.jobParamService = jobParamService;
         this.asyncJobLauncher = asyncJobLauncher;
         this.jc = jc;
-        this.crudService = crudService;
         this.threadPoolManager = threadPoolManager;
         this.objectMapper = new ObjectMapper();
         this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -75,7 +66,6 @@ public class RabbitMQConsumer {
                 request.getSource().setInfoList(new ArrayList<>(fileExpandedList));
             }
             JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);
-            crudService.insertBeforeTransfer(request);
             jc.setRequest(request);
             asyncJobLauncher.run(jc.concurrentJobDefinition(), parameters);
             return;

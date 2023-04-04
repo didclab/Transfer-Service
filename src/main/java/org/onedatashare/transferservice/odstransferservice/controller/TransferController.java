@@ -3,11 +3,9 @@ package org.onedatashare.transferservice.odstransferservice.controller;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
-import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.CrudService;
 import org.onedatashare.transferservice.odstransferservice.service.JobControl;
 import org.onedatashare.transferservice.odstransferservice.service.JobParamService;
 import org.onedatashare.transferservice.odstransferservice.service.VfsExpander;
-import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
@@ -47,21 +45,17 @@ public class TransferController {
     JobParamService jobParamService;
 
     @Autowired
-    CrudService crudService;
-
-    @Autowired
     VfsExpander vfsExpander;
 
     @RequestMapping(value = "/start", method = RequestMethod.POST)
     @Async
     public ResponseEntity<String> start(@RequestBody TransferJobRequest request) throws Exception {
         logger.info("Controller Entry point");
-        if(request.getSource().getType().equals(EndpointType.vfs)){
+        if (request.getSource().getType().equals(EndpointType.vfs)) {
             List<EntityInfo> fileExpandedList = vfsExpander.expandDirectory(request.getSource().getInfoList(), request.getSource().getParentInfo().getPath(), request.getChunkSize());
             request.getSource().setInfoList(new ArrayList<>(fileExpandedList));
         }
         JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);
-        crudService.insertBeforeTransfer(request);
         logger.info(request.toString());
         jc.setRequest(request);
         Job job = jc.concurrentJobDefinition();
