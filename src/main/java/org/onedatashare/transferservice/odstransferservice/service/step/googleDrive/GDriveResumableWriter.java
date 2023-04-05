@@ -78,7 +78,7 @@ public class GDriveResumableWriter implements ItemWriter<DataChunk>,SetPool {
             this.fileName = items.get(0).getFileName();
             int status = this.utility.initializeUpload(this.fileName, this.basePath);
             if(status != HttpStatus.OK.value()){
-                throw new IOException("Unable to get the Location header from google drive");
+                throw new IOException("Unable to get the Location header from google drive. Error response code: "+status);
             }
         }
     }

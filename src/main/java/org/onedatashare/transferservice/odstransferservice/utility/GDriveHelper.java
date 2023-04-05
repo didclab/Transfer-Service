@@ -40,7 +40,11 @@ public class GDriveHelper {
     private HttpRequest initializeUploadRequest(String fileName, String parentFolderId) throws JSONException {
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("name", fileName);
-        jsonObject.put("parents", Arrays.asList(parentFolderId));
+        if(parentFolderId.equals("")){
+            jsonObject.put("parents", "[]");
+        } else{
+            jsonObject.put("parents", Arrays.asList(parentFolderId));
+        }
         return HttpRequest.newBuilder()
                 .POST(HttpRequest.BodyPublishers.ofString(jsonObject.toString()))
                 .uri(URI.create("https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable"))
