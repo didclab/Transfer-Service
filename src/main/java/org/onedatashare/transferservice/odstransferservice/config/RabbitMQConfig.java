@@ -45,4 +45,8 @@ public class RabbitMQConfig {
                 .to(exchange)
                 .with(routingKey);
     }
+    @Bean
+    public Queue stopJobQueue(){
+        return new Queue(this.queueName,false, false, false);
+    }
 }

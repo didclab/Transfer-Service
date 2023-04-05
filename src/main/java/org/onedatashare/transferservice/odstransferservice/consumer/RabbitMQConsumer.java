@@ -2,11 +2,14 @@ package org.onedatashare.transferservice.odstransferservice.consumer;
 
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
+import org.onedatashare.transferservice.odstransferservice.model.StopJobRequest;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.model.optimizer.TransferApplicationParams;
 import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManager;
@@ -28,14 +31,17 @@ import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteExcep
 import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
 
 @Service
 public class RabbitMQConsumer {
 
     private final ObjectMapper objectMapper;
     private final ThreadPoolManager threadPoolManager;
+
     Logger logger = LoggerFactory.getLogger(RabbitMQConsumer.class);
 
     JobControl jc;
@@ -61,6 +67,7 @@ public class RabbitMQConsumer {
         this.objectMapper = new ObjectMapper();
         this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.objectMapper.setDefaultPropertyInclusion(JsonInclude.Include.ALWAYS);
+
     }
 
     @RabbitListener(queues = "#{userQueue}")
@@ -90,4 +97,24 @@ public class RabbitMQConsumer {
             logger.info("Did not apply transfer params due to parsing message failure");
         }
     }
+
+    @RabbitListener(queues = "#{stopJobQueue}")
+    public void consumeStopJobRequest(final Message message){
+        String jsonStr = new String(message.getBody());
+        logger.info("Stop job request received: {}", jsonStr);
+        try{
+            StopJobRequest stopJobRequest = objectMapper.readValue(jsonStr, StopJobRequest.class);
+            Long jobId = stopJobRequest.getJobId();
+            String transferNodeName = stopJobRequest.getTransferNodeName();
+            jc.jobStop(jobId, transferNodeName);
+
+        }
+        catch (JsonProcessingException e){
+            logger.error("Error parsing stop job request JSON: {}", e.getMessage());
+        }
+
+
+    }
+
+
 }
