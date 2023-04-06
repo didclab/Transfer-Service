@@ -34,13 +34,18 @@ import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.configuration.annotation.DefaultBatchConfigurer;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.job.builder.FlowBuilder;
 import org.springframework.batch.core.job.flow.Flow;
 import org.springframework.batch.core.job.flow.support.SimpleFlow;
+import org.springframework.batch.core.launch.JobExecutionNotRunningException;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.launch.JobOperator;
+import org.springframework.batch.core.launch.NoSuchJobExecutionException;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
@@ -104,6 +109,11 @@ public class JobControl extends DefaultBatchConfigurer {
 
     @Autowired
     JobRepository roachRepository;
+    @Autowired
+    private JobExplorer jobExplorer;
+
+    @Autowired
+    private JobOperator jobOperator;
 
 
     @Lazy
@@ -256,5 +266,24 @@ public class JobControl extends DefaultBatchConfigurer {
         int retryAttempts = ofNullable(this.request.getOptions().getRetry()).orElse(1);
         SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy(retryAttempts, retryFor);
         this.retryTemplateForReaderAndWriter.setRetryPolicy(retryPolicy);
+    }
+    public  void jobStop(long jobId, String transferNodeName) {
+        try{
+            for(JobExecution jobExecution: jobExplorer.getJobExecutions(jobExplorer.getJobInstance(jobId))){
+                if (jobExecution.getExecutionContext().getString("routingKey").equals(transferNodeName)){
+                    jobOperator.stop(jobExecution.getId());
+                    logger.info("Job Stopped Successfully");
+
+                }
+            }
+            logger.info("No matching Job instances found");
+
+        }
+        catch (NoSuchJobExecutionException | JobExecutionNotRunningException e){
+            logger.info("Error stopping job");
+
+        }
+
+
     }
 }
