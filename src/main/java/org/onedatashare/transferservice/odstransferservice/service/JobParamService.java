@@ -47,6 +47,7 @@ public class JobParamService {
         builder.addLong(CONCURRENCY, (long) request.getOptions().getConcurrencyThreadCount());
         builder.addLong(PARALLELISM, (long) request.getOptions().getParallelThreadCount());
         builder.addLong(PIPELINING, (long) request.getOptions().getPipeSize());
+        builder.addLong(HTTP_PIPELINING,(long) request.getOptions().getHttpPipelining());
         builder.addString(CHUNK_SIZE, String.valueOf(request.getChunkSize()));
         builder.addString(COMPRESS, String.valueOf(request.getOptions().getCompress()));
         builder.addLong(RETRY, (long) request.getOptions().getRetry());
