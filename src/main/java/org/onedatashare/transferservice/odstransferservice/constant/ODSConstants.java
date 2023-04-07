@@ -60,6 +60,9 @@ public class ODSConstants {
     public static final String CONCURRENCY = "concurrency";
     public static final String PARALLELISM = "parallelism";
     public static final String PIPELINING = "pipelining";
+
+    public static final String HTTP_PIPELINING = "http-pipelining";
+
     public static final String OPTIMIZER = "optimizer";
     public static final String RETRY = "retry";
     public static final String APP_NAME = "appName";

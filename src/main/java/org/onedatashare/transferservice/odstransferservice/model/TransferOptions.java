@@ -15,4 +15,5 @@ public class TransferOptions {
     private int concurrencyThreadCount;
     private int parallelThreadCount;
     private int pipeSize;
+    private int httpPipelining;
 }

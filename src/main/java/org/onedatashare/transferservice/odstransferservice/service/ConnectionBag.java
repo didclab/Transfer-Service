@@ -7,8 +7,10 @@ import org.onedatashare.transferservice.odstransferservice.model.TransferOptions
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.pools.*;
+import org.onedatashare.transferservice.odstransferservice.pools.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -18,12 +20,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class ConnectionBag {
     private Logger logger = LoggerFactory.getLogger(ConnectionBag.class);
-
+    @Value("${ods.apache.httpclient.enabled}")
+    boolean apacheHttpClientEnabled;
     private JschSessionPool sftpReaderPool;
     private JschSessionPool sftpWriterPool;
     private FtpConnectionPool ftpReaderPool;
     private FtpConnectionPool ftpWriterPool;
     private HttpConnectionPool httpReaderPool;
+    private ApacheHttpConnectionPool apacheHttpReaderPool;
     private S3ConnectionPool s3ReaderPool;
     private S3ConnectionPool s3WriterPool;
     private GDriveConnectionPool googleDriveWriterPool;
@@ -75,7 +79,10 @@ public class ConnectionBag {
         if (request.getSource().getType().equals(EndpointType.http)) {
             readerMade = true;
             readerType = EndpointType.http;
-            this.createHttpReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount(), request.getChunkSize());
+            if(apacheHttpClientEnabled)
+                this.createApacheHttpReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount(), request.getChunkSize());
+            else
+                this.createHttpReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount(), request.getChunkSize());
         }
         if (request.getDestination().getType().equals(EndpointType.gdrive)) {
             writerMade = true;
@@ -98,7 +105,10 @@ public class ConnectionBag {
         if (readerType != null) {
             switch (readerType) {
                 case http:
-                    this.httpReaderPool.close();
+                    if(!apacheHttpClientEnabled)
+                        this.httpReaderPool.close();
+                    else
+                        this.apacheHttpReaderPool.close();
                     break;
                 case ftp:
                     this.ftpReaderPool.close();
@@ -175,6 +185,18 @@ public class ConnectionBag {
         this.googleDriveWriterPool = new GDriveConnectionPool(oauthDestCredential, chunkSize);
         this.googleDriveWriterPool.setCompress(false);
         this.googleDriveWriterPool.addObjects(concurrencyThreadCount);
+        this.compression = false;
+    }
+
+    public void createApacheHttpReaderPool(AccountEndpointCredential credential, int connectionCount, int chunkSize) {
+
+        this.apacheHttpReaderPool = new ApacheHttpConnectionPool(credential, chunkSize);
+        this.apacheHttpReaderPool.setCompress(false);
+        try {
+            this.apacheHttpReaderPool.addObjects(connectionCount);
+        }catch(Exception ex){
+            ex.printStackTrace();
+        }
         this.compression = false;
     }
 

@@ -23,6 +23,7 @@ import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPW
 import org.onedatashare.transferservice.odstransferservice.service.step.googleDrive.GDriveReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.googleDrive.GDriveResumableWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.googleDrive.GDriveSimpleWriter;
+import org.onedatashare.transferservice.odstransferservice.service.step.http.ApacheHttpReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.http.HttpReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.scp.SCPReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.scp.SCPWriter;
@@ -48,6 +49,7 @@ import org.springframework.batch.core.step.builder.SimpleStepBuilder;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
@@ -74,6 +76,10 @@ public class JobControl extends DefaultBatchConfigurer {
     public TransferJobRequest request;
 
     Logger logger = LoggerFactory.getLogger(JobControl.class);
+
+
+    @Value("${ods.apache.httpclient.enabled}")
+    boolean apacheHttpClientEnabled;
 
     @Autowired
     ThreadPoolManager threadPoolManager;
@@ -141,9 +147,17 @@ public class JobControl extends DefaultBatchConfigurer {
     protected AbstractItemCountingItemStreamItemReader<DataChunk> getRightReader(EndpointType type, EntityInfo fileInfo) {
         switch (type) {
             case http:
-                HttpReader hr = new HttpReader(fileInfo, request.getSource().getVfsSourceCredential());
-                hr.setPool(connectionBag.getHttpReaderPool());
-                return hr;
+
+                if(apacheHttpClientEnabled){
+                    ApacheHttpReader hr = new ApacheHttpReader(fileInfo, request.getSource().getVfsSourceCredential());
+                    hr.setPool(connectionBag.getApacheHttpReaderPool());
+                    return hr;
+                }else {
+                    HttpReader hr = new HttpReader(fileInfo, request.getSource().getVfsSourceCredential());
+                    hr.setPool(connectionBag.getHttpReaderPool());
+                    return hr;
+                }
+
             case vfs:
                 VfsReader vfsReader = new VfsReader(request.getSource().getVfsSourceCredential(), fileInfo);
                 return vfsReader;
