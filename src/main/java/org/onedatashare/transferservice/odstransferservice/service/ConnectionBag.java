@@ -5,6 +5,7 @@ import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.model.TransferOptions;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.pools.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +27,7 @@ public class ConnectionBag {
     private HttpConnectionPool httpReaderPool;
     private S3ConnectionPool s3ReaderPool;
     private S3ConnectionPool s3WriterPool;
-
+    private GDriveConnectionPool googleDriveWriterPool;
     EndpointType readerType;
     EndpointType writerType;
     boolean readerMade;
@@ -80,6 +81,11 @@ public class ConnectionBag {
             readerType = EndpointType.http;
             this.createHttpReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount()* request.getOptions().getParallelThreadCount(), request.getChunkSize());
         }
+        if (request.getDestination().getType().equals(EndpointType.gdrive)) {
+            writerMade = true;
+            writerType = EndpointType.gdrive;
+            this.createGoogleDriveWriterPool(request.getDestination().getOauthDestCredential(), request.getOptions().getConcurrencyThreadCount(), request.getChunkSize());
+        }
         if (request.getSource().getType().equals(EndpointType.s3)) {
             readerMade = true;
             readerType = EndpointType.s3;
@@ -120,6 +126,8 @@ public class ConnectionBag {
                 case s3:
                     s3WriterPool.close();
                     break;
+                case gdrive:
+                    googleDriveWriterPool.close();
             }
         }
     }
@@ -165,6 +173,13 @@ public class ConnectionBag {
         this.httpReaderPool.setCompress(false);
         this.httpReaderPool.addObjects(connectionCount);
         this.httpReaderPool.addObject();
+        this.compression = false;
+    }
+
+    private void createGoogleDriveWriterPool(OAuthEndpointCredential oauthDestCredential, int concurrencyThreadCount, int chunkSize) {
+        this.googleDriveWriterPool = new GDriveConnectionPool(oauthDestCredential, chunkSize);
+        this.googleDriveWriterPool.setCompress(false);
+        this.googleDriveWriterPool.addObjects(concurrencyThreadCount);
         this.compression = false;
     }
 
