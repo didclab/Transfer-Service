@@ -84,29 +84,21 @@ public class RabbitMQConsumer {
             logger.debug("Failed to parse jsonStr:{} to TransferJobRequest.java", jsonStr);
         }
         try {
+            Object obj = objectMapper.readValue(jsonStr, Object.class);
+            if (obj instanceof StopJobRequest) {
+                StopJobRequest stopJobRequest = (StopJobRequest) obj;
+                Long jobId = stopJobRequest.getJobId();
+                String transferNodeName = stopJobRequest.getTransferNodeName();
+                jc.jobStop(jobId, transferNodeName);
+            }
+            else{
             TransferApplicationParams params = objectMapper.readValue(jsonStr, TransferApplicationParams.class);
             logger.info("Parsed TransferApplicationParams:{}", params);
             this.threadPoolManager.applyOptimizer(params.getConcurrency(), params.getParallelism());
+        }
         } catch (Exception e) {
             logger.info("Did not apply transfer params due to parsing message failure");
         }
-    }
-    @RabbitListener(queues = "#{stopJobQueue}")
-    public void consumeStopJobRequest(final Message message){
-        String jsonStr = new String(message.getBody());
-        logger.info("Stop job request received: {}", jsonStr);
-        try{
-            StopJobRequest stopJobRequest = objectMapper.readValue(jsonStr, StopJobRequest.class);
-            Long jobId = stopJobRequest.getJobId();
-            String transferNodeName = stopJobRequest.getTransferNodeName();
-            jc.jobStop(jobId, transferNodeName);
-
-        }
-        catch (JsonProcessingException e){
-            logger.error("Error parsing stop job request JSON: {}", e.getMessage());
-        }
-
-
     }
 
 }
