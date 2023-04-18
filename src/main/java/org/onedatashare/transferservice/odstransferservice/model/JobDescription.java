@@ -6,7 +6,6 @@ import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.StepExecution;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -83,7 +82,7 @@ class StepDescriptor {
             stepDescriptor.endTime = endTime;
         }
         Date startTime = stepExecution.getStartTime();
-        if(startTime != null){
+        if (startTime != null) {
             stepDescriptor.startTime = startTime;
         }
         stepDescriptor.exitStatus = stepExecution.getExitStatus();
