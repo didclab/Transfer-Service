@@ -5,8 +5,11 @@ import lombok.Builder;
 import lombok.Data;
 import org.springframework.batch.core.*;
 
-import java.sql.Timestamp;
-import java.util.*;
+import java.time.Instant;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Builder
@@ -20,11 +23,11 @@ public class BatchJobData {
 
     private Long jobInstanceId;
 
-    private Timestamp createTime;
+    private String createTime;
 
-    private Timestamp startTime;
+    private String startTime;
 
-    private Timestamp endTime;
+    private String endTime;
 
     private BatchStatus status;
 
@@ -32,7 +35,7 @@ public class BatchJobData {
 
     private String exitMessage;
 
-    private Timestamp lastUpdated;
+    private String lastUpdated;
 
     private Boolean isRunning;
 
@@ -48,9 +51,9 @@ public class BatchJobData {
         BatchJobDataBuilder batchJobDataBuilder = new BatchJobDataBuilder();
         Map<String, JobParameter> map = jobParams.getParameters();
         Map<String, String> nextMap = new HashMap<>();
-        for(String key : map.keySet()){
+        for (String key : map.keySet()) {
             JobParameter jobParameter = map.get(key);
-            if(jobParameter != null){
+            if (jobParameter != null) {
                 nextMap.put(key, jobParameter.toString());
             }
         }
@@ -62,12 +65,12 @@ public class BatchJobData {
                 .id(jobExecution.getId())
                 .jobInstanceId(jobExecution.getJobInstance().getInstanceId())
                 .version(Long.valueOf(jobExecution.getVersion()))
-                .createTime(createTime == null ? null : new Timestamp(createTime.getTime()))
-                .startTime(startTime == null ? null: new Timestamp(startTime.getTime()))
-                .endTime(endTime == null ? null : new Timestamp(endTime.getTime()))
+                .createTime(createTime == null ? null : createTime.toInstant().toString())
+                .startTime(startTime == null ? null : startTime.toInstant().toString())
+                .endTime(endTime == null ? null : endTime.toInstant().toString())
                 .status(jobExecution.getStatus())
                 .jobParameters(nextMap)
-                .lastUpdated(lastUpdated == null ? null : new Timestamp(lastUpdated.getTime()))
+                .lastUpdated(lastUpdated == null ? null : lastUpdated.toInstant().toString())
                 .exitCode(jobExecution.getExitStatus())
                 .exitMessage(jobExecution.getExitStatus().getExitDescription())
                 .isRunning(jobExecution.isRunning())

@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import org.springframework.batch.core.StepExecution;
 
-import java.sql.Timestamp;
 import java.util.Date;
 
 @Data
@@ -21,9 +20,9 @@ public class BatchStepExecution {
 
     private Long jobInstanceId;
 
-    private Timestamp startTime;
+    private String startTime;
 
-    private Timestamp endTime;
+    private String endTime;
 
     private String status;
 
@@ -47,7 +46,7 @@ public class BatchStepExecution {
 
     private String exitMessage;
 
-    private Timestamp lastUpdated;
+    private String lastUpdated;
 
     public static BatchStepExecution convertStepExecutionToMeta(StepExecution stepExecution) {
         Date endTime = stepExecution.getEndTime();
@@ -63,12 +62,12 @@ public class BatchStepExecution {
                 .step_name(stepExecution.getStepName())
                 .version(version.longValue())
                 .jobInstanceId(stepExecution.getJobExecutionId())
-                .startTime(new Timestamp(stepExecution.getStartTime().getTime()))
-                .endTime(endTime == null ? null : new Timestamp(endTime.getTime()))
+                .startTime(stepExecution.getStartTime().toInstant().toString())
+                .endTime(endTime == null ? null : endTime.toInstant().toString())
                 .status(stepExecution.getStatus().toString())
                 .exitCode(stepExecution.getExitStatus().getExitCode())
                 .exitMessage(stepExecution.getExitStatus().getExitDescription())
-                .lastUpdated(lastUpdated == null ? null : new Timestamp(lastUpdated.getTime()))
+                .lastUpdated(lastUpdated == null ? null : lastUpdated.toInstant().toString())
                 .filterCount((long) stepExecution.getFilterCount())
                 .processSkipCount((long) stepExecution.getProcessSkipCount())
                 .rollbackCount((long) stepExecution.getRollbackCount())
