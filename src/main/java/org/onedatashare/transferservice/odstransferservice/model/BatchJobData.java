@@ -3,13 +3,10 @@ package org.onedatashare.transferservice.odstransferservice.model;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import org.springframework.batch.core.BatchStatus;
-import org.springframework.batch.core.ExitStatus;
-import org.springframework.batch.core.JobExecution;
+import org.springframework.batch.core.*;
 
 import java.sql.Timestamp;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Builder
@@ -47,26 +44,35 @@ public class BatchJobData {
         List<BatchStepExecution> steps = jobExecution.getStepExecutions().stream()
                 .map(BatchStepExecution::convertStepExecutionToMeta)
                 .collect(Collectors.toList());
-        Map<String, String> jobParams = jobExecution.getJobParameters()
-                .getParameters()
-                .entrySet()
-                .stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
-
-        return new BatchJobDataBuilder()
+        JobParameters jobParams = jobExecution.getJobParameters();
+        BatchJobDataBuilder batchJobDataBuilder = new BatchJobDataBuilder();
+        Map<String, JobParameter> map = jobParams.getParameters();
+        Map<String, String> nextMap = new HashMap<>();
+        for(String key : map.keySet()){
+            JobParameter jobParameter = map.get(key);
+            if(jobParameter != null){
+                nextMap.put(key, jobParameter.toString());
+            }
+        }
+        Date createTime = jobExecution.getCreateTime();
+        Date startTime = jobExecution.getStartTime();
+        Date endTime = jobExecution.getEndTime();
+        Date lastUpdated = jobExecution.getLastUpdated();
+        return batchJobDataBuilder
                 .id(jobExecution.getId())
                 .jobInstanceId(jobExecution.getJobInstance().getInstanceId())
                 .version(Long.valueOf(jobExecution.getVersion()))
-                .createTime(new Timestamp(jobExecution.getCreateTime().getTime()))
-                .startTime(new Timestamp(jobExecution.getStartTime().getTime()))
-                .endTime(new Timestamp(jobExecution.getEndTime().getTime()))
+                .createTime(createTime == null ? null : new Timestamp(createTime.getTime()))
+                .startTime(startTime == null ? null: new Timestamp(startTime.getTime()))
+                .endTime(endTime == null ? null : new Timestamp(endTime.getTime()))
                 .status(jobExecution.getStatus())
+                .jobParameters(nextMap)
+                .lastUpdated(lastUpdated == null ? null : new Timestamp(lastUpdated.getTime()))
                 .exitCode(jobExecution.getExitStatus())
+                .exitMessage(jobExecution.getExitStatus().getExitDescription())
                 .isRunning(jobExecution.isRunning())
-                .jobParameters(jobParams)
                 .batchSteps(steps)
                 .build();
-
     }
 }
 
