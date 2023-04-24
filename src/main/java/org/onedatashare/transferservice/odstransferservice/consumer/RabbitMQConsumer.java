@@ -17,13 +17,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class RabbitMQConsumer {
@@ -41,6 +44,9 @@ public class RabbitMQConsumer {
     Queue userQueue;
 
     VfsExpander vfsExpander;
+
+    @Autowired
+    Set<Long> jobIds;
 
     public RabbitMQConsumer(VfsExpander vfsExpander, Queue userQueue, JobParamService jobParamService, JobLauncher asyncJobLauncher, JobControl jc, ThreadPoolManager threadPoolManager) {
         this.vfsExpander = vfsExpander;
@@ -67,7 +73,8 @@ public class RabbitMQConsumer {
             }
             JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);
             jc.setRequest(request);
-            asyncJobLauncher.run(jc.concurrentJobDefinition(), parameters);
+            JobExecution jobExecution = asyncJobLauncher.run(jc.concurrentJobDefinition(), parameters);
+            this.jobIds.add(jobExecution.getJobId());
             return;
         } catch (Exception e) {
             logger.debug("Failed to parse jsonStr:{} to TransferJobRequest.java", jsonStr);

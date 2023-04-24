@@ -11,18 +11,24 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+
 
 @RequestMapping("/api/v1/job")
 @RestController
 public class JobMonitor {
 
     private final JobExplorer jobExplorer;
+    private Set<Long> jobIds;
 
     Logger logger = LoggerFactory.getLogger(JobMonitor.class);
 
-    public JobMonitor(JobExplorer jobExplorer) {
+    public JobMonitor(JobExplorer jobExplorer, Set<Long> jobIds) {
         this.jobExplorer = jobExplorer;
+        this.jobIds = jobIds;
     }
 
     @GetMapping("/execution")
@@ -35,5 +41,11 @@ public class JobMonitor {
         } else {
             return null;
         }
+    }
+
+    @GetMapping("/ids")
+    public ResponseEntity<List<Long>> getJobIdsRun() {
+        logger.info("Listing Job Ids");
+        return ResponseEntity.ok(new ArrayList<>(this.jobIds));
     }
 }

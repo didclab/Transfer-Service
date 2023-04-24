@@ -56,7 +56,7 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
 
     @Override
     public void beforeJob(JobExecution jobExecution) {
-        logger.info("*****Job Execution start Time***** : {} with jobId={}", jobExecution.getStartTime(),jobExecution.getJobId());
+        logger.info("*****Job Execution start Time***** : {} with jobId={} {}", jobExecution.getStartTime(),jobExecution.getJobId());
         long fileCount = jobExecution.getJobParameters().getLong(ODSConstants.FILE_COUNT);
         String optimizerType = jobExecution.getJobParameters().getString(ODSConstants.OPTIMIZER);
         if(optimizerType != null){

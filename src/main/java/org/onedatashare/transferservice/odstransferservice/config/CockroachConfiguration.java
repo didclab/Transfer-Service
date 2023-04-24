@@ -6,12 +6,15 @@ import org.springframework.batch.core.repository.support.JobRepositoryFactoryBea
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
 
 @Configuration
-public class DataSourceConfig {
+@Profile("cockroach")
+public class CockroachConfiguration {
 
     @Value("${spring.datasource.url}")
     String url;
@@ -19,10 +22,11 @@ public class DataSourceConfig {
     String userName;
     @Value("${spring.datasource.password}")
     String pwd;
-    
+
     @SneakyThrows
     @Bean
-    public JobRepository roachRepository(DataSource dataSource, PlatformTransactionManager transactionManager) {
+    @Primary
+    public JobRepository jobRepository(DataSource dataSource, PlatformTransactionManager transactionManager) {
         JobRepositoryFactoryBean factory = new JobRepositoryFactoryBean();
         factory.setDataSource(dataSource);
         factory.setTransactionManager(transactionManager);
@@ -32,4 +36,3 @@ public class DataSourceConfig {
         return factory.getObject();
     }
 }
-
