@@ -22,7 +22,9 @@ public class HsqlConfiguration {
         JobRepositoryFactoryBean fb = new JobRepositoryFactoryBean();
         fb.setDatabaseType("HSQL");
         fb.setDataSource(dataSource);
+        fb.setIsolationLevelForCreate("READ_UNCOMMITTED");
         fb.setTransactionManager(transactionManager);
         return fb.getObject();
     }
+
 }
