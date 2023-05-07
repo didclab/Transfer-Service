@@ -1,13 +1,17 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.dropbox;
 
+import com.box.sdk.BoxUser;
 import com.dropbox.core.DbxException;
 import com.dropbox.core.v2.DbxClientV2;
 import com.dropbox.core.v2.files.CommitInfo;
 import com.dropbox.core.v2.files.FileMetadata;
 import com.dropbox.core.v2.files.UploadSessionCursor;
+import com.dropbox.core.v2.users.FullAccount;
 import lombok.SneakyThrows;
+import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.AuthenticateCredentials;
 import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
@@ -25,10 +29,11 @@ import java.nio.file.Paths;
 import java.util.List;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.OWNER_ID;
 
 public class DropBoxChunkedWriter extends ODSBaseWriter implements ItemWriter<DataChunk> {
 
-    private final OAuthEndpointCredential credential;
+    private OAuthEndpointCredential credential;
     private String destinationPath;
     private DbxClientV2 client;
     String sessionId;
@@ -37,10 +42,16 @@ public class DropBoxChunkedWriter extends ODSBaseWriter implements ItemWriter<Da
     private String fileName;
     private FileMetadata uploadSessionFinishUploader;
 
+    private AuthenticateCredentials authenticateCredentials;
 
-    public DropBoxChunkedWriter(OAuthEndpointCredential credential, MetricsCollector metricsCollector, InfluxCache influxCache) {
+    String ownerId;
+    String usersEmail;
+
+
+    public DropBoxChunkedWriter(OAuthEndpointCredential credential, MetricsCollector metricsCollector, InfluxCache influxCache, AuthenticateCredentials authenticateCredentials) {
         super(metricsCollector, influxCache);
         this.credential = credential;
+        this.authenticateCredentials = authenticateCredentials;
     }
 
     @BeforeStep
@@ -51,7 +62,8 @@ public class DropBoxChunkedWriter extends ODSBaseWriter implements ItemWriter<Da
         sessionId = this.client.files().uploadSessionStart().finish().getSessionId();
         this.stepExecution = stepExecution;
         this.cursor = new UploadSessionCursor(sessionId, 0);
-
+        this.ownerId = stepExecution.getJobParameters().getString(OWNER_ID);
+        this.usersEmail = client.users().getCurrentAccount().getEmail();
     }
 
     @SneakyThrows
@@ -66,6 +78,10 @@ public class DropBoxChunkedWriter extends ODSBaseWriter implements ItemWriter<Da
 
     @Override
     public void write(List<? extends DataChunk> items) throws Exception {
+        if(this.credential.isTokenExpires()){
+            this.credential = authenticateCredentials.checkExpiryAndGenerateNew( usersEmail, ODSConstants.DROPBOX, ownerId);
+            this.client = new DbxClientV2(ODSUtility.dbxRequestConfig, this.credential.getToken());
+        }
         for(DataChunk chunk : items){
             this.client.files().uploadSessionAppendV2(cursor).uploadAndFinish(new ByteArrayInputStream(chunk.getData()));
             this.cursor = new UploadSessionCursor(sessionId, chunk.getStartPosition() + chunk.getSize());

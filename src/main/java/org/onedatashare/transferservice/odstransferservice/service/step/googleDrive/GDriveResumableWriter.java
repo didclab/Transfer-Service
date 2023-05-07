@@ -1,6 +1,7 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.googleDrive;
 
 import com.google.api.services.drive.Drive;
+import com.google.api.services.drive.model.About;
 import com.google.api.services.drive.model.File;
 import org.apache.commons.pool2.ObjectPool;
 import org.codehaus.jettison.json.JSONException;
@@ -11,6 +12,7 @@ import org.onedatashare.transferservice.odstransferservice.model.SetPool;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.pools.GDriveConnectionPool;
 import org.onedatashare.transferservice.odstransferservice.pools.HttpConnectionPool;
+import org.onedatashare.transferservice.odstransferservice.service.AuthenticateCredentials;
 import org.onedatashare.transferservice.odstransferservice.utility.GDriveHelper;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
@@ -36,12 +38,13 @@ import java.security.GeneralSecurityException;
 import java.util.*;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.GOOGLE_DRIVE_MIN_BYTES;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.OWNER_ID;
 
 
 public class GDriveResumableWriter implements ItemWriter<DataChunk>,SetPool {
 
     Logger logger = LoggerFactory.getLogger(GDriveResumableWriter.class);
-    private final OAuthEndpointCredential credential;
+    private OAuthEndpointCredential credential;
     private final EntityInfo fileInfo;
     private String basePath;
     private String fileName;
@@ -50,12 +53,18 @@ public class GDriveResumableWriter implements ItemWriter<DataChunk>,SetPool {
 
     private DataChunk readyChunk;
 
+    String usersEmail;
+    String ownerId;
+
+    private AuthenticateCredentials authenticateCredentials;
+
     private boolean failed;
     private boolean success;
 
-    public GDriveResumableWriter(OAuthEndpointCredential credential, EntityInfo fileInfo) {
+    public GDriveResumableWriter(OAuthEndpointCredential credential, EntityInfo fileInfo, AuthenticateCredentials authenticateCredentials) {
         this.credential = credential;
         this.fileInfo = fileInfo;
+        this.authenticateCredentials = authenticateCredentials;
     }
 
     @BeforeStep
@@ -64,10 +73,11 @@ public class GDriveResumableWriter implements ItemWriter<DataChunk>,SetPool {
         this.readyChunk = null;
         this.failed=false;
         this.success=false;
+        this.ownerId = stepExecution.getJobParameters().getString(OWNER_ID);
     }
 
     @BeforeWrite
-    public void beforeWrite(List<? extends DataChunk> items) throws IOException, JSONException, InterruptedException {
+    public void beforeWrite(List<? extends DataChunk> items) throws IOException, JSONException, InterruptedException, GeneralSecurityException {
         if(this.utility == null || this.utility.getSessionUri() == null){
             this.logger.debug("Initializing resumable upload");
             this.utility = GDriveHelper.builder()
@@ -81,11 +91,21 @@ public class GDriveResumableWriter implements ItemWriter<DataChunk>,SetPool {
                 throw new IOException("Unable to get the Location header from google drive. Error response code: "+status);
             }
         }
+        Drive client = ODSUtility.authenticateDriveClient(this.credential);
+        if(client!=null) {
+            About about = client.about().get().execute();
+            if(about!= null) {
+                this.usersEmail = about.getUser().getEmailAddress();
+            }
+        }
     }
 
     @Override
     public void write(List<? extends DataChunk> dataChunkList) {
         try {
+            if(this.credential.isTokenExpires()){
+                this.credential = authenticateCredentials.checkExpiryAndGenerateNew( usersEmail, ODSConstants.GOOGLEDRIVE, ownerId);
+            }
             int chunkIndex = 0;
             while (chunkIndex < dataChunkList.size()) {
                 DataChunk currentChunk = dataChunkList.get(chunkIndex);

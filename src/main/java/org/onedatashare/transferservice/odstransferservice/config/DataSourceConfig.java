@@ -4,9 +4,11 @@ import lombok.SneakyThrows;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.web.client.RestTemplate;
 
 import javax.sql.DataSource;
 
@@ -30,6 +32,13 @@ public class DataSourceConfig {
         factory.setTablePrefix("BATCH_");
         factory.setMaxVarCharLength(1000);
         return factory.getObject();
+    }
+
+    @LoadBalanced
+    @Bean
+    public RestTemplate credentialTemplate(){
+        RestTemplate credenTemplate = new RestTemplate();
+        return credenTemplate;
     }
 }
 

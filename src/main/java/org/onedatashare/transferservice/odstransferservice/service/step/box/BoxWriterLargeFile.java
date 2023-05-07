@@ -4,9 +4,12 @@ import com.box.sdk.BoxAPIConnection;
 import com.box.sdk.BoxFileUploadSession;
 import com.box.sdk.BoxFileUploadSessionPart;
 import com.box.sdk.BoxFolder;
+import com.box.sdk.BoxUser;
+import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.AuthenticateCredentials;
 import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
@@ -26,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.OWNER_ID;
 
 /**
  * This class is responsible for writing to Box using the chunked upload approach & small file upload
@@ -33,7 +37,7 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
  */
 public class BoxWriterLargeFile extends ODSBaseWriter implements ItemWriter<DataChunk> {
 
-    private final OAuthEndpointCredential credential;
+    private OAuthEndpointCredential credential;
     private BoxAPIConnection boxAPIConnection;
     EntityInfo fileInfo;
     private HashMap<String, BoxFileUploadSession> fileMap;
@@ -42,8 +46,11 @@ public class BoxWriterLargeFile extends ODSBaseWriter implements ItemWriter<Data
     String destinationBasePath;
     BoxFolder boxFolder;
     Logger logger = LoggerFactory.getLogger(BoxWriterLargeFile.class);
+    String usersEmail;
+    String ownerId;
+    private AuthenticateCredentials authenticateCredentials;
 
-    public BoxWriterLargeFile(OAuthEndpointCredential oAuthDestCredential, EntityInfo fileInfo, MetricsCollector metricsCollector, InfluxCache influxCache) {
+    public BoxWriterLargeFile(OAuthEndpointCredential oAuthDestCredential, EntityInfo fileInfo, MetricsCollector metricsCollector, InfluxCache influxCache, AuthenticateCredentials authenticateCredentials) {
         super(metricsCollector, influxCache);
         this.boxAPIConnection = new BoxAPIConnection(oAuthDestCredential.getToken());
         this.fileInfo = fileInfo;
@@ -51,6 +58,10 @@ public class BoxWriterLargeFile extends ODSBaseWriter implements ItemWriter<Data
         this.digestMap = new HashMap<>();
         this.parts = new ArrayList<>();
         this.credential = oAuthDestCredential;
+        this.authenticateCredentials = authenticateCredentials;
+        BoxUser user = new BoxUser(this.boxAPIConnection, this.credential.getAccountId());
+        BoxUser.Info userInfo = user.getInfo("login");
+        this.usersEmail = userInfo.getLogin();
     }
 
     @BeforeStep
@@ -58,6 +69,7 @@ public class BoxWriterLargeFile extends ODSBaseWriter implements ItemWriter<Data
         this.destinationBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH); //path to place the files
         this.boxFolder = new BoxFolder(this.boxAPIConnection, this.destinationBasePath);
         this.stepExecution = stepExecution;
+        this.ownerId = stepExecution.getJobParameters().getString(OWNER_ID);
     }
 
     /**
@@ -111,6 +123,10 @@ public class BoxWriterLargeFile extends ODSBaseWriter implements ItemWriter<Data
      */
     @Override
     public void write(List<? extends DataChunk> items) throws NoSuchAlgorithmException {
+        if(this.credential.isTokenExpires()){
+            this.credential = authenticateCredentials.checkExpiryAndGenerateNew( usersEmail, ODSConstants.BOX, ownerId);
+            this.boxAPIConnection = new BoxAPIConnection(this.credential.getToken());
+        }
         String fileName = items.get(0).getFileName();
         prepareForUpload(fileName);
         BoxFileUploadSession session = this.fileMap.get(fileName);
