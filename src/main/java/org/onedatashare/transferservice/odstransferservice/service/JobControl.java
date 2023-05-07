@@ -105,6 +105,9 @@ public class JobControl extends DefaultBatchConfigurer {
     @Autowired
     JobRepository roachRepository;
 
+    @Autowired
+    AuthenticateCredentials authenticateCredentials;
+
 
     @Lazy
     @Bean
@@ -161,18 +164,18 @@ public class JobControl extends DefaultBatchConfigurer {
                 amazonS3Reader.setPool(connectionBag.getS3ReaderPool());
                 return amazonS3Reader;
             case box:
-                BoxReader boxReader = new BoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
+                BoxReader boxReader = new BoxReader(request.getSource().getOauthSourceCredential(), fileInfo,this.authenticateCredentials);
                 boxReader.setMaxRetry(this.request.getOptions().getRetry());
                 return boxReader;
             case dropbox:
-                DropBoxReader dropBoxReader = new DropBoxReader(request.getSource().getOauthSourceCredential(), fileInfo);
+                DropBoxReader dropBoxReader = new DropBoxReader(request.getSource().getOauthSourceCredential(), fileInfo, this.authenticateCredentials);
                 return dropBoxReader;
             case scp:
                 SCPReader reader = new SCPReader(fileInfo);
                 reader.setPool(connectionBag.getSftpReaderPool());
                 return reader;
             case gdrive:
-                GDriveReader dDriveReader = new GDriveReader(request.getSource().getOauthSourceCredential(), fileInfo);
+                GDriveReader dDriveReader = new GDriveReader(request.getSource().getOauthSourceCredential(), fileInfo, this.authenticateCredentials);
                 return dDriveReader;
         }
         return null;
@@ -208,11 +211,11 @@ public class JobControl extends DefaultBatchConfigurer {
                     BoxWriterSmallFile boxWriterSmallFile = new BoxWriterSmallFile(request.getDestination().getOauthDestCredential(), fileInfo, this.metricsCollector, this.influxCache);
                     return boxWriterSmallFile;
                 } else {
-                    BoxWriterLargeFile boxWriterLargeFile = new BoxWriterLargeFile(request.getDestination().getOauthDestCredential(), fileInfo, this.metricsCollector, this.influxCache);
+                    BoxWriterLargeFile boxWriterLargeFile = new BoxWriterLargeFile(request.getDestination().getOauthDestCredential(), fileInfo, this.metricsCollector, this.influxCache, this.authenticateCredentials);
                     return boxWriterLargeFile;
                 }
             case dropbox:
-                DropBoxChunkedWriter dropBoxChunkedWriter = new DropBoxChunkedWriter(request.getDestination().getOauthDestCredential(), this.metricsCollector, this.influxCache);
+                DropBoxChunkedWriter dropBoxChunkedWriter = new DropBoxChunkedWriter(request.getDestination().getOauthDestCredential(), this.metricsCollector, this.influxCache, this.authenticateCredentials);
                 return dropBoxChunkedWriter;
             case scp:
                 SCPWriter scpWriter = new SCPWriter(fileInfo, this.metricsCollector, this.influxCache);
@@ -223,7 +226,7 @@ public class JobControl extends DefaultBatchConfigurer {
                     GDriveSimpleWriter writer = new GDriveSimpleWriter(request.getDestination().getOauthDestCredential(),fileInfo);
                     return writer;
                 }else{
-                    GDriveResumableWriter writer = new GDriveResumableWriter(request.getDestination().getOauthDestCredential(),fileInfo);
+                    GDriveResumableWriter writer = new GDriveResumableWriter(request.getDestination().getOauthDestCredential(),fileInfo, this.authenticateCredentials);
                     writer.setPool(connectionBag.getGoogleDriveWriterPool());
                     return writer;
                 }
