@@ -4,10 +4,12 @@ import com.dropbox.core.DbxException;
 import com.dropbox.core.v2.DbxClientV2;
 import com.dropbox.core.v2.files.DownloadBuilder;
 import com.dropbox.core.v2.files.Metadata;
+import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.AuthenticateCredentials;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
@@ -20,13 +22,14 @@ import org.springframework.util.ClassUtils;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Paths;
 
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.OWNER_ID;
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SOURCE_BASE_PATH;
 
 public class DropBoxReader extends AbstractItemCountingItemStreamItemReader<DataChunk> {
 
     Logger logger = LoggerFactory.getLogger(DropBoxReader.class);
     private final EntityInfo fileInfo;
-    private final OAuthEndpointCredential credential;
+    private  OAuthEndpointCredential credential;
     private String sBasePath;
     private FilePartitioner partitioner;
 
@@ -34,12 +37,18 @@ public class DropBoxReader extends AbstractItemCountingItemStreamItemReader<Data
     private DownloadBuilder requestSkeleton;
     private Metadata fileMetaData;
 
+    private AuthenticateCredentials authenticateCredentials;
 
-    public DropBoxReader(OAuthEndpointCredential credential, EntityInfo fileInfo) {
+    String usersEmail;
+    String ownerId;
+
+
+    public DropBoxReader(OAuthEndpointCredential credential, EntityInfo fileInfo, AuthenticateCredentials authenticateCredentials) {
         this.credential = credential;
         this.fileInfo = fileInfo;
         this.partitioner = new FilePartitioner(fileInfo.getChunkSize());
         this.setName(ClassUtils.getShortName(DropBoxReader.class));
+        this.authenticateCredentials = authenticateCredentials;
     }
 
     @BeforeStep
@@ -52,6 +61,7 @@ public class DropBoxReader extends AbstractItemCountingItemStreamItemReader<Data
         this.sBasePath = "";
         this.sBasePath = "/"+this.sBasePath;
         this.partitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
+        this.ownerId = stepExecution.getJobParameters().getString(OWNER_ID);
     }
 
     public void setName(String name) {
@@ -60,6 +70,10 @@ public class DropBoxReader extends AbstractItemCountingItemStreamItemReader<Data
 
     @Override
     protected DataChunk doRead() throws Exception {
+        if(this.credential.isTokenExpires()){
+            this.credential = authenticateCredentials.checkExpiryAndGenerateNew( usersEmail, ODSConstants.DROPBOX, ownerId);
+            doOpen();
+        }
         FilePart currentPart = partitioner.nextPart();
         if (currentPart == null || currentPart.getStart() == currentPart.getEnd()) return null;
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(currentPart.getSize());
@@ -75,6 +89,7 @@ public class DropBoxReader extends AbstractItemCountingItemStreamItemReader<Data
         this.client = new DbxClientV2(ODSUtility.dbxRequestConfig, credential.getToken());
         this.requestSkeleton = this.client.files().downloadBuilder(this.fileInfo.getPath());
         this.fileMetaData = this.client.files().getMetadata(this.fileInfo.getPath());
+        this.usersEmail = client.users().getCurrentAccount().getEmail();
     }
 
     @Override
