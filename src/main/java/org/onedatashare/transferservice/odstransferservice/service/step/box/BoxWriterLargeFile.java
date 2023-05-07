@@ -1,6 +1,10 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.box;
 
-import com.box.sdk.*;
+import com.box.sdk.BoxAPIConnection;
+import com.box.sdk.BoxFileUploadSession;
+import com.box.sdk.BoxFileUploadSessionPart;
+import com.box.sdk.BoxFolder;
+import com.box.sdk.BoxUser;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
