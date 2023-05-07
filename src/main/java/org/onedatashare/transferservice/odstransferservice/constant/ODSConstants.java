@@ -17,6 +17,10 @@ public class ODSConstants {
     public static final String FILE_SIZE = "fileSize";
     public static final String FILE_PATH = "filePath";
     public static final String FILE_ID = "file_id";
+
+    public static final String  DROPBOX= "dropbox";
+    public static final String  GOOGLEDRIVE = "gdrive";
+    public static final String  BOX= "box";
     public static final String TIME = "time";
     public static final String SOURCE_ACCOUNT_ID_PASS = "sourceAccountIdPass";
     public static final String SOURCE_HOST = "sourceURI";
