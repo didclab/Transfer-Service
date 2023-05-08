@@ -53,9 +53,6 @@ public class WebDAVWriter implements ItemWriter<DataChunk> {
     @Override
     public void write(List<? extends DataChunk> items) throws Exception {
         for(DataChunk item : items){
-            Map<String,String> headers = new HashMap<>();
-            long bytesTo = item.getStartPosition()+item.getSize() - 1;
-            headers.put(HttpHeaders.CONTENT_RANGE,"bytes "+item.getStartPosition()+"-"+bytesTo+"/"+this.fileInfo.getSize());
             boolean fileExist = client.exists(this.uri+item.getFileName());
             if(fileExist==true){
                 logger.debug("File already exists. Overriding the file");
