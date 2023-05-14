@@ -47,7 +47,7 @@ public class GDriveReader extends AbstractItemCountingItemStreamItemReader<DataC
                 get.getMediaHttpDownloader().setChunkSize(this.fileInfo.getChunkSize()).setContentRange(filePart.getStart(), filePart.getEnd());
                 get.executeMediaAndDownloadTo(outputStream);
                 byte[] receivedData = outputStream.toByteArray();
-                if(receivedData.length -1 != filePart.getSize()){
+                if(receivedData.length != filePart.getSize()){
                     logger.warn("Invalid chunk size received. Retrying to read chunk from the server...");
                     throw new IOException("Chunk receive error.");
                 }
