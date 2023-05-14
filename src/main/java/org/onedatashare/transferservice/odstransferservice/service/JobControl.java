@@ -173,6 +173,7 @@ public class JobControl extends DefaultBatchConfigurer {
                 return reader;
             case gdrive:
                 GDriveReader dDriveReader = new GDriveReader(request.getSource().getOauthSourceCredential(), fileInfo);
+                dDriveReader.setRetryTemplate(retryTemplateForReaderAndWriter);
                 return dDriveReader;
         }
         return null;
@@ -221,6 +222,7 @@ public class JobControl extends DefaultBatchConfigurer {
             case gdrive:
                 if(fileInfo.getSize() < FIVE_MB){
                     GDriveSimpleWriter writer = new GDriveSimpleWriter(request.getDestination().getOauthDestCredential(),fileInfo);
+                    writer.setRetryTemplate(retryTemplateForReaderAndWriter);
                     return writer;
                 }else{
                     GDriveResumableWriter writer = new GDriveResumableWriter(request.getDestination().getOauthDestCredential(),fileInfo);
