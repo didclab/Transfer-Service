@@ -2,6 +2,7 @@ package org.onedatashare.transferservice.odstransferservice.model.credential;
 
 import lombok.Data;
 import lombok.ToString;
+import org.apache.commons.lang.StringUtils;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 
 @Data
@@ -17,7 +18,9 @@ public class AccountEndpointCredential extends EndpointCredential{
         if(type.equals(EndpointType.sftp)){
             noTypeUri = credential.getUri().replaceFirst("sftp://", "");
         }else if(type.equals(EndpointType.ftp)){
-            noTypeUri = credential.getUri().replaceFirst("ftp://", "");
+            noTypeUri = credential.getUri().startsWith("ftps://") ?
+                    credential.getUri().replaceFirst("ftps://", "")
+                   : credential.getUri().replaceFirst("ftp://", "");
         }
         else{
             noTypeUri = credential.getUri().replaceFirst("http://", "");

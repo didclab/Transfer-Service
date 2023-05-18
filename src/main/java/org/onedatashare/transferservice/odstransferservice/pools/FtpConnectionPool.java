@@ -3,9 +3,13 @@ package org.onedatashare.transferservice.odstransferservice.pools;
 import lombok.SneakyThrows;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPReply;
+import org.apache.commons.net.ftp.FTPSClient;
 import org.apache.commons.pool2.ObjectPool;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
+import org.onedatashare.transferservice.odstransferservice.controller.TransferController;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -17,6 +21,8 @@ public class FtpConnectionPool implements ObjectPool<FTPClient> {
     private LinkedBlockingQueue<FTPClient> connectionPool;
     private Boolean compression;
 
+    Logger logger = LoggerFactory.getLogger(FtpConnectionPool.class);
+
     public FtpConnectionPool(AccountEndpointCredential credential, int bufferSize){
         this.credential = credential;
         this.bufferSize = bufferSize;
@@ -26,6 +32,10 @@ public class FtpConnectionPool implements ObjectPool<FTPClient> {
     @Override
     public void addObject() throws IOException {
         FTPClient client = new FTPClient();
+        if(credential != null && credential.getUri().startsWith("ftps://")){
+            client = new FTPSClient();
+            logger.info("Using FTPS call");
+        }
         String[] hostAndPort = AccountEndpointCredential.uriFormat(credential, EndpointType.ftp);
         if(hostAndPort.length >1){
             client.connect(hostAndPort[0], Integer.parseInt(hostAndPort[1]));
