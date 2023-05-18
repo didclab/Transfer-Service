@@ -40,16 +40,11 @@ import org.springframework.batch.core.configuration.annotation.StepBuilderFactor
 import org.springframework.batch.core.job.builder.FlowBuilder;
 import org.springframework.batch.core.job.flow.Flow;
 import org.springframework.batch.core.job.flow.support.SimpleFlow;
-import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
-import org.springframework.batch.core.launch.support.SimpleJobLauncher;
-import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.SimpleStepBuilder;
+import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
@@ -102,24 +97,13 @@ public class JobControl extends DefaultBatchConfigurer {
     @Autowired
     RetryTemplate retryTemplateForReaderAndWriter;
 
-    @Autowired
-    JobRepository roachRepository;
-
-
-    @Lazy
-    @Bean
-    public JobLauncher asyncJobLauncher() {
-        SimpleJobLauncher jobLauncher = new SimpleJobLauncher();
-        jobLauncher.setJobRepository(roachRepository);
-        jobLauncher.setTaskExecutor(this.threadPoolManager.sequentialThreadPool());
-        return jobLauncher;
-    }
 
     private List<Flow> createConcurrentFlow(List<EntityInfo> infoList, String basePath) {
         if (this.request.getSource().getType().equals(EndpointType.vfs)) {
             infoList = vfsExpander.expandDirectory(infoList, basePath, this.request.getChunkSize());
             logger.info("File list: {}", infoList);
         }
+        int parallelThreadCount = request.getOptions().getParallelThreadCount();//total parallel threads
         return infoList.stream().map(file -> {
             String idForStep = "";
             if (!file.getId().isEmpty()) {
@@ -128,8 +112,10 @@ public class JobControl extends DefaultBatchConfigurer {
                 idForStep = file.getPath();
             }
             SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(idForStep).<DataChunk, DataChunk>chunk(this.request.getOptions().getPipeSize());
-            if (ODSUtility.fullyOptimizableProtocols.contains(this.request.getSource().getType()) && ODSUtility.fullyOptimizableProtocols.contains(this.request.getDestination().getType()) && this.request.getOptions().getParallelThreadCount() > 0) {
-                child.taskExecutor(this.threadPoolManager.parallelThreadPool(request.getOptions().getParallelThreadCount(), idForStep));
+            if (ODSUtility.fullyOptimizableProtocols.contains(this.request.getSource().getType()) && ODSUtility.fullyOptimizableProtocols.contains(this.request.getDestination().getType()) ) {
+                if(this.request.getOptions().getParallelThreadCount() > 0){
+                    child.taskExecutor(this.threadPoolManager.parallelThreadPool(parallelThreadCount, file.getPath()));
+                }
             }
             child.reader(getRightReader(request.getSource().getType(), file))
                     .writer(getRightWriter(request.getDestination().getType(), file));
@@ -138,7 +124,7 @@ public class JobControl extends DefaultBatchConfigurer {
         }).collect(Collectors.toList());
     }
 
-    protected AbstractItemCountingItemStreamItemReader<DataChunk> getRightReader(EndpointType type, EntityInfo fileInfo) {
+    protected ItemReader<DataChunk> getRightReader(EndpointType type, EntityInfo fileInfo) {
         switch (type) {
             case http:
                 HttpReader hr = new HttpReader(fileInfo, request.getSource().getVfsSourceCredential());
@@ -219,11 +205,11 @@ public class JobControl extends DefaultBatchConfigurer {
                 scpWriter.setPool(connectionBag.getSftpWriterPool());
                 return scpWriter;
             case gdrive:
-                if(fileInfo.getSize() < FIVE_MB){
-                    GDriveSimpleWriter writer = new GDriveSimpleWriter(request.getDestination().getOauthDestCredential(),fileInfo);
+                if (fileInfo.getSize() < FIVE_MB) {
+                    GDriveSimpleWriter writer = new GDriveSimpleWriter(request.getDestination().getOauthDestCredential(), fileInfo);
                     return writer;
-                }else{
-                    GDriveResumableWriter writer = new GDriveResumableWriter(request.getDestination().getOauthDestCredential(),fileInfo);
+                } else {
+                    GDriveResumableWriter writer = new GDriveResumableWriter(request.getDestination().getOauthDestCredential(), fileInfo);
                     writer.setPool(connectionBag.getGoogleDriveWriterPool());
                     return writer;
                 }
