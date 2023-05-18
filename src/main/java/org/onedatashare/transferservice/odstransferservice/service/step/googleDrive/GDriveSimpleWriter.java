@@ -19,7 +19,9 @@ import org.springframework.batch.core.annotation.AfterWrite;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.core.annotation.BeforeWrite;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.retry.support.RetryTemplate;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLConnection;
@@ -38,6 +40,7 @@ public class GDriveSimpleWriter implements ItemWriter<DataChunk> {
     private String mimeType;
     private File fileMetaData;
     private File parentFolder;
+    private RetryTemplate retryTemplate;
 
     public GDriveSimpleWriter(OAuthEndpointCredential credential, EntityInfo fileInfo){
         this.credential = credential;
@@ -64,18 +67,36 @@ public class GDriveSimpleWriter implements ItemWriter<DataChunk> {
         fileBuffer.addAllChunks(items);
     }
 
+    public void setRetryTemplate(RetryTemplate retryTemplate) {
+        this.retryTemplate = retryTemplate;
+    }
+
     @AfterStep
-    public void afterStep() throws IOException {
-        InputStream inputStream = this.fileBuffer.condenseListToOneStream(this.fileInfo.getSize());
-        InputStreamContent inputStreamContent = new InputStreamContent(this.mimeType, inputStream);
-        this.fileMetaData = new File()
-                .setName(this.fileName)
-                .setParents(Collections.singletonList(this.parentFolder.getId()))
-                .setMimeType(this.mimeType);
-        this.client.files().create(this.fileMetaData, inputStreamContent).execute();
-        inputStream.close();
-        this.client = null;
-        this.fileBuffer.clear();
-        this.fileBuffer = null;
+    public void afterStep() throws Exception {
+        this.retryTemplate.execute((c) -> {
+            try {
+                logger.debug("Transferring file to the server");
+                InputStream inputStream = this.fileBuffer.condenseListToOneStream(this.fileInfo.getSize());
+                InputStreamContent inputStreamContent = new InputStreamContent(this.mimeType, inputStream);
+                this.fileMetaData = new File()
+                        .setName(this.fileName)
+                        .setParents(Collections.singletonList(this.parentFolder.getId()))
+                        .setMimeType(this.mimeType);
+                File file = this.client.files().create(this.fileMetaData, inputStreamContent).execute();
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                this.client.files().get(file.getId()).executeMediaAndDownloadTo(outputStream);
+                inputStream.close();
+                if (outputStream.size() != fileInfo.getSize()) {
+                    outputStream.close();
+                    throw new IOException("Source and Destination Files do not match. Retrying file transfer...");
+                }
+            } catch(IOException e){
+                throw e;
+            }
+            this.client = null;
+            this.fileBuffer.clear();
+            this.fileBuffer = null;
+            return null;
+        });
     }
 }

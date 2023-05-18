@@ -123,7 +123,6 @@ public class GDriveResumableWriter implements ItemWriter<DataChunk>,SetPool {
         if(success==true){
             return;
         }
-        int val = (int)(this.fileInfo.getSize()-1-readyChunk.getStartPosition());
         if(failed==true){
             throw new IOException("Could not transfer file to the server");
         }

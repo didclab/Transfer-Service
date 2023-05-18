@@ -11,9 +11,11 @@ import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.ClassUtils;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 public class GDriveReader extends AbstractItemCountingItemStreamItemReader<DataChunk> {
 
@@ -24,6 +26,7 @@ public class GDriveReader extends AbstractItemCountingItemStreamItemReader<DataC
     private Drive client;
     private String fileName;
     private File file;
+    private RetryTemplate retryTemplate;
 
     public GDriveReader(OAuthEndpointCredential credential, EntityInfo fileInfo){
         this.credential = credential;
@@ -37,15 +40,31 @@ public class GDriveReader extends AbstractItemCountingItemStreamItemReader<DataC
     protected DataChunk doRead() throws Exception {
         FilePart filePart = this.partitioner.nextPart();
         if(filePart == null || filePart.getSize() == 0) return null;
-        Drive.Files.Get get = this.client.files().get(fileInfo.getId());
-        get.getMediaHttpDownloader().setChunkSize(this.fileInfo.getChunkSize()).setContentRange(filePart.getStart(), filePart.getEnd());
-        logger.info(get.toString());
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream(filePart.getSize());
-        get.executeMediaAndDownloadTo(outputStream);
+        this.retryTemplate.execute((c) ->{
+            try{
+                Drive.Files.Get get = this.client.files().get(fileInfo.getId());
+                get.getMediaHttpDownloader().setChunkSize(this.fileInfo.getChunkSize()).setContentRange(filePart.getStart(), filePart.getEnd());
+                get.executeMediaAndDownloadTo(outputStream);
+                byte[] receivedData = outputStream.toByteArray();
+                if(receivedData.length != filePart.getSize()){
+                    logger.warn("Invalid chunk size received. Retrying to read chunk from the server...");
+                    throw new IOException("Chunk receive error.");
+                }
+            } catch(IOException e){
+                throw e;
+            }
+            return null;
+        });
         DataChunk chunk = ODSUtility.makeChunk(filePart.getSize(), outputStream.toByteArray(), (int) filePart.getStart(), (int) filePart.getPartIdx(), this.fileName);
         outputStream.close();
         logger.info(chunk.toString());
         return chunk;
+
+    }
+
+    public void setRetryTemplate(RetryTemplate template){
+        this.retryTemplate = template;
     }
 
     @Override
@@ -54,7 +73,6 @@ public class GDriveReader extends AbstractItemCountingItemStreamItemReader<DataC
         this.file = this.client.files().get(fileInfo.getId()).setFields("id, name, kind, mimeType, size, modifiedTime").execute();
         this.fileName = file.getName();
         this.partitioner.createParts(this.fileInfo.getSize(), this.fileName);
-        logger.info(file.toString());
     }
 
     @Override
