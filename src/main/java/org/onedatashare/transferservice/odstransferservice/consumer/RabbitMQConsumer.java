@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
+import org.onedatashare.transferservice.odstransferservice.model.StopJobRequest;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.model.optimizer.TransferApplicationParams;
 import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManager;
@@ -83,11 +84,21 @@ public class RabbitMQConsumer {
             logger.debug("Failed to parse jsonStr:{} to TransferJobRequest.java", jsonStr);
         }
         try {
+            Object obj = objectMapper.readValue(jsonStr, Object.class);
+            if (obj instanceof StopJobRequest) {
+                StopJobRequest stopJobRequest = (StopJobRequest) obj;
+                Long jobId = stopJobRequest.getJobId();
+                String transferNodeName = stopJobRequest.getTransferNodeName();
+                jc.jobStop(jobId, transferNodeName);
+            }
+            else{
             TransferApplicationParams params = objectMapper.readValue(jsonStr, TransferApplicationParams.class);
             logger.info("Parsed TransferApplicationParams:{}", params);
             this.threadPoolManager.applyOptimizer(params.getConcurrency(), params.getParallelism());
+        }
         } catch (Exception e) {
             logger.info("Did not apply transfer params due to parsing message failure");
         }
     }
+
 }
