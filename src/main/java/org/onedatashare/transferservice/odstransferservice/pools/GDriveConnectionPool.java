@@ -1,37 +1,32 @@
 package org.onedatashare.transferservice.odstransferservice.pools;
 
 import org.apache.commons.pool2.ObjectPool;
-import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.onedatashare.transferservice.odstransferservice.model.credential.EndpointCredential;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 
-public class HttpConnectionPool implements ObjectPool<HttpClient> {
-    private final ThreadPoolManager threadPoolManager;
-    AccountEndpointCredential credential;
+public class GDriveConnectionPool implements ObjectPool<HttpClient> {
+    EndpointCredential credential;
     int bufferSize;
+    public LinkedBlockingQueue<HttpClient> connectionPool;
     private boolean compress;
-    HttpClient client;
 
 
-    public HttpConnectionPool(AccountEndpointCredential credential, int bufferSize, ThreadPoolManager threadPoolManager) {
+    public GDriveConnectionPool(EndpointCredential credential, int bufferSize) {
         this.credential = credential;
         this.bufferSize = bufferSize;
-        this.threadPoolManager = threadPoolManager;
+        this.connectionPool = new LinkedBlockingQueue<>();
     }
 
     @Override
     public void addObject() {
-        ThreadPoolTaskExecutor exec = this.threadPoolManager.createThreadPool(15, "http_pool");
-        this.client = HttpClient.newBuilder()
+        HttpClient client = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_2)
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .executor(exec)
                 .connectTimeout(Duration.ofSeconds(20))
                 .build();
+        connectionPool.add(client);
     }
 
     @Override
@@ -43,21 +38,19 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
 
     @Override
     public HttpClient borrowObject() throws InterruptedException {
-//        return this.connectionPool.take();
-        return this.client;
+        return this.connectionPool.take();
     }
 
     @Override
     public void clear() {
-        this.client = null;
+        this.connectionPool.clear();
     }
 
     @Override
     public void close() {
-//        for (HttpClient httpClient : this.connectionPool) {
-//            this.connectionPool.remove(httpClient);
-//        }
-        this.client = null;
+        for (HttpClient httpClient : this.connectionPool) {
+            this.connectionPool.remove(httpClient);
+        }
     }
 
     @Override
@@ -72,13 +65,12 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
 
     @Override
     public void invalidateObject(HttpClient httpClient) {
-//        this.connectionPool.remove(httpClient);
-        this.client = null;
+        this.connectionPool.remove(httpClient);
     }
 
     @Override
     public void returnObject(HttpClient httpClient) {
-//        this.connectionPool.add(httpClient);
+        this.connectionPool.add(httpClient);
     }
 
     public void setCompress(boolean compress) {
@@ -90,6 +82,6 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
     }
 
     public int getSize() {
-        return 1;
+        return this.connectionPool.size();
     }
 }

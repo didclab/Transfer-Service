@@ -29,6 +29,7 @@ public class ThreadPoolManager {
     public ThreadPoolTaskExecutor createThreadPool(int corePoolSize, String prefix) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(corePoolSize);
+        executor.setMaxPoolSize(corePoolSize);
         executor.setThreadNamePrefix(prefix);
         executor.setAllowCoreThreadTimeOut(true);
         executor.setThreadFactory(Thread.ofVirtual().factory());
@@ -84,6 +85,14 @@ public class ThreadPoolManager {
         ThreadPoolTaskExecutor te = this.executorHashmap.get(STEP_POOL_PREFIX);
         if (te == null) {
             return this.createThreadPool(threadCount, STEP_POOL_PREFIX);
+        }
+        return te;
+    }
+
+    public ThreadPoolTaskExecutor parallelThreadPool(int threadCount){
+        ThreadPoolTaskExecutor te = this.executorHashmap.get(PARALLEL_POOL_PREFIX);
+        if(te == null){
+            te = this.createThreadPool(threadCount, PARALLEL_POOL_PREFIX);
         }
         return te;
     }

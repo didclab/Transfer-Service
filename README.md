@@ -119,3 +119,10 @@ Once we have created
 
 8. [Spring JPA](https://docs.spring.io/spring-data/jpa/docs/current/reference/html/)
     I would only look this over if you plan on working with the Data otherwise not very necessary
+
+## Features Implemented - Spring 2023
+
+| No.| Feature                                                     | Branch name                                                                                           |
+|----|-------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
+| 1  | HTTP Pipelining for Reader using Apache HTTP client library | [origin/vn/httppipelining](https://github.com/didclab/Transfer-Service/tree/origin/vn/httppipelining) |
+| 2  | Added support for WebDAV reader and writer                  | [origin/vn/webdav](https://github.com/didclab/Transfer-Service/tree/origin/vn/webdav)                 |

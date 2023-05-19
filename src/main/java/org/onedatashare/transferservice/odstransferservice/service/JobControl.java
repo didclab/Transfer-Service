@@ -20,6 +20,9 @@ import org.onedatashare.transferservice.odstransferservice.service.step.dropbox.
 import org.onedatashare.transferservice.odstransferservice.service.step.dropbox.DropBoxReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPWriter;
+import org.onedatashare.transferservice.odstransferservice.service.step.googleDrive.GDriveReader;
+import org.onedatashare.transferservice.odstransferservice.service.step.googleDrive.GDriveResumableWriter;
+import org.onedatashare.transferservice.odstransferservice.service.step.googleDrive.GDriveSimpleWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.http.HttpReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.scp.SCPReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.scp.SCPWriter;
@@ -37,16 +40,11 @@ import org.springframework.batch.core.configuration.annotation.StepBuilderFactor
 import org.springframework.batch.core.job.builder.FlowBuilder;
 import org.springframework.batch.core.job.flow.Flow;
 import org.springframework.batch.core.job.flow.support.SimpleFlow;
-import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
-import org.springframework.batch.core.launch.support.SimpleJobLauncher;
-import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.SimpleStepBuilder;
+import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
@@ -58,6 +56,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.FIVE_MB;
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.TWENTY_MB;
 
 
@@ -98,24 +97,13 @@ public class JobControl extends DefaultBatchConfigurer {
     @Autowired
     RetryTemplate retryTemplateForReaderAndWriter;
 
-    @Autowired
-    JobRepository roachRepository;
-
-
-    @Lazy
-    @Bean
-    public JobLauncher asyncJobLauncher() {
-        SimpleJobLauncher jobLauncher = new SimpleJobLauncher();
-        jobLauncher.setJobRepository(roachRepository);
-        jobLauncher.setTaskExecutor(this.threadPoolManager.sequentialThreadPool());
-        return jobLauncher;
-    }
 
     private List<Flow> createConcurrentFlow(List<EntityInfo> infoList, String basePath) {
         if (this.request.getSource().getType().equals(EndpointType.vfs)) {
             infoList = vfsExpander.expandDirectory(infoList, basePath, this.request.getChunkSize());
             logger.info("File list: {}", infoList);
         }
+        int parallelThreadCount = request.getOptions().getParallelThreadCount();//total parallel threads
         return infoList.stream().map(file -> {
             String idForStep = "";
             if (!file.getId().isEmpty()) {
@@ -124,8 +112,10 @@ public class JobControl extends DefaultBatchConfigurer {
                 idForStep = file.getPath();
             }
             SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(idForStep).<DataChunk, DataChunk>chunk(this.request.getOptions().getPipeSize());
-            if (ODSUtility.fullyOptimizableProtocols.contains(this.request.getSource().getType()) && ODSUtility.fullyOptimizableProtocols.contains(this.request.getDestination().getType()) && this.request.getOptions().getParallelThreadCount() > 0) {
-                child.taskExecutor(this.threadPoolManager.parallelThreadPool(request.getOptions().getParallelThreadCount(), idForStep));
+            if (ODSUtility.fullyOptimizableProtocols.contains(this.request.getSource().getType()) && ODSUtility.fullyOptimizableProtocols.contains(this.request.getDestination().getType()) ) {
+                if(this.request.getOptions().getParallelThreadCount() > 0){
+                    child.taskExecutor(this.threadPoolManager.parallelThreadPool(parallelThreadCount, file.getPath()));
+                }
             }
             child.reader(getRightReader(request.getSource().getType(), file))
                     .writer(getRightWriter(request.getDestination().getType(), file));
@@ -134,7 +124,7 @@ public class JobControl extends DefaultBatchConfigurer {
         }).collect(Collectors.toList());
     }
 
-    protected AbstractItemCountingItemStreamItemReader<DataChunk> getRightReader(EndpointType type, EntityInfo fileInfo) {
+    protected ItemReader<DataChunk> getRightReader(EndpointType type, EntityInfo fileInfo) {
         switch (type) {
             case http:
                 HttpReader hr = new HttpReader(fileInfo, request.getSource().getVfsSourceCredential());
@@ -167,6 +157,10 @@ public class JobControl extends DefaultBatchConfigurer {
                 SCPReader reader = new SCPReader(fileInfo);
                 reader.setPool(connectionBag.getSftpReaderPool());
                 return reader;
+            case gdrive:
+                GDriveReader dDriveReader = new GDriveReader(request.getSource().getOauthSourceCredential(), fileInfo);
+                dDriveReader.setRetryTemplate(retryTemplateForReaderAndWriter);
+                return dDriveReader;
         }
         return null;
     }
@@ -211,6 +205,16 @@ public class JobControl extends DefaultBatchConfigurer {
                 SCPWriter scpWriter = new SCPWriter(fileInfo, this.metricsCollector, this.influxCache);
                 scpWriter.setPool(connectionBag.getSftpWriterPool());
                 return scpWriter;
+            case gdrive:
+                if(fileInfo.getSize() < FIVE_MB){
+                    GDriveSimpleWriter writer = new GDriveSimpleWriter(request.getDestination().getOauthDestCredential(),fileInfo);
+                    writer.setRetryTemplate(retryTemplateForReaderAndWriter);
+                    return writer;
+                } else {
+                    GDriveResumableWriter writer = new GDriveResumableWriter(request.getDestination().getOauthDestCredential(), fileInfo);
+                    writer.setPool(connectionBag.getGoogleDriveWriterPool());
+                    return writer;
+                }
         }
         return null;
     }

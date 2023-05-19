@@ -2,11 +2,20 @@ package org.onedatashare.transferservice.odstransferservice.utility;
 
 import com.amazonaws.services.s3.model.UploadPartRequest;
 import com.dropbox.core.DbxRequestConfig;
+import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.services.drive.Drive;
+import com.google.api.services.drive.model.File;
+import com.google.api.services.drive.model.FileList;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
+import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.util.Arrays;
 import java.util.HashSet;
 
@@ -14,6 +23,15 @@ public class ODSUtility {
 
     @Value("${dropbox.identifier}")
     private static String odsClientID = "OneDataShare-DIDCLab";
+
+    @Value("${gdrive.client.id}")
+    private static String gDriveClientId= System.getenv("ODS_GDRIVE_CLIENT_ID");
+
+    @Value("${gdrive.client.secret}")
+    private static String gDriveClientSecret = System.getenv("ODS_GDRIVE_CLIENT_SECRET");
+
+    @Value("${gdrive.appname}")
+    private static String gdriveAppName;
 
     public static DbxRequestConfig dbxRequestConfig = DbxRequestConfig.newBuilder(odsClientID).build();
 
@@ -34,6 +52,43 @@ public class ODSUtility {
         dataChunk.setData(data);
         dataChunk.setSize(size);
         return dataChunk;
+    }
+
+    public static Drive authenticateDriveClient(OAuthEndpointCredential oauthCred) throws GeneralSecurityException, IOException {
+        System.out.println(gDriveClientId);
+        System.out.println(gDriveClientSecret);
+        GoogleCredential credential1 = new GoogleCredential.Builder().setJsonFactory(GsonFactory.getDefaultInstance())
+                .setClientSecrets(gDriveClientId, gDriveClientSecret)
+                .setTransport(GoogleNetHttpTransport.newTrustedTransport()).build();
+        credential1.setAccessToken(oauthCred.getToken());
+        credential1.setRefreshToken(oauthCred.getRefreshToken());
+        return new Drive.Builder(GoogleNetHttpTransport.newTrustedTransport(), GsonFactory.getDefaultInstance(), credential1)
+                .setApplicationName("OneDataShare-Prod")
+                .build();
+    }
+
+    public static File gdriveMakeDir(String basePath, Drive client) throws IOException {
+        Drive.Files.List request = client.files().list().setQ(
+                        "mimeType='application/vnd.google-apps.folder' and trashed=false")
+                .setFields("nextPageToken, files(id,name)")
+                .setSpaces("drive");
+        FileList files = request.execute();
+        for(File file : files.getFiles()){
+            if(file.getId().equals(basePath)){
+                return file;
+            }
+        }
+        File fileMetadata = new File();
+        File ret= new File();
+        String[] path = basePath.split("/");
+        for(String mini: path){
+            fileMetadata.setName(mini);
+            fileMetadata.setMimeType("application/vnd.google-apps.folder");
+            ret = client.files().create(fileMetadata)
+                    .setFields("id")
+                    .execute();
+        }
+        return ret;
     }
 
 
