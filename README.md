@@ -126,3 +126,5 @@ Once we have created
 |----|-------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
 | 1  | HTTP Pipelining for Reader using Apache HTTP client library | [origin/vn/httppipelining](https://github.com/didclab/Transfer-Service/tree/origin/vn/httppipelining) |
 | 2  | Added support for WebDAV reader and writer                  | [origin/vn/webdav](https://github.com/didclab/Transfer-Service/tree/origin/vn/webdav)                 |
+| 3  | Set up a Dead Letter queue for  unprocessable messages | [feature/dead_letter_queue](https://github.com/didclab/Transfer-Service/tree/feature/dead_letter_queue) |
+| 4  | Implementing Credential Expiry Detection and Renewal in Transfer-Service | [feature/reauth_credentials](https://github.com/didclab/Transfer-Service/tree/feature/reauth_credentials) |
