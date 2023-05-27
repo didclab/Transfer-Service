@@ -35,11 +35,14 @@ public class JobMonitor {
     public ResponseEntity<BatchJobData> getJobExecution(@RequestParam("jobId") Optional<Long> jobId) {
         if (jobId.isPresent()) {
             logger.info(jobId.get().toString());
-            JobExecution jobExecution = this.jobExplorer.getJobExecution(jobId.get());
-            if (jobExecution == null) return null;
-            return ResponseEntity.ok(BatchJobData.convertFromJobExecution(jobExecution));
+            if(jobIds.contains(jobId.get())){
+                JobExecution jobExecution = this.jobExplorer.getJobExecution(jobId.get());
+                return ResponseEntity.ok(BatchJobData.convertFromJobExecution(jobExecution));
+            }else {
+                return ResponseEntity.ok(BatchJobData.builder().build());
+            }
         } else {
-            return null;
+            return ResponseEntity.ok(BatchJobData.builder().build());
         }
     }
 
