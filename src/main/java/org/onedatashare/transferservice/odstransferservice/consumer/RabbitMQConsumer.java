@@ -78,7 +78,6 @@ public class RabbitMQConsumer {
             return;
         } catch (Exception e) {
             logger.debug("Failed to parse jsonStr:{} to TransferJobRequest.java", jsonStr);
-            e.printStackTrace();
         }
         try {
             TransferApplicationParams params = objectMapper.readValue(jsonStr, TransferApplicationParams.class);
