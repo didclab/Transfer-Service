@@ -29,7 +29,7 @@ public class ThreadPoolManager {
     public ThreadPoolTaskExecutor createThreadPool(int corePoolSize, String prefix) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(corePoolSize);
-        executor.setMaxPoolSize(corePoolSize);
+//        executor.setMaxPoolSize(corePoolSize);
         executor.setThreadNamePrefix(prefix);
         executor.setAllowCoreThreadTimeOut(true);
         executor.initialize();
