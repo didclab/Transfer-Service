@@ -78,6 +78,7 @@ public class RabbitMQConsumer {
             return;
         } catch (Exception e) {
             logger.debug("Failed to parse jsonStr:{} to TransferJobRequest.java", jsonStr);
+            e.printStackTrace();
         }
         try {
             TransferApplicationParams params = objectMapper.readValue(jsonStr, TransferApplicationParams.class);
@@ -85,6 +86,7 @@ public class RabbitMQConsumer {
             this.threadPoolManager.applyOptimizer(params.getConcurrency(), params.getParallelism());
         } catch (Exception e) {
             logger.info("Did not apply transfer params due to parsing message failure");
+            e.printStackTrace();
         }
     }
 }
