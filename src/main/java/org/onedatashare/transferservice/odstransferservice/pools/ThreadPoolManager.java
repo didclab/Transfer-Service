@@ -49,14 +49,14 @@ public class ThreadPoolManager {
             ThreadPoolTaskExecutor pool = this.executorHashmap.get(key);
             if (key.contains(STEP_POOL_PREFIX)) {
                 logger.info("Changing {} pool size from {} to {}", pool.getThreadNamePrefix(), pool.getPoolSize(), concurrency);
-                if (concurrency > 0) {
+                if (concurrency > 0 && concurrency != pool.getPoolSize()) {
                     pool.setCorePoolSize(concurrency);
                     logger.info("Set {} pool size to {}", pool.getThreadNamePrefix(), concurrency);
                 }
             }
             if (key.contains(PARALLEL_POOL_PREFIX)) {
                 logger.info("Changing {} pool size from {} to {}", pool.getThreadNamePrefix(), pool.getPoolSize(), parallel);
-                if (parallel > 0) {
+                if (parallel > 0 && parallel != pool.getPoolSize()) {
                     pool.setCorePoolSize(parallel);
                 }
             }
