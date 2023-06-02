@@ -36,7 +36,7 @@ public class ThreadPoolManager {
         executor.setMaxPoolSize(corePoolSize);
         executor.setThreadNamePrefix(prefix);
         executor.setAllowCoreThreadTimeOut(true);
-        executor.setKeepAliveSeconds(2);
+//        executor.setKeepAliveSeconds(2);
         executor.initialize();
         if (this.executorHashmap == null) {
             this.executorHashmap = new HashMap<>();
