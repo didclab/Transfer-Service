@@ -28,8 +28,9 @@ public class ThreadPoolManager {
     }
 
     public ThreadPoolTaskExecutor createThreadPool(int corePoolSize, String prefix) {
+
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setQueueCapacity(1);
+//        executor.setQueueCapacity(1);
         executor.setCorePoolSize(corePoolSize);
         executor.setMaxPoolSize(corePoolSize);
         executor.setThreadNamePrefix(prefix);
