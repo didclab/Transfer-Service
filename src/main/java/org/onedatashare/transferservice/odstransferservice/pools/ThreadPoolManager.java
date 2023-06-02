@@ -29,9 +29,10 @@ public class ThreadPoolManager {
     public ThreadPoolTaskExecutor createThreadPool(int corePoolSize, String prefix) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(corePoolSize);
-//        executor.setMaxPoolSize(corePoolSize);
+        executor.setMaxPoolSize(corePoolSize);
         executor.setThreadNamePrefix(prefix);
         executor.setAllowCoreThreadTimeOut(true);
+        executor.setKeepAliveSeconds(2);
         executor.initialize();
         if (this.executorHashmap == null) {
             this.executorHashmap = new HashMap<>();
@@ -116,7 +117,7 @@ public class ThreadPoolManager {
             if (key.contains(PARALLEL_POOL_PREFIX)) {
                 parallelism = this.executorHashmap.get(key).getActiveCount();
                 if(parallelism > 0){
-                    break;
+                    return parallelism;
                 }
             }
         }
