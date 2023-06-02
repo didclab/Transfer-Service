@@ -50,6 +50,7 @@ public class ThreadPoolManager {
             if (key.contains(STEP_POOL_PREFIX)) {
                 logger.info("Changing {} pool size from {} to {}", pool.getThreadNamePrefix(), pool.getPoolSize(), concurrency);
                 if (concurrency > 0 && concurrency != pool.getPoolSize()) {
+                    pool.setMaxPoolSize(concurrency);
                     pool.setCorePoolSize(concurrency);
                     logger.info("Set {} pool size to {}", pool.getThreadNamePrefix(), concurrency);
                 }
@@ -57,6 +58,7 @@ public class ThreadPoolManager {
             if (key.contains(PARALLEL_POOL_PREFIX)) {
                 logger.info("Changing {} pool size from {} to {}", pool.getThreadNamePrefix(), pool.getPoolSize(), parallel);
                 if (parallel > 0 && parallel != pool.getPoolSize()) {
+                    pool.setMaxPoolSize(parallel);
                     pool.setCorePoolSize(parallel);
                 }
             }
@@ -105,14 +107,14 @@ public class ThreadPoolManager {
         if (threadPoolManager == null) {
             return 0;
         }
-        return threadPoolManager.getCorePoolSize();
+        return threadPoolManager.getActiveCount();
     }
 
     public Integer parallelismCount() {
         int parallelism = 0;
         for (String key : this.executorHashmap.keySet()) {
             if (key.contains(PARALLEL_POOL_PREFIX)) {
-                parallelism = this.executorHashmap.get(key).getCorePoolSize();
+                parallelism = this.executorHashmap.get(key).getActiveCount();
                 break;
             }
         }
