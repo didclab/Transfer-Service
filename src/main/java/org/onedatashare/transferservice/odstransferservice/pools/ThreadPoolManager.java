@@ -28,9 +28,7 @@ public class ThreadPoolManager {
     }
 
     public ThreadPoolTaskExecutor createThreadPool(int corePoolSize, String prefix) {
-        RejectedExecutionHandler rejectedExecutionHandler = new ThreadPoolExecutor.CallerRunsPolicy();
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setRejectedExecutionHandler(rejectedExecutionHandler);
         executor.setQueueCapacity(1);
         executor.setCorePoolSize(corePoolSize);
         executor.setMaxPoolSize(corePoolSize);
