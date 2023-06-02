@@ -14,8 +14,9 @@ public class OptimizerCreateRequest {
 
     long fileCount;
     Long jobId;
+    String dbType;
 
-    public OptimizerCreateRequest(String nodeId, int maxConcurrency, int maxParallelism, int maxPipelining, String optimizerType, long fileCount, long jobId) {
+    public OptimizerCreateRequest(String nodeId, int maxConcurrency, int maxParallelism, int maxPipelining, String optimizerType, long fileCount, long jobId, String dbType) {
         this.maxConcurrency = maxConcurrency;
         this.maxChunkSize = Integer.MAX_VALUE;
         this.maxParallelism = maxParallelism;
@@ -24,5 +25,6 @@ public class OptimizerCreateRequest {
         this.optimizerType = optimizerType;
         this.fileCount = fileCount;
         this.jobId = jobId;
+        this.dbType = dbType;
     }
 }

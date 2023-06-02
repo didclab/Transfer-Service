@@ -11,7 +11,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.listener.JobExecutionListenerSupport;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -45,6 +47,9 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
     int maxPipe;
     boolean optimizerEnable;
 
+    @Autowired
+    Environment environment;
+
     public JobCompletionListener(ThreadPoolManager threadPoolManager, OptimizerService optimizerService, MetricsCollector metricsCollector, ConnectionBag connectionBag) {
         this.threadPoolManager = threadPoolManager;
         this.optimizerService = optimizerService;
@@ -61,7 +66,7 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
         String optimizerType = jobExecution.getJobParameters().getString(ODSConstants.OPTIMIZER);
         if(optimizerType != null){
             if(!optimizerType.equals("None") && !optimizerType.isEmpty()) {
-                OptimizerCreateRequest createRequest = new OptimizerCreateRequest(appName, maxConc, maxParallel, maxPipe, optimizerType, fileCount, jobExecution.getJobId());
+                OptimizerCreateRequest createRequest = new OptimizerCreateRequest(appName, maxConc, maxParallel, maxPipe, optimizerType, fileCount, jobExecution.getJobId(), this.environment.getActiveProfiles()[0]);
                 optimizerService.createOptimizerBlocking(createRequest);
                 this.optimizerEnable = true;
             }
