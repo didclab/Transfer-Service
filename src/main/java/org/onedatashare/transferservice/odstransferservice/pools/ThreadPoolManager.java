@@ -115,7 +115,9 @@ public class ThreadPoolManager {
         for (String key : this.executorHashmap.keySet()) {
             if (key.contains(PARALLEL_POOL_PREFIX)) {
                 parallelism = this.executorHashmap.get(key).getActiveCount();
-                break;
+                if(parallelism > 0){
+                    break;
+                }
             }
         }
         return parallelism;
