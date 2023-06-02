@@ -31,10 +31,10 @@ public class ThreadPoolManager {
 
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
 //        executor.setQueueCapacity(1);
+        executor.setAllowCoreThreadTimeOut(false);
         executor.setCorePoolSize(corePoolSize);
         executor.setMaxPoolSize(corePoolSize);
         executor.setThreadNamePrefix(prefix);
-//        executor.setKeepAliveSeconds(2);
         executor.initialize();
         if (this.executorHashmap == null) {
             this.executorHashmap = new HashMap<>();
