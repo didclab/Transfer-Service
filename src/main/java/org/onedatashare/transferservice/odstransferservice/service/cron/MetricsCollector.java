@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -35,7 +36,7 @@ public class MetricsCollector {
     private Logger log = LoggerFactory.getLogger(MetricsCollector.class);
 
     @Value("${pmeter.cron.run}")
-    private boolean isCronEnabled;
+    private boolean isPmeterEnabled;
 
     @Value("${spring.application.name}")
     String appName;
@@ -48,12 +49,14 @@ public class MetricsCollector {
     PmeterParser pmeterParser;
 
     private LatencyRtt latencyRtt;
+    private List<DataInflux> metrics;
 
     public MetricsCollector(PmeterParser pmeterParser, InfluxCache influxCache, InfluxIOService influxIOService, LatencyRtt latencyRtt) {
         this.pmeterParser = pmeterParser;
         this.influxCache = influxCache;
         this.influxIOService = influxIOService;
         this.latencyRtt = latencyRtt;
+        this.metrics = new ArrayList<>();
     }
 
     /**
@@ -72,16 +75,22 @@ public class MetricsCollector {
     @Scheduled(cron = "${pmeter.cron.expression}")
     @SneakyThrows
     public void collectAndSave() {
-        if (!isCronEnabled) return;
-        pmeterParser.runPmeter();
-        List<DataInflux> pmeterMetrics = pmeterParser.parsePmeterOutput();
-        if (pmeterMetrics.size() < 1) return;
+        if(this.isPmeterEnabled){
+            pmeterParser.runPmeter();
+            this.metrics = pmeterParser.parsePmeterOutput();
+        }
         long freeMem = Runtime.getRuntime().freeMemory();
         long totalMem = Runtime.getRuntime().totalMemory();
         long usedMemory = totalMem - freeMem;
         long maxMem = Runtime.getRuntime().maxMemory();
         JobMetric currentAggregateMetric = influxCache.aggregateMetric(); //this metrics throughput is the throughput of the whole map in influxCache.
-        DataInflux lastPmeterData = pmeterMetrics.get(pmeterMetrics.size() - 1);
+        DataInflux lastPmeterData;
+        if(this.metrics.size() < 1){
+            this.metrics.add(new DataInflux());
+            lastPmeterData = metrics.get(metrics.size()-1);
+        }else{
+            lastPmeterData = metrics.get(metrics.size() - 1);
+        }
         lastPmeterData.setAllocatedMemory(totalMem);
         lastPmeterData.setMemory(usedMemory);
         lastPmeterData.setFreeMemory(freeMem);

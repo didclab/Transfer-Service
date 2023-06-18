@@ -10,6 +10,7 @@ import javax.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.*;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
@@ -27,11 +28,13 @@ public class ThreadPoolManager {
     }
 
     public ThreadPoolTaskExecutor createThreadPool(int corePoolSize, String prefix) {
+
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+//        executor.setQueueCapacity(1);
+        executor.setAllowCoreThreadTimeOut(false);
         executor.setCorePoolSize(corePoolSize);
-//        executor.setMaxPoolSize(corePoolSize);
+        executor.setMaxPoolSize(corePoolSize);
         executor.setThreadNamePrefix(prefix);
-        executor.setAllowCoreThreadTimeOut(true);
         executor.initialize();
         if (this.executorHashmap == null) {
             this.executorHashmap = new HashMap<>();
@@ -50,6 +53,7 @@ public class ThreadPoolManager {
             if (key.contains(STEP_POOL_PREFIX)) {
                 logger.info("Changing {} pool size from {} to {}", pool.getThreadNamePrefix(), pool.getPoolSize(), concurrency);
                 if (concurrency > 0 && concurrency != pool.getPoolSize()) {
+                    pool.setMaxPoolSize(concurrency);
                     pool.setCorePoolSize(concurrency);
                     logger.info("Set {} pool size to {}", pool.getThreadNamePrefix(), concurrency);
                 }
@@ -57,6 +61,7 @@ public class ThreadPoolManager {
             if (key.contains(PARALLEL_POOL_PREFIX)) {
                 logger.info("Changing {} pool size from {} to {}", pool.getThreadNamePrefix(), pool.getPoolSize(), parallel);
                 if (parallel > 0 && parallel != pool.getPoolSize()) {
+                    pool.setMaxPoolSize(parallel);
                     pool.setCorePoolSize(parallel);
                 }
             }
@@ -113,7 +118,9 @@ public class ThreadPoolManager {
         for (String key : this.executorHashmap.keySet()) {
             if (key.contains(PARALLEL_POOL_PREFIX)) {
                 parallelism = this.executorHashmap.get(key).getCorePoolSize();
-                break;
+                if(parallelism > 0){
+                    return parallelism;
+                }
             }
         }
         return parallelism;

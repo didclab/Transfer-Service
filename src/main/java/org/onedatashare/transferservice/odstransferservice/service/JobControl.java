@@ -112,8 +112,8 @@ public class JobControl extends DefaultBatchConfigurer {
                 idForStep = file.getPath();
             }
             SimpleStepBuilder<DataChunk, DataChunk> child = stepBuilderFactory.get(idForStep).<DataChunk, DataChunk>chunk(this.request.getOptions().getPipeSize());
-            if (ODSUtility.fullyOptimizableProtocols.contains(this.request.getSource().getType()) && ODSUtility.fullyOptimizableProtocols.contains(this.request.getDestination().getType()) ) {
-                if(this.request.getOptions().getParallelThreadCount() > 0){
+            if (ODSUtility.fullyOptimizableProtocols.contains(this.request.getSource().getType()) && ODSUtility.fullyOptimizableProtocols.contains(this.request.getDestination().getType())) {
+                if (this.request.getOptions().getParallelThreadCount() > 0) {
                     child.taskExecutor(this.threadPoolManager.parallelThreadPool(parallelThreadCount, file.getPath()));
                 }
             }
@@ -206,8 +206,8 @@ public class JobControl extends DefaultBatchConfigurer {
                 scpWriter.setPool(connectionBag.getSftpWriterPool());
                 return scpWriter;
             case gdrive:
-                if(fileInfo.getSize() < FIVE_MB){
-                    GDriveSimpleWriter writer = new GDriveSimpleWriter(request.getDestination().getOauthDestCredential(),fileInfo);
+                if (fileInfo.getSize() < FIVE_MB) {
+                    GDriveSimpleWriter writer = new GDriveSimpleWriter(request.getDestination().getOauthDestCredential(), fileInfo);
                     writer.setRetryTemplate(retryTemplateForReaderAndWriter);
                     return writer;
                 } else {
