@@ -25,11 +25,11 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
 
     @Override
     public void addObject() {
-        ThreadPoolTaskExecutor exec = this.threadPoolManager.createThreadPool(15, "http_pool");
+//        ThreadPoolTaskExecutor exec = this.threadPoolManager.createThreadPool(1, "http_pool");
         this.client = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_2)
                 .followRedirects(HttpClient.Redirect.NORMAL)
-                .executor(exec)
+//                .executor(exec)
                 .connectTimeout(Duration.ofSeconds(20))
                 .build();
     }
