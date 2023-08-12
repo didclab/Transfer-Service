@@ -105,8 +105,8 @@ public class HttpReader implements SetPool, ItemReader<DataChunk> {
         } else {
             request = rangeMode(uri, filePart, range);
         }
-//        HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
-        HttpResponse<byte[]> response = client.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray()).get();
+        HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+//        HttpResponse<byte[]> response = client.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray()).get();
         DataChunk chunk = ODSUtility.makeChunk(response.body().length, response.body(), filePart.getStart(), Long.valueOf(filePart.getPartIdx()).intValue(), this.fileName);
         logger.info(chunk.toString());
         return chunk;
@@ -118,22 +118,22 @@ public class HttpReader implements SetPool, ItemReader<DataChunk> {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        String filePath = Paths.get(fileInfo.getPath()).toString();
-        uri = sourceCred.getUri() + filePath;
-        HttpRequest request = HttpRequest.newBuilder()
-                .GET()
-                .uri(URI.create(uri)) //make http a string constant as well
-                .setHeader(ODSConstants.ACCEPT_ENCODING, ODSConstants.GZIP)
-                .setHeader(ODSConstants.RANGE, String.format(ODSConstants.byteRange, 0, 1)) //make Range into a string constant as well as bytes
-                .build();
-        HttpResponse<byte[]> response = null;
-        try {
-            response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        range = response.statusCode() == 206;
-        compressable = response.headers().allValues(ODSConstants.CONTENT_ENCODING).size() != 0;
+//        String filePath = Paths.get(fileInfo.getPath()).toString();
+//        uri = sourceCred.getUri() + filePath;
+//        HttpRequest request = HttpRequest.newBuilder()
+//                .GET()
+//                .uri(URI.create(uri)) //make http a string constant as well
+//                .setHeader(ODSConstants.ACCEPT_ENCODING, ODSConstants.GZIP)
+//                .setHeader(ODSConstants.RANGE, String.format(ODSConstants.byteRange, 0, 1)) //make Range into a string constant as well as bytes
+//                .build();
+//        HttpResponse<byte[]> response = null;
+//        try {
+//            response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+//        } catch (IOException | InterruptedException e) {
+//            throw new RuntimeException(e);
+//        }
+//        range = response.statusCode() == 206;
+//        compressable = response.headers().allValues(ODSConstants.CONTENT_ENCODING).size() != 0;
     }
 
 

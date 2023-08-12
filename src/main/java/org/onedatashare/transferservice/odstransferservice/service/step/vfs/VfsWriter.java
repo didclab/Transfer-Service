@@ -67,12 +67,11 @@ public class VfsWriter extends ODSBaseWriter implements ItemWriter<DataChunk> {
 
     @Override
     public void write(List<? extends DataChunk> items) throws Exception {
-        Path path = Paths.get(this.destinationPath, items.get(0).getFileName());
-        if(!path.toString().equals(this.filePath.toString())){
+        if(this.fileChannel == null){
+            Path path = Paths.get(this.destinationPath, items.get(0).getFileName());
             this.fileChannel = FileChannel.open(path, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
             this.filePath = path;
         }
-        logger.info("VfsWriter file Path: {}", this.filePath);
         for (int i = 0; i < items.size(); i++) {
             DataChunk chunk = items.get(i);
             int bytesWritten = this.fileChannel.write(ByteBuffer.wrap(chunk.getData()), chunk.getStartPosition());
