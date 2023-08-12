@@ -118,8 +118,8 @@ public class HttpReader implements SetPool, ItemReader<DataChunk> {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-//        String filePath = Paths.get(fileInfo.getPath()).toString();
-//        uri = sourceCred.getUri() + filePath;
+        String filePath = Paths.get(fileInfo.getPath()).toString();
+        uri = sourceCred.getUri() + filePath;
 //        HttpRequest request = HttpRequest.newBuilder()
 //                .GET()
 //                .uri(URI.create(uri)) //make http a string constant as well
