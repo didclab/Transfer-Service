@@ -24,6 +24,10 @@ import java.util.List;
 public class PmeterParser {
 
     private final String MEASURE = "measure";
+    private final ByteArrayOutputStream outputStream;
+    private final PumpStreamHandler streamHandler;
+    private final DefaultExecutor executor;
+    private final ExecuteWatchdog watchDog;
 
     Logger logger = LoggerFactory.getLogger(PmeterParser.class);
 
@@ -48,6 +52,15 @@ public class PmeterParser {
     private CommandLine cmdLine;
 
     public PmeterParser(ObjectMapper pmeterMapper) {
+        this.outputStream = new ByteArrayOutputStream();
+        this.streamHandler = new PumpStreamHandler(outputStream);
+
+        this.executor = new DefaultExecutor();
+
+        this.watchDog = new ExecuteWatchdog(ExecuteWatchdog.INFINITE_TIMEOUT);
+        executor.setWatchdog(watchDog);
+        executor.setStreamHandler(streamHandler);
+
         this.pmeterMapper = pmeterMapper;
     }
 
@@ -61,14 +74,6 @@ public class PmeterParser {
 
 
     public void runPmeter() {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        PumpStreamHandler streamHandler = new PumpStreamHandler(outputStream);
-
-        DefaultExecutor executor = new DefaultExecutor();
-
-        ExecuteWatchdog watchDog = new ExecuteWatchdog(ExecuteWatchdog.INFINITE_TIMEOUT);
-        executor.setWatchdog(watchDog);
-        executor.setStreamHandler(streamHandler);
         try {
             executor.execute(cmdLine);
         } catch (IOException e) {
