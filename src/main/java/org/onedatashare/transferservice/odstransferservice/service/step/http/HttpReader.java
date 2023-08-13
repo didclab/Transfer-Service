@@ -102,9 +102,9 @@ public class HttpReader implements SetPool, ItemReader<DataChunk> {
         if (filePart == null) return null;
         HttpRequest request;
         if (this.httpConnectionPool.getCompress()) {
-            request = compressMode(uri, filePart);
+            request = compressMode(uri, filePart, this.range);
         } else {
-            request = rangeMode(uri, filePart);
+            request = rangeMode(uri, filePart, this.range);
         }
         HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
 //        HttpResponse<byte[]> response = client.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray()).get();
