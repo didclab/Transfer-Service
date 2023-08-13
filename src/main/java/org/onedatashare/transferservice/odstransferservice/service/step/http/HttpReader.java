@@ -49,6 +49,7 @@ public class HttpReader implements SetPool, ItemReader<DataChunk> {
         this.fileInfo = fileInfo;
         this.filePartitioner = new FilePartitioner(fileInfo.getChunkSize());
         this.sourceCred = credential;
+        this.range = true;
     }
 
     @BeforeStep
@@ -100,10 +101,10 @@ public class HttpReader implements SetPool, ItemReader<DataChunk> {
         FilePart filePart = this.filePartitioner.nextPart();
         if (filePart == null) return null;
         HttpRequest request;
-        if (this.httpConnectionPool.getCompress() && compressable) {
-            request = compressMode(uri, filePart, range);
+        if (this.httpConnectionPool.getCompress()) {
+            request = compressMode(uri, filePart);
         } else {
-            request = rangeMode(uri, filePart, range);
+            request = rangeMode(uri, filePart);
         }
         HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
 //        HttpResponse<byte[]> response = client.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray()).get();
