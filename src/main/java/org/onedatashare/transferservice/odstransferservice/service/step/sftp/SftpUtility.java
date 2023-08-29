@@ -67,15 +67,18 @@ public class SftpUtility {
         String[] destCredUri = noTypeUri.split(":");
         boolean connected = false;
         Session jschSession = null;
-        try {
-            return authenticateWithUserAndPrivateKey(credential, jsch, destCredUri, compression);
-        } catch (JSchException ignored) {
-            ignored.printStackTrace();
-        }
-        try {
-            return authenticateWithUserPass(credential, jsch, destCredUri, compression);
-        } catch (JSchException ignored) {
-            ignored.printStackTrace();
+        if(credential.getSecret().contains("-----BEGIN RSA PRIVATE KEY-----")){
+            try{
+                return authenticateWithUserAndPrivateKey(credential, jsch, destCredUri, compression);
+            } catch (JSchException e) {
+                e.printStackTrace();
+            }
+        }else{
+            try {
+                return authenticateWithUserPass(credential, jsch, destCredUri, compression);
+            } catch (JSchException e) {
+                e.printStackTrace();
+            }
         }
         return null;
     }
