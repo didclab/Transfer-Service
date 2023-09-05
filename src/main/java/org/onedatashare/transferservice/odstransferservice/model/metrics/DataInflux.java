@@ -78,6 +78,10 @@ public class DataInflux {
     @Column(name = NIC_MTU)
     private Integer nicMtu;
 
+    @JsonProperty(value = NIC_SPEED)
+    @Column(name = NIC_SPEED)
+    private Integer nicSpeed;
+
     @JsonProperty(value = LATENCY)
     @Column(name = LATENCY)
     private Double latency;

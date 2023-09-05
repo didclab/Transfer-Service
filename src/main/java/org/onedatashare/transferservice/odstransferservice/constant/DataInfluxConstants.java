@@ -20,6 +20,7 @@ public class DataInfluxConstants {
     public static final String DROP_IN = "dropin";
     public static final String DROP_OUT = "dropout";
     public static final String NIC_MTU = "nic_mtu";
+    public static final String NIC_SPEED = "nic_speed";
     public static final String LATENCY = "latency";
     public static final String RTT = "rtt";
     public static final String SOURCE_RTT = "source_rtt";
