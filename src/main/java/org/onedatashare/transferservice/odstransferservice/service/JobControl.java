@@ -30,6 +30,8 @@ import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFT
 import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsWriter;
+import org.onedatashare.transferservice.odstransferservice.service.step.webdav.WebDAVReader;
+import org.onedatashare.transferservice.odstransferservice.service.step.webdav.WebDAVWriter;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -161,6 +163,9 @@ public class JobControl extends DefaultBatchConfigurer {
                 GDriveReader dDriveReader = new GDriveReader(request.getSource().getOauthSourceCredential(), fileInfo);
                 dDriveReader.setRetryTemplate(retryTemplateForReaderAndWriter);
                 return dDriveReader;
+            case webdav:
+                WebDAVReader webDAVReader = new WebDAVReader(request.getSource().getVfsSourceCredential(),fileInfo);
+                return webDAVReader;
         }
         return null;
     }
@@ -215,6 +220,9 @@ public class JobControl extends DefaultBatchConfigurer {
                     writer.setPool(connectionBag.getGoogleDriveWriterPool());
                     return writer;
                 }
+            case webdav:
+                WebDAVWriter writer = new WebDAVWriter(request.getDestination().getVfsDestCredential(),fileInfo,this.metricsCollector,this.influxCache);
+                return writer;
         }
         return null;
     }
