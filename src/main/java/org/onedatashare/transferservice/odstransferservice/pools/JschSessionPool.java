@@ -1,5 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.pools;
 
+import com.jcraft.jsch.ConfigRepository;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
 import org.apache.commons.pool2.ObjectPool;
@@ -12,14 +13,12 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class JschSessionPool implements ObjectPool<Session> {
 
     private final AccountEndpointCredential credential;
-    private final int bufferSize;
     public final LinkedBlockingQueue<Session> connectionPool;
     JSch jsch;
     private boolean compression;
 
-    public JschSessionPool(AccountEndpointCredential credential, int bufferSize){
+    public JschSessionPool(AccountEndpointCredential credential){
         this.credential = credential;
-        this.bufferSize = bufferSize;
         this.connectionPool = new LinkedBlockingQueue();
         jsch = new JSch();
         compression = false;

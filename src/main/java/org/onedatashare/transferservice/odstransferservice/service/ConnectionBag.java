@@ -49,42 +49,42 @@ public class ConnectionBag {
         if (request.getSource().getType().equals(EndpointType.sftp)) {
             readerMade = true;
             readerType = EndpointType.sftp;
-            this.createSftpReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount(), request.getChunkSize());
+            this.createSftpReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount());
         }
         if (request.getDestination().getType().equals(EndpointType.sftp)) {
             writerMade = true;
             writerType = EndpointType.sftp;
-            this.createSftpWriterPool(request.getDestination().getVfsDestCredential(), request.getOptions().getConcurrencyThreadCount(), request.getChunkSize());
+            this.createSftpWriterPool(request.getDestination().getVfsDestCredential(), request.getOptions().getConcurrencyThreadCount());
         }
         if (request.getSource().getType().equals(EndpointType.scp)) {
             readerMade = true;
             readerType = EndpointType.scp;
-            this.createSftpReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount(), request.getChunkSize());
+            this.createSftpReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount());
         }
         if (request.getDestination().getType().equals(EndpointType.scp)) {
             writerMade = true;
             writerType = EndpointType.scp;
-            this.createSftpWriterPool(request.getDestination().getVfsDestCredential(), request.getOptions().getConcurrencyThreadCount(), request.getChunkSize());
+            this.createSftpWriterPool(request.getDestination().getVfsDestCredential(), request.getOptions().getConcurrencyThreadCount());
         }
         if (request.getSource().getType().equals(EndpointType.ftp)) {
             readerType = EndpointType.ftp;
             readerMade = true;
-            this.createFtpReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount(), request.getChunkSize());
+            this.createFtpReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount(), request.getConnectionBufferSize());
         }
         if (request.getDestination().getType().equals(EndpointType.ftp)) {
             writerMade = true;
             writerType = EndpointType.ftp;
-            this.createFtpWriterPool(request.getDestination().getVfsDestCredential(), request.getOptions().getConcurrencyThreadCount(), request.getChunkSize());
+            this.createFtpWriterPool(request.getDestination().getVfsDestCredential(), request.getOptions().getConcurrencyThreadCount(), request.getConnectionBufferSize());
         }
         if (request.getSource().getType().equals(EndpointType.http)) {
             readerMade = true;
             readerType = EndpointType.http;
-            this.createHttpReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount()* request.getOptions().getParallelThreadCount(), request.getChunkSize());
+            this.createHttpReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount()* request.getOptions().getParallelThreadCount());
         }
         if (request.getDestination().getType().equals(EndpointType.gdrive)) {
             writerMade = true;
             writerType = EndpointType.gdrive;
-            this.createGoogleDriveWriterPool(request.getDestination().getOauthDestCredential(), request.getOptions().getConcurrencyThreadCount(), request.getChunkSize());
+            this.createGoogleDriveWriterPool(request.getDestination().getOauthDestCredential(), request.getOptions().getConcurrencyThreadCount());
         }
         if (request.getSource().getType().equals(EndpointType.s3)) {
             readerMade = true;
@@ -154,30 +154,30 @@ public class ConnectionBag {
         }
     }
 
-    public void createSftpReaderPool(AccountEndpointCredential credential, int connectionCount, int chunkSize) {
-        this.sftpReaderPool = new JschSessionPool(credential, chunkSize);
+    public void createSftpReaderPool(AccountEndpointCredential credential, int connectionCount) {
+        this.sftpReaderPool = new JschSessionPool(credential);
         this.sftpReaderPool.setCompression(this.transferOptions.getCompress());
         this.compression = this.transferOptions.getCompress();
         this.sftpReaderPool.addObjects(connectionCount);
     }
 
-    public void createSftpWriterPool(AccountEndpointCredential credential, int connectionCount, int chunkSize) {
-        this.sftpWriterPool = new JschSessionPool(credential, chunkSize);
+    public void createSftpWriterPool(AccountEndpointCredential credential, int connectionCount) {
+        this.sftpWriterPool = new JschSessionPool(credential);
         this.sftpWriterPool.setCompression(this.transferOptions.getCompress());
         this.compression = this.transferOptions.getCompress();
         this.sftpWriterPool.addObjects(connectionCount);
     }
 
-    public void createHttpReaderPool(AccountEndpointCredential credential, int connectionCount, int chunkSize) {
-        this.httpReaderPool = new HttpConnectionPool(credential, chunkSize, this.threadPoolManager);
+    public void createHttpReaderPool(AccountEndpointCredential credential, int connectionCount) {
+        this.httpReaderPool = new HttpConnectionPool(credential, this.threadPoolManager);
         this.httpReaderPool.setCompress(false);
         this.httpReaderPool.addObjects(connectionCount);
         this.httpReaderPool.addObject();
         this.compression = false;
     }
 
-    private void createGoogleDriveWriterPool(OAuthEndpointCredential oauthDestCredential, int concurrencyThreadCount, int chunkSize) {
-        this.googleDriveWriterPool = new GDriveConnectionPool(oauthDestCredential, chunkSize);
+    private void createGoogleDriveWriterPool(OAuthEndpointCredential oauthDestCredential, int concurrencyThreadCount) {
+        this.googleDriveWriterPool = new GDriveConnectionPool(oauthDestCredential);
         this.googleDriveWriterPool.setCompress(false);
         this.googleDriveWriterPool.addObjects(concurrencyThreadCount);
         this.compression = false;

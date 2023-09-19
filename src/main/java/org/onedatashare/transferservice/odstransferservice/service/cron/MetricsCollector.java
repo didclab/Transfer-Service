@@ -14,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.StepExecution;
-import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -75,7 +74,7 @@ public class MetricsCollector {
     @Scheduled(cron = "${pmeter.cron.expression}")
     @SneakyThrows
     public void collectAndSave() {
-        if(this.isPmeterEnabled){
+        if (this.isPmeterEnabled) {
             pmeterParser.runPmeter();
             this.metrics = pmeterParser.parsePmeterOutput();
         }
@@ -85,10 +84,10 @@ public class MetricsCollector {
         long maxMem = Runtime.getRuntime().maxMemory();
         JobMetric currentAggregateMetric = influxCache.aggregateMetric(); //this metrics throughput is the throughput of the whole map in influxCache.
         DataInflux lastPmeterData;
-        if(this.metrics.size() < 1){
+        if (this.metrics.size() < 1) {
             this.metrics.add(new DataInflux());
-            lastPmeterData = metrics.get(metrics.size()-1);
-        }else{
+            lastPmeterData = metrics.get(metrics.size() - 1);
+        } else {
             lastPmeterData = metrics.get(metrics.size() - 1);
         }
         lastPmeterData.setAllocatedMemory(totalMem);
@@ -103,17 +102,17 @@ public class MetricsCollector {
             lastPmeterData.setOdsUser(jobParameters.getString(OWNER_ID));
             //Getting & setting source/destination RTT/
             double sourceRtt = 0.0;
-            if(!jobParameters.getString(SOURCE_CREDENTIAL_TYPE).equals("vfs")){
+            if (!jobParameters.getString(SOURCE_CREDENTIAL_TYPE).equals("vfs")) {
                 sourceRtt = this.latencyRtt.rttCompute(jobParameters.getString(SOURCE_HOST), jobParameters.getLong(SOURCE_PORT).intValue());
             }
             double destRtt = 0.0;
-            if(!jobParameters.getString(DEST_CREDENTIAL_TYPE).equals("vfs")) {
+            if (!jobParameters.getString(DEST_CREDENTIAL_TYPE).equals("vfs")) {
                 destRtt = this.latencyRtt.rttCompute(jobParameters.getString(DEST_HOST), jobParameters.getLong(DEST_PORT).intValue());
             }
             lastPmeterData.setSourceRtt(sourceRtt);
-            lastPmeterData.setSourceLatency(sourceRtt/2);
+            lastPmeterData.setSourceLatency(sourceRtt / 2);
             lastPmeterData.setDestinationRtt(destRtt);
-            lastPmeterData.setDestLatency(destRtt/2);
+            lastPmeterData.setDestLatency(destRtt / 2);
             //application level parameters
             lastPmeterData.setConcurrency(currentAggregateMetric.getConcurrency());
             lastPmeterData.setParallelism(currentAggregateMetric.getParallelism());

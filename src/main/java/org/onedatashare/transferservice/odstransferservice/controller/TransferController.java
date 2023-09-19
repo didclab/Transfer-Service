@@ -23,10 +23,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -60,7 +58,7 @@ public class TransferController {
     public ResponseEntity<String> start(@RequestBody TransferJobRequest request) throws Exception {
         logger.info("Controller Entry point");
         if (request.getSource().getType().equals(EndpointType.vfs)) {
-            List<EntityInfo> fileExpandedList = vfsExpander.expandDirectory(request.getSource().getInfoList(), request.getSource().getParentInfo().getPath(), request.getChunkSize());
+            List<EntityInfo> fileExpandedList = vfsExpander.expandDirectory(request.getSource().getInfoList(), request.getSource().getFileSourcePath());
             request.getSource().setInfoList(new ArrayList<>(fileExpandedList));
         }
         JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);

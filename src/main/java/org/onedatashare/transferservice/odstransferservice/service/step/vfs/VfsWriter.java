@@ -24,7 +24,6 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
 
 public class VfsWriter extends ODSBaseWriter implements ItemWriter<DataChunk> {
 
-    Logger logger = LoggerFactory.getLogger(VfsWriter.class);
     AccountEndpointCredential destCredential;
     FileChannel fileChannel;
     String destinationPath;
@@ -58,7 +57,6 @@ public class VfsWriter extends ODSBaseWriter implements ItemWriter<DataChunk> {
             try {
                 Files.createDirectories(Paths.get(this.destinationPath));
             } catch (FileAlreadyExistsException fileAlreadyExistsException) {
-                logger.warn("Already have the file with this path \t" + this.filePath.toString());
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -76,7 +74,6 @@ public class VfsWriter extends ODSBaseWriter implements ItemWriter<DataChunk> {
             DataChunk chunk = items.get(i);
             int bytesWritten = this.fileChannel.write(ByteBuffer.wrap(chunk.getData()), chunk.getStartPosition());
             if (chunk.getSize() != bytesWritten)
-                logger.info("Wrote " + bytesWritten + " but we should have written " + chunk.getSize());
             chunk = null;
         }
     }

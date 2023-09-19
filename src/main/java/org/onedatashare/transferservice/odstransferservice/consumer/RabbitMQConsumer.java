@@ -68,7 +68,7 @@ public class RabbitMQConsumer {
             TransferJobRequest request = objectMapper.readValue(jsonStr, TransferJobRequest.class);
             logger.info("Job Recieved: {}", request.toString());
             if (request.getSource().getType().equals(EndpointType.vfs)) {
-                List<EntityInfo> fileExpandedList = vfsExpander.expandDirectory(request.getSource().getInfoList(), request.getSource().getParentInfo().getPath(), request.getChunkSize());
+                List<EntityInfo> fileExpandedList = vfsExpander.expandDirectory(request.getSource().getInfoList(), request.getSource().getFileSourcePath());
                 request.getSource().setInfoList(new ArrayList<>(fileExpandedList));
             }
             JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);
@@ -77,15 +77,14 @@ public class RabbitMQConsumer {
             this.jobIds.add(jobExecution.getJobId());
             return;
         } catch (Exception e) {
-            logger.debug("Failed to parse jsonStr:{} to TransferJobRequest.java", jsonStr);
+            logger.debug("Failed to parse jsonStr: {} to TransferJobRequest.java", jsonStr);
         }
         try {
             TransferApplicationParams params = objectMapper.readValue(jsonStr, TransferApplicationParams.class);
-            logger.info("Parsed TransferApplicationParams:{}", params);
+            logger.info("Parsed TransferApplicationParams: {}", params);
             this.threadPoolManager.applyOptimizer(params.getConcurrency(), params.getParallelism());
         } catch (Exception e) {
             logger.info("Did not apply transfer params due to parsing message failure");
-            e.printStackTrace();
         }
     }
 }

@@ -31,7 +31,6 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
 
 public class HttpReader implements SetPool, ItemReader<DataChunk> {
 
-    Logger logger = LoggerFactory.getLogger(HttpReader.class);
     String sBasePath;
     String fileName;
     FilePartitioner filePartitioner;
@@ -58,7 +57,6 @@ public class HttpReader implements SetPool, ItemReader<DataChunk> {
         this.sBasePath = params.getString(SOURCE_BASE_PATH);
         this.filePartitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
         this.fileName = Paths.get(fileInfo.getId()).getFileName().toString();
-        logger.info("Thread={} is reading in fileName={} fileId={}", Thread.currentThread().getName(), this.fileName, this.fileInfo.getId());
         this.uri = sourceCred.getUri() + Paths.get(fileInfo.getPath()).toString();
         this.open();
     }
@@ -107,9 +105,7 @@ public class HttpReader implements SetPool, ItemReader<DataChunk> {
             request = rangeMode(uri, filePart, this.range);
         }
         HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
-//        HttpResponse<byte[]> response = client.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray()).get();
         DataChunk chunk = ODSUtility.makeChunk(response.body().length, response.body(), filePart.getStart(), Long.valueOf(filePart.getPartIdx()).intValue(), this.fileName);
-        logger.info(chunk.toString());
         return chunk;
     }
 

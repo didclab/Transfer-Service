@@ -100,7 +100,7 @@ public class JobControl extends DefaultBatchConfigurer {
 
     private List<Flow> createConcurrentFlow(List<EntityInfo> infoList, String basePath) {
         if (this.request.getSource().getType().equals(EndpointType.vfs)) {
-            infoList = vfsExpander.expandDirectory(infoList, basePath, this.request.getChunkSize());
+            infoList = vfsExpander.expandDirectory(infoList, basePath);
             logger.info("File list: {}", infoList);
         }
         int parallelThreadCount = request.getOptions().getParallelThreadCount();//total parallel threads
@@ -221,7 +221,7 @@ public class JobControl extends DefaultBatchConfigurer {
 
     public Job concurrentJobDefinition() {
         connectionBag.preparePools(this.request);
-        List<Flow> flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getParentInfo().getPath());
+        List<Flow> flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getFileSourcePath());
         logger.info("Created flows");
         setRetryPolicy();
         Flow[] fl = new Flow[flows.size()];

@@ -36,18 +36,16 @@ public class JobParamService {
         EndpointType destType = request.getDestination().getType();
         builder.addLong(TIME, System.currentTimeMillis());
         builder.addString(OWNER_ID, request.getOwnerId());
-        builder.addString(PRIORITY, String.valueOf(request.getPriority()));
-        builder.addString(SOURCE_BASE_PATH, request.getSource().getParentInfo().getPath());
+        builder.addString(SOURCE_BASE_PATH, request.getSource().getFileSourcePath());
         builder.addString(SOURCE_CREDENTIAL_ID, request.getSource().getCredId());
         builder.addString(SOURCE_CREDENTIAL_TYPE, sourceType.toString());
-        builder.addString(DEST_BASE_PATH, request.getDestination().getParentInfo().getPath());
+        builder.addString(DEST_BASE_PATH, request.getDestination().getFileDestinationPath());
         builder.addString(DEST_CREDENTIAL_ID, request.getDestination().getCredId());
         builder.addString(DEST_CREDENTIAL_TYPE, destType.toString());
         //here we are adding the starting optimization parameters to JobParameters
         builder.addLong(CONCURRENCY, (long) request.getOptions().getConcurrencyThreadCount());
         builder.addLong(PARALLELISM, (long) request.getOptions().getParallelThreadCount());
         builder.addLong(PIPELINING, (long) request.getOptions().getPipeSize());
-        builder.addString(CHUNK_SIZE, String.valueOf(request.getChunkSize()));
         builder.addString(COMPRESS, String.valueOf(request.getOptions().getCompress()));
         builder.addLong(RETRY, (long) request.getOptions().getRetry());
         builder.addString(APP_NAME, System.getenv("APP_NAME"));
