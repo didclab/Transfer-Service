@@ -1,13 +1,14 @@
 package org.onedatashare.transferservice.odstransferservice.model;
 
+import com.influxdb.annotations.Column;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import javax.persistence.*;
-import java.util.Date;
 import org.springframework.stereotype.Component;
+
+import java.util.Date;
 
 /**
  * @author deepika
@@ -22,7 +23,7 @@ import org.springframework.stereotype.Component;
 public class NetworkMetric {
 
     @Id
-    @GeneratedValue(strategy= GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "data")
@@ -36,5 +37,5 @@ public class NetworkMetric {
 
     @Transient
     private JobMetric jobData;
-    
+
 }

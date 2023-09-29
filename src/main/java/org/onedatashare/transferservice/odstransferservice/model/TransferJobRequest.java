@@ -14,7 +14,7 @@ import java.util.ArrayList;
 public class TransferJobRequest {
 
     @NonNull private String ownerId;
-    @NonNull private int connectionBufferSize;
+    private int connectionBufferSize;
     @NonNull private Source source;
     @NonNull private Destination destination;
     private TransferOptions options;

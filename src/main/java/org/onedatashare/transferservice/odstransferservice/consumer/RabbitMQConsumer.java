@@ -37,7 +37,7 @@ public class RabbitMQConsumer {
 
     JobControl jc;
 
-    JobLauncher asyncJobLauncher;
+    JobLauncher jobLauncher;
 
     JobParamService jobParamService;
 
@@ -48,11 +48,11 @@ public class RabbitMQConsumer {
     @Autowired
     Set<Long> jobIds;
 
-    public RabbitMQConsumer(VfsExpander vfsExpander, Queue userQueue, JobParamService jobParamService, JobLauncher asyncJobLauncher, JobControl jc, ThreadPoolManager threadPoolManager) {
+    public RabbitMQConsumer(VfsExpander vfsExpander, Queue userQueue, JobParamService jobParamService, JobLauncher jobLauncher, JobControl jc, ThreadPoolManager threadPoolManager) {
         this.vfsExpander = vfsExpander;
         this.userQueue = userQueue;
         this.jobParamService = jobParamService;
-        this.asyncJobLauncher = asyncJobLauncher;
+        this.jobLauncher = jobLauncher;
         this.jc = jc;
         this.threadPoolManager = threadPoolManager;
         this.objectMapper = new ObjectMapper();
@@ -73,7 +73,7 @@ public class RabbitMQConsumer {
             }
             JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);
             jc.setRequest(request);
-            JobExecution jobExecution = asyncJobLauncher.run(jc.concurrentJobDefinition(), parameters);
+            JobExecution jobExecution = jobLauncher.run(jc.concurrentJobDefinition(), parameters);
             this.jobIds.add(jobExecution.getJobId());
             return;
         } catch (Exception e) {

@@ -11,41 +11,45 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
-
-@Service
+@Component
 public class InfluxIOService {
 
-    @Autowired
-    private InfluxDBClient influxDBClient;
-
+    private final InfluxDBClient influxClient;
     Logger logger = LoggerFactory.getLogger(InfluxIOService.class);
 
     @Value("${ods.influx.bucket}")
     private String bucketName;
+
     @Value("${ods.influx.org}")
     String org;
 
-    private static final Logger LOG = LoggerFactory.getLogger(InfluxIOService.class);
     private WriteApi writeApi;
 
-    public InfluxIOService(InfluxDBClient influxDBClient) {
-        this.influxDBClient = influxDBClient;
+    public InfluxIOService(InfluxDBClient influxClient) {
+        this.influxClient = influxClient;
+        this.writeApi = this.influxClient.makeWriteApi();
     }
 
-    @PostConstruct
-    public void postConstruct() {
-        Bucket bucket = influxDBClient.getBucketsApi().findBucketByName(bucketName);
+    public void reconfigureBucketForNewJob(String ownerId) {
+        logger.info("********* Reconfiguring the Bucket ***********");
+        Bucket bucket;
+        if (ownerId == null) {
+            bucket = influxClient.getBucketsApi().findBucketByName(this.bucketName);
+        } else {
+            bucket = influxClient.getBucketsApi().findBucketByName(ownerId);
+        }
+
         if (bucket == null) {
-            logger.info("Creating the Influx bucket name={}, org={}", bucketName, org);
+            logger.info("Creating the Influx bucket name={}, org={}", ownerId, org);
             try {
-                bucket = this.influxDBClient.getBucketsApi().createBucket(bucketName, org);
+                bucket = this.influxClient.getBucketsApi().createBucket(ownerId, org);
             } catch (UnprocessableEntityException ignored) {
             }
         }
-        this.writeApi = this.influxDBClient.makeWriteApi();
+        this.writeApi = this.influxClient.makeWriteApi();
     }
 
 
@@ -53,7 +57,7 @@ public class InfluxIOService {
         try {
             writeApi.writeMeasurement(WritePrecision.MS, point);
         } catch (InfluxException exception) {
-            LOG.error("Exception occurred while pushing measurement to influx: " + exception.getMessage());
+            logger.error("Exception occurred while pushing measurement to influx: " + exception.getMessage());
         }
     }
 }

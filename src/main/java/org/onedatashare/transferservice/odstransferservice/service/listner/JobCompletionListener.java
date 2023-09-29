@@ -76,13 +76,7 @@ public class JobCompletionListener extends JobExecutionListenerSupport {
     @Override
     public void afterJob(JobExecution jobExecution) {
         logger.info("*****Job Execution End Time**** : {}", jobExecution.getEndTime());
-        LocalDateTime startTime = Instant.ofEpochMilli(jobExecution.getStartTime().getTime())
-                .atZone(ZoneId.systemDefault())
-                .toLocalDateTime();
-        LocalDateTime endTime = Instant.ofEpochMilli(jobExecution.getEndTime().getTime())
-                .atZone(ZoneId.systemDefault())
-                .toLocalDateTime();
-        logger.info("Total Job Time in seconds: {}", Duration.between(startTime, endTime).toSeconds());
+        logger.info("Total Job Time in seconds: {}", Duration.between(jobExecution.getStartTime(), jobExecution.getEndTime()).toSeconds());
         connectionBag.closePools();
         threadPoolManager.clearJobPool();
         if(this.optimizerEnable){

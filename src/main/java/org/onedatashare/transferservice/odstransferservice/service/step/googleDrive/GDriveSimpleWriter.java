@@ -1,7 +1,5 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.googleDrive;
 
-import com.google.api.client.http.AbstractInputStreamContent;
-import com.google.api.client.http.FileContent;
 import com.google.api.client.http.InputStreamContent;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
@@ -15,11 +13,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
-import org.springframework.batch.core.annotation.AfterWrite;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.core.annotation.BeforeWrite;
+import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.retry.support.RetryTemplate;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -40,9 +37,8 @@ public class GDriveSimpleWriter implements ItemWriter<DataChunk> {
     private String mimeType;
     private File fileMetaData;
     private File parentFolder;
-    private RetryTemplate retryTemplate;
 
-    public GDriveSimpleWriter(OAuthEndpointCredential credential, EntityInfo fileInfo){
+    public GDriveSimpleWriter(OAuthEndpointCredential credential, EntityInfo fileInfo) {
         this.credential = credential;
         this.fileInfo = fileInfo;
         this.fileBuffer = new FileBuffer();
@@ -63,40 +59,35 @@ public class GDriveSimpleWriter implements ItemWriter<DataChunk> {
     }
 
     @Override
-    public void write(List<? extends DataChunk> items) {
-        fileBuffer.addAllChunks(items);
+    public void write(Chunk<? extends DataChunk> items) {
+        fileBuffer.addAllChunks(items.getItems());
     }
 
-    public void setRetryTemplate(RetryTemplate retryTemplate) {
-        this.retryTemplate = retryTemplate;
-    }
 
     @AfterStep
     public void afterStep() throws Exception {
-        this.retryTemplate.execute((c) -> {
-            try {
-                logger.debug("Transferring file to the server");
-                InputStream inputStream = this.fileBuffer.condenseListToOneStream(this.fileInfo.getSize());
-                InputStreamContent inputStreamContent = new InputStreamContent(this.mimeType, inputStream);
-                this.fileMetaData = new File()
-                        .setName(this.fileName)
-                        .setParents(Collections.singletonList(this.parentFolder.getId()))
-                        .setMimeType(this.mimeType);
-                File file = this.client.files().create(this.fileMetaData, inputStreamContent).execute();
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                this.client.files().get(file.getId()).executeMediaAndDownloadTo(outputStream);
-                inputStream.close();
-                if (outputStream.size() != fileInfo.getSize()) {
-                    outputStream.close();
-                    throw new IOException("Source and Destination Files do not match. Retrying file transfer...");
-                }
-            } catch(IOException e){
-                throw e;
+        try {
+            logger.debug("Transferring file to the server");
+            InputStream inputStream = this.fileBuffer.condenseListToOneStream(this.fileInfo.getSize());
+            InputStreamContent inputStreamContent = new InputStreamContent(this.mimeType, inputStream);
+            this.fileMetaData = new File()
+                    .setName(this.fileName)
+                    .setParents(Collections.singletonList(this.parentFolder.getId()))
+                    .setMimeType(this.mimeType);
+            File file = this.client.files().create(this.fileMetaData, inputStreamContent).execute();
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            this.client.files().get(file.getId()).executeMediaAndDownloadTo(outputStream);
+            inputStream.close();
+            if (outputStream.size() != fileInfo.getSize()) {
+                outputStream.close();
+                throw new IOException("Source and Destination Files do not match. Retrying file transfer...");
             }
-            this.client = null;
-            this.fileBuffer.clear();
-            this.fileBuffer = null;
-            return null;
-        });
+        } catch (IOException e) {
+            throw e;
+        }
+        this.client = null;
+        this.fileBuffer.clear();
+        this.fileBuffer = null;
+
     }
 }

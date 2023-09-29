@@ -16,6 +16,7 @@ import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
+import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
 
 import java.security.MessageDigest;
@@ -33,7 +34,6 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
  */
 public class BoxWriterLargeFile extends ODSBaseWriter implements ItemWriter<DataChunk> {
 
-    private final OAuthEndpointCredential credential;
     private BoxAPIConnection boxAPIConnection;
     EntityInfo fileInfo;
     private HashMap<String, BoxFileUploadSession> fileMap;
@@ -50,7 +50,6 @@ public class BoxWriterLargeFile extends ODSBaseWriter implements ItemWriter<Data
         this.fileMap = new HashMap<>();
         this.digestMap = new HashMap<>();
         this.parts = new ArrayList<>();
-        this.credential = oAuthDestCredential;
     }
 
     @BeforeStep
@@ -105,12 +104,10 @@ public class BoxWriterLargeFile extends ODSBaseWriter implements ItemWriter<Data
      * This way we just detect if we need small or large file uploads.
      * Small: just adds chunks to a Pri Queue in the smallFileUpload obj and that maintains the order then in after step we write
      * Large: For every part we upload we compute the hash and save it as well as the BoxParts so in after step we can commit upload
-     *
-     * @param items
-     * @throws NoSuchAlgorithmException
      */
     @Override
-    public void write(List<? extends DataChunk> items) throws NoSuchAlgorithmException {
+    public void write(Chunk<? extends DataChunk> chunk) throws Exception {
+        List<? extends DataChunk> items = chunk.getItems();
         String fileName = items.get(0).getFileName();
         prepareForUpload(fileName);
         BoxFileUploadSession session = this.fileMap.get(fileName);
@@ -122,5 +119,6 @@ public class BoxWriterLargeFile extends ODSBaseWriter implements ItemWriter<Data
             logger.info("Current chunk in BoxLargeFile Writer " + dataChunk.toString());
         }
         this.digestMap.put(fileName, digest);
+
     }
 }

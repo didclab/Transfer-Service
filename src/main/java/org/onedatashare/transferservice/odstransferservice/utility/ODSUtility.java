@@ -21,17 +21,14 @@ import java.util.HashSet;
 
 public class ODSUtility {
 
-    @Value("${dropbox.identifier}")
     private static String odsClientID = "OneDataShare-DIDCLab";
 
-    @Value("${gdrive.client.id}")
     private static String gDriveClientId= System.getenv("ODS_GDRIVE_CLIENT_ID");
 
-    @Value("${gdrive.client.secret}")
     private static String gDriveClientSecret = System.getenv("ODS_GDRIVE_CLIENT_SECRET");
 
-    @Value("${gdrive.appname}")
-    private static String gdriveAppName;
+//    @Value("${gdrive.appname}")
+//    private static String gdriveAppName;
 
     public static DbxRequestConfig dbxRequestConfig = DbxRequestConfig.newBuilder(odsClientID).build();
 

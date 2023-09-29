@@ -18,6 +18,7 @@ import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
+import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
 
 import java.nio.file.Paths;
@@ -67,8 +68,21 @@ public class AmazonS3LargeFileWriter extends ODSBaseWriter implements ItemWriter
     }
 
 
+    @AfterStep
+    public ExitStatus afterStep(StepExecution stepExecution) {
+        this.metaData.completeMultipartUpload(client);
+        this.metaData.reset();
+        this.pool.returnObject(this.client);
+        return stepExecution.getExitStatus();
+    }
+
+    public void setPool(S3ConnectionPool s3WriterPool) {
+        this.pool = s3WriterPool;
+    }
+
     @Override
-    public void write(List<? extends DataChunk> items) {
+    public void write(Chunk<? extends DataChunk> chunk) throws Exception {
+        List<? extends DataChunk> items = chunk.getItems();
         if (!this.firstPass) {
             prepareS3Transfer(items.get(0).getFileName());
         }
@@ -83,17 +97,6 @@ public class AmazonS3LargeFileWriter extends ODSBaseWriter implements ItemWriter
             UploadPartResult uploadPartResult = client.uploadPart(uploadPartRequest);
             this.metaData.addUploadPart(uploadPartResult);
         }
-    }
 
-    @AfterStep
-    public ExitStatus afterStep(StepExecution stepExecution) {
-        this.metaData.completeMultipartUpload(client);
-        this.metaData.reset();
-        this.pool.returnObject(this.client);
-        return stepExecution.getExitStatus();
-    }
-
-    public void setPool(S3ConnectionPool s3WriterPool) {
-        this.pool = s3WriterPool;
     }
 }

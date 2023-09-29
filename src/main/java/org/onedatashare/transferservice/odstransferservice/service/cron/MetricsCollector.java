@@ -1,5 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service.cron;
 
+import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -133,6 +134,7 @@ public class MetricsCollector {
             lastPmeterData.setAvgFileSize(jobParameters.getLong(ODSConstants.FILE_SIZE_AVG));
             lastPmeterData.setOdsUser(jobParameters.getString(ODSConstants.OWNER_ID));
         }
+        log.info(lastPmeterData.toString());
         this.influxCache.clearCache();
         influxIOService.insertDataPoint(lastPmeterData);
     }

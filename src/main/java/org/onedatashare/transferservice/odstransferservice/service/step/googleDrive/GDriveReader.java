@@ -11,7 +11,6 @@ import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.ClassUtils;
 
 import java.io.ByteArrayOutputStream;
@@ -26,9 +25,8 @@ public class GDriveReader extends AbstractItemCountingItemStreamItemReader<DataC
     private Drive client;
     private String fileName;
     private File file;
-    private RetryTemplate retryTemplate;
 
-    public GDriveReader(OAuthEndpointCredential credential, EntityInfo fileInfo){
+    public GDriveReader(OAuthEndpointCredential credential, EntityInfo fileInfo) {
         this.credential = credential;
         this.fileInfo = fileInfo;
         this.partitioner = new FilePartitioner(fileInfo.getChunkSize());
@@ -39,32 +37,25 @@ public class GDriveReader extends AbstractItemCountingItemStreamItemReader<DataC
     @Override
     protected DataChunk doRead() throws Exception {
         FilePart filePart = this.partitioner.nextPart();
-        if(filePart == null || filePart.getSize() == 0) return null;
+        if (filePart == null || filePart.getSize() == 0) return null;
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream(filePart.getSize());
-        this.retryTemplate.execute((c) ->{
-            try{
-                Drive.Files.Get get = this.client.files().get(fileInfo.getId());
-                get.getMediaHttpDownloader().setChunkSize(this.fileInfo.getChunkSize()).setContentRange(filePart.getStart(), filePart.getEnd());
-                get.executeMediaAndDownloadTo(outputStream);
-                byte[] receivedData = outputStream.toByteArray();
-                if(receivedData.length != filePart.getSize()){
-                    logger.warn("Invalid chunk size received. Retrying to read chunk from the server...");
-                    throw new IOException("Chunk receive error.");
-                }
-            } catch(IOException e){
-                throw e;
+        try {
+            Drive.Files.Get get = this.client.files().get(fileInfo.getId());
+            get.getMediaHttpDownloader().setChunkSize(this.fileInfo.getChunkSize()).setContentRange(filePart.getStart(), filePart.getEnd());
+            get.executeMediaAndDownloadTo(outputStream);
+            byte[] receivedData = outputStream.toByteArray();
+            if (receivedData.length != filePart.getSize()) {
+                logger.warn("Invalid chunk size received. Retrying to read chunk from the server...");
+                throw new IOException("Chunk receive error.");
             }
-            return null;
-        });
+        } catch (IOException e) {
+            throw e;
+        }
         DataChunk chunk = ODSUtility.makeChunk(filePart.getSize(), outputStream.toByteArray(), (int) filePart.getStart(), (int) filePart.getPartIdx(), this.fileName);
         outputStream.close();
         logger.info(chunk.toString());
         return chunk;
 
-    }
-
-    public void setRetryTemplate(RetryTemplate template){
-        this.retryTemplate = template;
     }
 
     @Override

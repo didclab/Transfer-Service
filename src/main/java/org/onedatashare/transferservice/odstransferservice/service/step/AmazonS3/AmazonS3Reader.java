@@ -7,7 +7,6 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import lombok.Setter;
-import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
@@ -86,8 +85,8 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
         this.currentFileMetaData = this.s3Client.getObjectMetadata(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey());
         String key = this.amazonS3URI.getKey();
         int idx = key.lastIndexOf("/");
-        if(idx > -1){
-            this.fileName = key.substring(idx+1);
+        if (idx > -1) {
+            this.fileName = key.substring(idx + 1);
         }
         partitioner.createParts(this.currentFileMetaData.getContentLength(), this.fileName);
     }

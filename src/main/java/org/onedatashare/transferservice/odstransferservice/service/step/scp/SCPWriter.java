@@ -19,6 +19,7 @@ import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.core.annotation.BeforeWrite;
+import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
 
 import java.io.IOException;
@@ -62,7 +63,8 @@ public class SCPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, S
     }
 
     @Override
-    public void write(List<? extends DataChunk> items) throws IOException, JSchException {
+    public void write(Chunk<? extends DataChunk> chunk) throws IOException, JSchException {
+        List<? extends DataChunk> items = chunk.getItems();
         logger.info("Inside write SCPWriter");
         for (DataChunk b : items) {
             outputStream.write(b.getData());

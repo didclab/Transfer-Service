@@ -6,12 +6,11 @@ import org.onedatashare.transferservice.odstransferservice.model.credential.Acco
 import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
+import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
 
 import java.io.IOException;
@@ -28,13 +27,10 @@ public class VfsWriter extends ODSBaseWriter implements ItemWriter<DataChunk> {
     FileChannel fileChannel;
     String destinationPath;
     Path filePath;
-    private final EntityInfo fileInfo;
-
 
     public VfsWriter(AccountEndpointCredential credential, EntityInfo fileInfo, MetricsCollector metricsCollector, InfluxCache influxCache) {
         super(metricsCollector, influxCache);
         this.destCredential = credential;
-        this.fileInfo = fileInfo;
     }
 
     @BeforeStep
@@ -53,7 +49,7 @@ public class VfsWriter extends ODSBaseWriter implements ItemWriter<DataChunk> {
     }
 
     public void prepareDirectories() {
-        if(!Files.exists(Paths.get(this.destinationPath))){
+        if (!Files.exists(Paths.get(this.destinationPath))) {
             try {
                 Files.createDirectories(Paths.get(this.destinationPath));
             } catch (FileAlreadyExistsException fileAlreadyExistsException) {
@@ -64,8 +60,9 @@ public class VfsWriter extends ODSBaseWriter implements ItemWriter<DataChunk> {
     }
 
     @Override
-    public void write(List<? extends DataChunk> items) throws Exception {
-        if(this.fileChannel == null){
+    public void write(Chunk<? extends DataChunk> chunks) throws Exception {
+        List<? extends DataChunk> items = chunks.getItems();
+        if (this.fileChannel == null) {
             Path path = Paths.get(this.destinationPath, items.get(0).getFileName());
             this.fileChannel = FileChannel.open(path, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
             this.filePath = path;
@@ -74,7 +71,7 @@ public class VfsWriter extends ODSBaseWriter implements ItemWriter<DataChunk> {
             DataChunk chunk = items.get(i);
             int bytesWritten = this.fileChannel.write(ByteBuffer.wrap(chunk.getData()), chunk.getStartPosition());
             if (chunk.getSize() != bytesWritten)
-            chunk = null;
+                chunk = null;
         }
     }
 }

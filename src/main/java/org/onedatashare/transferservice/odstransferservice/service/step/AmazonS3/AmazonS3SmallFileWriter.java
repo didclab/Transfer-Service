@@ -19,6 +19,7 @@ import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
+import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
 
 import java.nio.file.Paths;
@@ -58,11 +59,6 @@ public class AmazonS3SmallFileWriter extends ODSBaseWriter implements ItemWriter
         this.client = this.pool.borrowObject();
     }
 
-    @Override
-    public void write(List<? extends DataChunk> items) throws Exception {
-        this.fileName = items.get(0).getFileName();
-        this.putObjectRequest.addAllChunks(items);
-    }
 
     @AfterStep
     public ExitStatus afterStep(StepExecution stepExecution) {
@@ -81,4 +77,10 @@ public class AmazonS3SmallFileWriter extends ODSBaseWriter implements ItemWriter
         return objectMetadata;
     }
 
+    @Override
+    public void write(Chunk<? extends DataChunk> chunk) throws Exception {
+        List<? extends DataChunk> items = chunk.getItems();
+        this.fileName = items.get(0).getFileName();
+        this.putObjectRequest.addAllChunks(items);
+    }
 }

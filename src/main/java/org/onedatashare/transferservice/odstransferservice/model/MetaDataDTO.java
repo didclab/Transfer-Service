@@ -1,11 +1,11 @@
 package org.onedatashare.transferservice.odstransferservice.model;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
-import lombok.NonNull;
-
-import javax.persistence.*;
 
 @Entity
 @Table(name = "job_info_3")

@@ -41,7 +41,6 @@ public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChu
     private JschSessionPool connectionPool;
     private Session session;
     private ChannelSftp channelSftp;
-    private RetryTemplate retryTemplate;
 
     public SFTPReader(AccountEndpointCredential credential, EntityInfo file, int pipeSize) {
         this.fileInfo = file;
@@ -111,7 +110,4 @@ public class SFTPReader extends AbstractItemCountingItemStreamItemReader<DataChu
         this.connectionPool = (JschSessionPool) connectionPool;
     }
 
-    public void setRetryTemplate(RetryTemplate retryTemplate) {
-        this.retryTemplate = retryTemplate;
-    }
 }

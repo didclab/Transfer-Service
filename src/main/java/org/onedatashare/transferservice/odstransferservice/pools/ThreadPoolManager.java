@@ -6,11 +6,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.*;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
@@ -22,13 +20,11 @@ public class ThreadPoolManager {
 
     Logger logger = LoggerFactory.getLogger(ThreadPoolManager.class);
 
-    @PostConstruct
-    public void createMap() {
+    public ThreadPoolManager() {
         this.executorHashmap = new HashMap<>();
     }
 
     public ThreadPoolTaskExecutor createThreadPool(int corePoolSize, String prefix) {
-
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
 //        executor.setQueueCapacity(1);
         executor.setAllowCoreThreadTimeOut(false);
@@ -93,9 +89,9 @@ public class ThreadPoolManager {
         return te;
     }
 
-    public ThreadPoolTaskExecutor parallelThreadPool(int threadCount){
+    public ThreadPoolTaskExecutor parallelThreadPool(int threadCount) {
         ThreadPoolTaskExecutor te = this.executorHashmap.get(PARALLEL_POOL_PREFIX);
-        if(te == null){
+        if (te == null) {
             te = this.createThreadPool(threadCount, PARALLEL_POOL_PREFIX);
         }
         return te;
@@ -118,7 +114,7 @@ public class ThreadPoolManager {
         for (String key : this.executorHashmap.keySet()) {
             if (key.contains(PARALLEL_POOL_PREFIX)) {
                 parallelism = this.executorHashmap.get(key).getCorePoolSize();
-                if(parallelism > 0){
+                if (parallelism > 0) {
                     return parallelism;
                 }
             }

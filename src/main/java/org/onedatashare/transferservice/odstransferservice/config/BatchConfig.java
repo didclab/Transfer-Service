@@ -1,12 +1,13 @@
 package org.onedatashare.transferservice.odstransferservice.config;
 
-import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
+import org.springframework.batch.core.configuration.support.DefaultBatchConfiguration;
 import org.springframework.batch.core.launch.JobLauncher;
-import org.springframework.batch.core.launch.support.SimpleJobLauncher;
+import org.springframework.batch.core.launch.support.TaskExecutorJobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.core.task.SyncTaskExecutor;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -15,22 +16,24 @@ import java.util.Set;
 public class BatchConfig {
 
     @Bean
+    public JobLauncher jobLauncher(JobRepository jobRepository) {
+        TaskExecutorJobLauncher taskExecutorJobLauncher = new TaskExecutorJobLauncher();
+        taskExecutorJobLauncher.setJobRepository(jobRepository);
+        taskExecutorJobLauncher.setTaskExecutor(new SyncTaskExecutor());
+        return taskExecutorJobLauncher;
+    }
+
+    @Bean
     public Set<Long> jobIds() {
         return new HashSet<>();
     }
 
-    @Bean
-    public JobLauncher asyncJobLauncher(JobRepository jobRepository) {
-        SimpleJobLauncher jobLauncher = new SimpleJobLauncher();
-        jobLauncher.setJobRepository(jobRepository);
-        jobLauncher.setTaskExecutor(new SimpleAsyncTaskExecutor());
-        return jobLauncher;
-    }
-
-    @Bean
-    public JobBuilderFactory jobBuilderFactory(JobRepository jobRepository) {
-        return new JobBuilderFactory(jobRepository);
-    }
-
+//    @Bean
+//    public JobLauncher asyncJobLauncher(JobRepository jobRepository) {
+//        TaskExecutorJobLauncher jobLauncher = new TaskExecutorJobLauncher();
+//        jobLauncher.setJobRepository(jobRepository);
+//        jobLauncher.setTaskExecutor(new SimpleAsyncTaskExecutor());
+//        return jobLauncher;
+//    }
 }
 
