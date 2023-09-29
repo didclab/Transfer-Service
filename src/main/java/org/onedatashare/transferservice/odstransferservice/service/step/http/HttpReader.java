@@ -107,6 +107,7 @@ public class HttpReader implements SetPool, ItemReader<DataChunk> {
         HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
         DataChunk chunk = ODSUtility.makeChunk(response.body().length, response.body(), filePart.getStart(), Long.valueOf(filePart.getPartIdx()).intValue(), this.fileName);
         System.out.println(chunk.toString());
+        System.out.println("Is a Virtual Thread? :" +Thread.currentThread().isVirtual());
         return chunk;
     }
 

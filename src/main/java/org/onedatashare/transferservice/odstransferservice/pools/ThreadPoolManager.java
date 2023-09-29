@@ -9,6 +9,9 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
@@ -26,6 +29,7 @@ public class ThreadPoolManager {
 
     public ThreadPoolTaskExecutor createThreadPool(int corePoolSize, String prefix) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setThreadFactory(Thread.ofVirtual().factory());
 //        executor.setQueueCapacity(1);
         executor.setAllowCoreThreadTimeOut(false);
         executor.setCorePoolSize(corePoolSize);
