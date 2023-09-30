@@ -1,5 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
@@ -7,6 +8,7 @@ import org.onedatashare.transferservice.odstransferservice.model.credential.OAut
 
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 @Data
 @Getter
@@ -18,6 +20,8 @@ public class TransferJobRequest {
     @NonNull private Source source;
     @NonNull private Destination destination;
     private TransferOptions options;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private UUID jobUuid;
 
     @Data
     @AllArgsConstructor
