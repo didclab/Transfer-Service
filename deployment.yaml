@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transfer-service-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: transfer-service
+  template:
+    metadata:
+      labels:
+        app: transfer-service
+    spec:
+      containers:
+      - name: transfer-service-container
+        image: aakashjaswal/transfer-service:v1 #TODO: ECR Setup.
+        # Add environment variables, maybe for dynamic nodename based on above config.
+        ports:
+        - containerPort: 8092
