@@ -3,7 +3,13 @@ The following was discovered as part of building this project:
 
 * The original package name 'org.onedatashare.transfer-service.ods-transfer-service' is invalid and this project uses 'org.onedatashare.transferservice.odstransferservice' instead.
 
-# Getting Started
+# Getting Started for K8s
+- Build and Push Docker Image: Ensure that the Docker image is built and pushed to a Docker registry accessible from your Kubernetes cluster.
+- Deploy to Kubernetes Cluster: Apply the deployment and service configurations:
+
+kubectl apply -f deployment.yaml
+kubectl apply -f service.yaml
+
 
 ### Reference Documentation
 For further reference, please consider the following sections:
