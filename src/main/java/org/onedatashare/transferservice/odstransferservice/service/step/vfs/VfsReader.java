@@ -14,12 +14,11 @@ import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 import org.springframework.util.ClassUtils;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SOURCE_BASE_PATH;
@@ -28,7 +27,6 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
 
     FileChannel sink;
     Logger logger = LoggerFactory.getLogger(VfsReader.class);
-    FileInputStream inputStream;
     String sBasePath;
     String fileName;
     FilePartitioner filePartitioner;
@@ -60,14 +58,14 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
         logger.info("currently reading {}", chunkParameters);
         int totalBytes = 0;
         ByteBuffer buffer = bufferMap.get(Thread.currentThread().getId());
-        if(buffer == null){
+        if (buffer == null) {
             buffer = ByteBuffer.allocate(chunkParameters.getSize());
             bufferMap.put(Thread.currentThread().getId(), buffer);
         }
         while (totalBytes < chunkParameters.getSize()) {
             int bytesRead = 0;
             try {
-                bytesRead = this.sink.read(buffer, chunkParameters.getStart()+totalBytes);
+                bytesRead = this.sink.read(buffer, chunkParameters.getStart() + totalBytes);
             } catch (IOException ex) {
                 logger.error("Unable to read from source");
                 ex.printStackTrace();
@@ -76,31 +74,26 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
             totalBytes += bytesRead;
         }
         buffer.flip();
-        if(chunkParameters.getSize() != totalBytes){
+        if (chunkParameters.getSize() != totalBytes) {
             logger.info("We read in {} bytes and expected to read in {} bytes", chunkParameters.getSize(), totalBytes);
         }
-        byte[] data = new byte[chunkParameters.getSize()];
-        buffer.get(data, 0, totalBytes);
-        buffer.clear();
-        return ODSUtility.makeChunk(totalBytes, data, chunkParameters.getStart(), Long.valueOf(chunkParameters.getPartIdx()).intValue(), this.fileName);
+        return ODSUtility.makeChunk(totalBytes, buffer.array(), chunkParameters.getStart(), Long.valueOf(chunkParameters.getPartIdx()).intValue(), this.fileName);
     }
 
     @Override
     protected void doOpen() {
         logger.info("Starting Open in VFS");
         try {
-            this.inputStream = new FileInputStream(Paths.get(this.fileInfo.getPath()).toString());
-        } catch (FileNotFoundException e) {
+            this.sink = FileChannel.open(Paths.get(this.fileInfo.getPath()), StandardOpenOption.READ);
+        } catch (IOException e) {
             logger.error("Path not found : " + this.fileInfo.getPath());
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-        this.sink = this.inputStream.getChannel();
     }
 
     @Override
     protected void doClose() {
         try {
-            if (inputStream != null) inputStream.close();
             if (sink.isOpen()) sink.close();
         } catch (Exception ex) {
             logger.error("Not able to close the input Stream");
