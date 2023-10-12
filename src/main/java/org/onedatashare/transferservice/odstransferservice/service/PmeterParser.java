@@ -1,6 +1,7 @@
 package org.onedatashare.transferservice.odstransferservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteWatchdog;
@@ -11,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -47,9 +47,15 @@ public class PmeterParser {
     @Value("${pmeter.options}")
     String pmeterOptions;
     ObjectMapper pmeterMapper;
-
-
     private CommandLine cmdLine;
+
+    @PostConstruct
+    public void init() {
+        this.cmdLine = CommandLine.parse(
+                String.format("pmeter " + MEASURE + " %s --user %s --measure %s %s --file_name %s",
+                        pmeterNic, odsUser,
+                        measureCount, pmeterOptions, pmeterReportPath));
+    }
 
     public PmeterParser(ObjectMapper pmeterMapper) {
         this.outputStream = new ByteArrayOutputStream();
@@ -62,14 +68,6 @@ public class PmeterParser {
         executor.setStreamHandler(streamHandler);
 
         this.pmeterMapper = pmeterMapper;
-    }
-
-    @PostConstruct
-    public void postConstruct() {
-        this.cmdLine = CommandLine.parse(
-                String.format("pmeter " + MEASURE + " %s --user %s --measure %s %s --file_name %s",
-                        pmeterNic, odsUser,
-                        measureCount, pmeterOptions, pmeterReportPath));
     }
 
 

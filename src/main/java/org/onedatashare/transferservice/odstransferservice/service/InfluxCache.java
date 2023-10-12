@@ -2,7 +2,8 @@ package org.onedatashare.transferservice.odstransferservice.service;
 
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.JobMetric;
-import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManager;
+import org.onedatashare.transferservice.odstransferservice.service.listner.ConcurrencyStepListener;
+import org.onedatashare.transferservice.odstransferservice.service.listner.ParallelismChunkListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
@@ -26,9 +27,9 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
 @Service
 public class InfluxCache {
 
+    private final ParallelismChunkListener parallelismChunkListener;
+    private final ConcurrencyStepListener concurrencyStepListener;
     public ConcurrentHashMap<Long, JobMetric> threadCache; //stores a JobMetric that represents everything that thread has processed for the step. Thus each JobMetric is an aggregate of what has happened
-
-    ThreadPoolManager threadPoolManager;
 
     Logger logger = LoggerFactory.getLogger(InfluxCache.class);
 
@@ -37,11 +38,9 @@ public class InfluxCache {
         WRITER
     }
 
-    /**
-     * @param threadPoolManager - This is constructor dependency injection in spring for those of you reading.
-     */
-    public InfluxCache(ThreadPoolManager threadPoolManager) {
-        this.threadPoolManager = threadPoolManager;
+    public InfluxCache(ConcurrencyStepListener concurrencyStepListener, ParallelismChunkListener parallelismChunkListener) {
+        this.concurrencyStepListener = concurrencyStepListener;
+        this.parallelismChunkListener = parallelismChunkListener;
         this.threadCache = new ConcurrentHashMap<>();
     }
 
@@ -51,8 +50,8 @@ public class InfluxCache {
             prevMetric = new JobMetric();
             prevMetric.setThreadId(threadId);
             prevMetric.setStepExecution(stepExecution);
-            prevMetric.setConcurrency(threadPoolManager.concurrencyCount());
-            prevMetric.setParallelism(threadPoolManager.parallelismCount());
+            prevMetric.setConcurrency(concurrencyStepListener.getConcurrency());
+            prevMetric.setParallelism(parallelismChunkListener.getParallelism());
             prevMetric.setPipelining(stepExecution.getJobParameters().getLong(PIPELINING).intValue());
             prevMetric.setChunkSize(chunkSize);
             this.threadCache.put(threadId, prevMetric);

@@ -12,12 +12,11 @@ import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
+import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
 
 import java.io.ByteArrayInputStream;
@@ -33,9 +32,7 @@ public class DropBoxChunkedWriter extends ODSBaseWriter implements ItemWriter<Da
     private DbxClientV2 client;
     String sessionId;
     private UploadSessionCursor cursor;
-    Logger logger = LoggerFactory.getLogger(DropBoxChunkedWriter.class);
     private String fileName;
-    private FileMetadata uploadSessionFinishUploader;
 
 
     public DropBoxChunkedWriter(OAuthEndpointCredential credential, MetricsCollector metricsCollector, InfluxCache influxCache) {
@@ -58,19 +55,20 @@ public class DropBoxChunkedWriter extends ODSBaseWriter implements ItemWriter<Da
     @AfterStep
     public ExitStatus afterStep(StepExecution stepExecution) {
         String path = Paths.get(this.destinationPath, this.fileName).toString();
-        path = "/"+path;
+        path = "/" + path;
         CommitInfo commitInfo = CommitInfo.newBuilder(path).build();
-        this.uploadSessionFinishUploader = this.client.files().uploadSessionFinish(cursor, commitInfo).finish();
+        FileMetadata uploadSessionFinishUploader = this.client.files().uploadSessionFinish(cursor, commitInfo).finish();
         return stepExecution.getExitStatus();
     }
 
     @Override
-    public void write(List<? extends DataChunk> items) throws Exception {
-        for(DataChunk chunk : items){
-            this.client.files().uploadSessionAppendV2(cursor).uploadAndFinish(new ByteArrayInputStream(chunk.getData()));
-            this.cursor = new UploadSessionCursor(sessionId, chunk.getStartPosition() + chunk.getSize());
-            logger.info("Current chunk in DropBox Writer " + chunk.toString());
+    public void write(Chunk<? extends DataChunk> chunk) throws Exception {
+        List<? extends DataChunk> items = chunk.getItems();
+        for (DataChunk dataChunk : items) {
+            this.client.files().uploadSessionAppendV2(cursor).uploadAndFinish(new ByteArrayInputStream(dataChunk.getData()));
+            this.cursor = new UploadSessionCursor(sessionId, dataChunk.getStartPosition() + dataChunk.getSize());
         }
-        this.fileName= items.get(0).getFileName();
+        this.fileName = items.get(0).getFileName();
+
     }
 }

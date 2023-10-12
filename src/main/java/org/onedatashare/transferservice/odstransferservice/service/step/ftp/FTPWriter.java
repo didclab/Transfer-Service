@@ -16,8 +16,8 @@ import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
+import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.retry.support.RetryTemplate;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -37,7 +37,6 @@ public class FTPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, S
     AccountEndpointCredential destCred;
     private FtpConnectionPool connectionPool;
     private FTPClient client;
-    private RetryTemplate retryTemplate;
 
     public FTPWriter(AccountEndpointCredential destCred, EntityInfo fileInfo, MetricsCollector metricsCollector, InfluxCache influxCache) {
         super(metricsCollector, influxCache);
@@ -78,26 +77,6 @@ public class FTPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, S
 
 
     public void write(List<? extends DataChunk> list) throws IOException {
-        logger.info("Inside Writer---writing chunk of : " + list.get(0).getFileName());
-        String fileName = list.get(0).getFileName();
-
-        this.retryTemplate.execute((c) -> {
-            try {
-                if (this.outputStream == null) {
-                    this.outputStream = getStream(fileName);
-                }
-                for (DataChunk b : list) {
-                    logger.info("Current chunk in FTP Writer " + b.toString());
-                    this.outputStream.write(b.getData());
-                    this.client.setRestartOffset(b.getStartPosition());
-                }
-                this.outputStream.flush();
-            } catch (IOException ex) {
-                this.outputStream = null;
-                this.invalidateAndCreateNewClient();
-            }
-            return null;
-        });
     }
 
     @Override
@@ -105,9 +84,6 @@ public class FTPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, S
         this.connectionPool = (FtpConnectionPool) connectionPool;
     }
 
-    public void setRetryTemplate(RetryTemplate retryTemplate) {
-        this.retryTemplate = retryTemplate;
-    }
 
     private void invalidateAndCreateNewClient() {
         this.connectionPool.invalidateAndCreateNewClient(this.client);
@@ -116,5 +92,27 @@ public class FTPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, S
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public void write(Chunk<? extends DataChunk> chunk) {
+        List<? extends DataChunk> items = chunk.getItems();
+        String fileName = items.get(0).getFileName();
+
+        try {
+            if (this.outputStream == null) {
+                this.outputStream = getStream(fileName);
+            }
+            for (DataChunk b : items) {
+                logger.info("Current chunk in FTP Writer " + b.toString());
+                this.outputStream.write(b.getData());
+                this.client.setRestartOffset(b.getStartPosition());
+            }
+            this.outputStream.flush();
+        } catch (IOException ex) {
+            this.outputStream = null;
+            this.invalidateAndCreateNewClient();
+        }
+
     }
 }

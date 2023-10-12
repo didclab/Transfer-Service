@@ -14,9 +14,8 @@ public class GDriveConnectionPool implements ObjectPool<HttpClient> {
     private boolean compress;
 
 
-    public GDriveConnectionPool(EndpointCredential credential, int bufferSize) {
+    public GDriveConnectionPool(EndpointCredential credential) {
         this.credential = credential;
-        this.bufferSize = bufferSize;
         this.connectionPool = new LinkedBlockingQueue<>();
     }
 

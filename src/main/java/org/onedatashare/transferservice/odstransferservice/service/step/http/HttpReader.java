@@ -1,7 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.http;
 
 import org.apache.commons.pool2.ObjectPool;
-import org.aspectj.lang.annotation.After;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
@@ -11,8 +10,6 @@ import org.onedatashare.transferservice.odstransferservice.model.credential.Acco
 import org.onedatashare.transferservice.odstransferservice.pools.HttpConnectionPool;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.StepExecution;
@@ -31,7 +28,6 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
 
 public class HttpReader implements SetPool, ItemReader<DataChunk> {
 
-    Logger logger = LoggerFactory.getLogger(HttpReader.class);
     String sBasePath;
     String fileName;
     FilePartitioner filePartitioner;
@@ -58,7 +54,6 @@ public class HttpReader implements SetPool, ItemReader<DataChunk> {
         this.sBasePath = params.getString(SOURCE_BASE_PATH);
         this.filePartitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
         this.fileName = Paths.get(fileInfo.getId()).getFileName().toString();
-        logger.info("Thread={} is reading in fileName={} fileId={}", Thread.currentThread().getName(), this.fileName, this.fileInfo.getId());
         this.uri = sourceCred.getUri() + Paths.get(fileInfo.getPath()).toString();
         this.open();
     }
@@ -107,9 +102,7 @@ public class HttpReader implements SetPool, ItemReader<DataChunk> {
             request = rangeMode(uri, filePart, this.range);
         }
         HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
-//        HttpResponse<byte[]> response = client.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray()).get();
         DataChunk chunk = ODSUtility.makeChunk(response.body().length, response.body(), filePart.getStart(), Long.valueOf(filePart.getPartIdx()).intValue(), this.fileName);
-        logger.info(chunk.toString());
         return chunk;
     }
 

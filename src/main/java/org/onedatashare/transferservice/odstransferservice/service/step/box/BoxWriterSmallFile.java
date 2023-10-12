@@ -16,6 +16,7 @@ import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
+import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
 
 import java.util.HashMap;
@@ -27,7 +28,6 @@ public class BoxWriterSmallFile extends ODSBaseWriter implements ItemWriter<Data
 
     private BoxAPIConnection boxAPIConnection;
     EntityInfo fileInfo;
-    private HashMap<String, BoxFileUploadSession> fileMap;
     String destinationBasePath;
     BoxFolder boxFolder;
     BoxSmallFileUpload smallFileUpload;
@@ -38,7 +38,6 @@ public class BoxWriterSmallFile extends ODSBaseWriter implements ItemWriter<Data
         super(metricsCollector, influxCache);
         this.boxAPIConnection = new BoxAPIConnection(credential.getToken());
         this.fileInfo = fileInfo;
-        this.fileMap = new HashMap<>();
         smallFileUpload = new BoxSmallFileUpload();
     }
 
@@ -61,10 +60,11 @@ public class BoxWriterSmallFile extends ODSBaseWriter implements ItemWriter<Data
     }
 
     @Override
-    public void write(List<? extends DataChunk> items) throws Exception {
+    public void write(Chunk<? extends DataChunk> chunk) throws Exception {
+        List<? extends DataChunk> items = chunk.getItems();
         this.fileName = items.get(0).getFileName();
         this.smallFileUpload.addAllChunks(items);
         logger.info("Small file box writer wrote {} DataChunks", items.size());
-    }
 
+    }
 }

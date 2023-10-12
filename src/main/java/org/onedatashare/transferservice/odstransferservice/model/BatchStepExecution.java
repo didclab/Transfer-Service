@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import org.springframework.batch.core.StepExecution;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Data
@@ -26,7 +27,7 @@ public class BatchStepExecution {
 
     private String status;
 
-    private Integer commitCount;
+    private Long commitCount;
 
     private Long readCount;
 
@@ -49,28 +50,28 @@ public class BatchStepExecution {
     private String lastUpdated;
 
     public static BatchStepExecution convertStepExecutionToMeta(StepExecution stepExecution) {
-        Date endTime = stepExecution.getEndTime();
-        Date lastUpdated = stepExecution.getLastUpdated();
+        LocalDateTime endTime = stepExecution.getEndTime();
+        LocalDateTime lastUpdated = stepExecution.getLastUpdated();
         Integer version = stepExecution.getVersion();
         return new BatchStepExecutionBuilder()
-                .readCount((long) stepExecution.getReadCount())
-                .readSkipcount((long) stepExecution.getReadSkipCount())
-                .writeSkipCount((long) stepExecution.getWriteSkipCount())
-                .writeCount((long) stepExecution.getWriteCount())
+                .readCount(stepExecution.getReadCount())
+                .readSkipcount(stepExecution.getReadSkipCount())
+                .writeSkipCount(stepExecution.getWriteSkipCount())
+                .writeCount(stepExecution.getWriteCount())
                 .commitCount(stepExecution.getCommitCount())
                 .id(stepExecution.getId())
                 .step_name(stepExecution.getStepName())
                 .version(version.longValue())
                 .jobInstanceId(stepExecution.getJobExecutionId())
-                .startTime(stepExecution.getStartTime().toInstant().toString())
-                .endTime(endTime == null ? null : endTime.toInstant().toString())
+                .startTime(stepExecution.getStartTime().toString())
+                .endTime(endTime == null ? null : endTime.toString())
                 .status(stepExecution.getStatus().toString())
                 .exitCode(stepExecution.getExitStatus().getExitCode())
                 .exitMessage(stepExecution.getExitStatus().getExitDescription())
-                .lastUpdated(lastUpdated == null ? null : lastUpdated.toInstant().toString())
-                .filterCount((long) stepExecution.getFilterCount())
-                .processSkipCount((long) stepExecution.getProcessSkipCount())
-                .rollbackCount((long) stepExecution.getRollbackCount())
+                .lastUpdated(lastUpdated == null ? null : lastUpdated.toString())
+                .filterCount(stepExecution.getFilterCount())
+                .processSkipCount(stepExecution.getProcessSkipCount())
+                .rollbackCount(stepExecution.getRollbackCount())
                 .build();
     }
 }

@@ -16,8 +16,8 @@ import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
+import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.retry.support.RetryTemplate;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -39,7 +39,6 @@ public class SFTPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, 
     private Session session;
     private OutputStream destination;
 
-    private RetryTemplate retryTemplate;
 
     public SFTPWriter(AccountEndpointCredential destCred, MetricsCollector metricsCollector, InfluxCache influxCache) {
         super(metricsCollector, influxCache);
@@ -120,26 +119,24 @@ public class SFTPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, 
     }
 
     @Override
-    public void write(List<? extends DataChunk> items) throws Exception {
+    public void write(Chunk<? extends DataChunk> chunk) throws Exception {
+        List<? extends DataChunk> items = chunk.getItems();
 //        String fileName = Paths.get(this.dBasePath, items.get(0).getFileName()).toString();
         String fileName = Paths.get(items.get(0).getFileName()).toString();
-        this.retryTemplate.execute((c) -> {
-            try {
-                if (this.destination == null) {
-                    this.destination = getStream(fileName);
-                }
-                for (DataChunk b : items) {
-                    logger.info("Current chunk in SFTP Writer " + b.toString());
-                    destination.write(b.getData());
-                }
-                destination.flush();
-            } catch (IOException ex) {
-                this.destination = null;
-                createNewSession();
-                throw ex;
+        try {
+            if (this.destination == null) {
+                this.destination = getStream(fileName);
             }
-            return null;
-        });
+            for (DataChunk b : items) {
+                logger.info("Current chunk in SFTP Writer " + b.toString());
+                destination.write(b.getData());
+            }
+            destination.flush();
+        } catch (IOException ex) {
+            this.destination = null;
+            createNewSession();
+            throw ex;
+        }
     }
 
     protected void createNewSession() throws InterruptedException {
@@ -152,9 +149,5 @@ public class SFTPWriter extends ODSBaseWriter implements ItemWriter<DataChunk>, 
     @Override
     public void setPool(ObjectPool connectionPool) {
         this.connectionPool = (JschSessionPool) connectionPool;
-    }
-
-    public void setRetryTemplate(RetryTemplate retryTemplate) {
-        this.retryTemplate = retryTemplate;
     }
 }
