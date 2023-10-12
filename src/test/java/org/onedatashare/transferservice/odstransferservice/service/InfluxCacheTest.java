@@ -11,7 +11,8 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.JobMetric;
-import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManager;
+import org.onedatashare.transferservice.odstransferservice.service.listner.ConcurrencyStepListener;
+import org.onedatashare.transferservice.odstransferservice.service.listner.ParallelismChunkListener;
 import org.springframework.batch.core.StepExecution;
 
 import java.time.Duration;
@@ -23,14 +24,17 @@ public class InfluxCacheTest {
     InfluxCache testObj;
 
     @Mock
-    ThreadPoolManager mockedThreadPoolManager;
+    ConcurrencyStepListener concurrencyStepListener;
+
+    @Mock
+    ParallelismChunkListener parallelismChunkListener;
 
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     StepExecution mockedStepExecution;
 
     @BeforeEach
     public void init() {
-        testObj = new InfluxCache(mockedThreadPoolManager);
+        testObj = new InfluxCache(concurrencyStepListener, parallelismChunkListener);
     }
 
 
@@ -71,8 +75,8 @@ public class InfluxCacheTest {
 
     @Test
     public void testCacheOneSizeAndEnsureIsRead() {
-        Mockito.when(mockedThreadPoolManager.concurrencyCount()).thenReturn(1);
-        Mockito.when(mockedThreadPoolManager.parallelismCount()).thenReturn(1);
+        Mockito.when(concurrencyStepListener.getConcurrency()).thenReturn(1);
+        Mockito.when(parallelismChunkListener.getParallelism()).thenReturn(1);
         Mockito.when(mockedStepExecution.getJobParameters().getLong(ODSConstants.PIPELINING)).thenReturn(1L);
         LocalDateTime startTime = LocalDateTime.now();
         LocalDateTime endTime = LocalDateTime.now();
@@ -86,14 +90,14 @@ public class InfluxCacheTest {
         Assertions.assertEquals(1, testObj.threadCache.size());
 
         //now test the quality of that 1 object
-        JobMetric metric = testObj.threadCache.get(Thread.currentThread().getId());
+        JobMetric metric = testObj.threadCache.get(Thread.currentThread().threadId());
         Assertions.assertEquals(expectedMetric, metric);
     }
 
     @Test
     public void testCacheOneSizeEnsureMetricIsWrite() {
-        Mockito.when(mockedThreadPoolManager.concurrencyCount()).thenReturn(1);
-        Mockito.when(mockedThreadPoolManager.parallelismCount()).thenReturn(1);
+        Mockito.when(concurrencyStepListener.getConcurrency()).thenReturn(1);
+        Mockito.when(parallelismChunkListener.getParallelism()).thenReturn(1);
         Mockito.when(mockedStepExecution.getJobParameters().getLong(ODSConstants.PIPELINING)).thenReturn(1L);
         LocalDateTime startTime = LocalDateTime.now();
         LocalDateTime endTime = LocalDateTime.now();
@@ -106,18 +110,18 @@ public class InfluxCacheTest {
         Assertions.assertEquals(1, testObj.threadCache.size());
 
         //now test the quality of that 1 object
-        JobMetric metric = testObj.threadCache.get(Thread.currentThread().getId());
+        JobMetric metric = testObj.threadCache.get(Thread.currentThread().threadId());
         Assertions.assertEquals(expectedMetric, metric);
     }
 
     @Test
     public void testCacheTwoAddsOnOneThreadReadAndReadMetrics() {
-        Mockito.when(mockedThreadPoolManager.concurrencyCount()).thenReturn(1);
-        Mockito.when(mockedThreadPoolManager.parallelismCount()).thenReturn(1);
+        Mockito.when(concurrencyStepListener.getConcurrency()).thenReturn(1);
+        Mockito.when(parallelismChunkListener.getParallelism()).thenReturn(1);
         Mockito.when(mockedStepExecution.getJobParameters().getLong(ODSConstants.PIPELINING)).thenReturn(1L);
         LocalDateTime startTime = LocalDateTime.now();
         LocalDateTime endTime = LocalDateTime.now();
-        long testThreadId = Thread.currentThread().getId(), totalBytes = 100;
+        long testThreadId = Thread.currentThread().threadId(), totalBytes = 100;
         int cc = 1, pp = 1, p = 1;
         testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, InfluxCache.ThroughputType.READER,0L);
         LocalDateTime startTime2 = LocalDateTime.now();
@@ -141,13 +145,13 @@ public class InfluxCacheTest {
 
     @Test
     public void testAddTwoWriteMetricsOneThread() {
-        Mockito.when(mockedThreadPoolManager.concurrencyCount()).thenReturn(1);
-        Mockito.when(mockedThreadPoolManager.parallelismCount()).thenReturn(1);
+        Mockito.when(concurrencyStepListener.getConcurrency()).thenReturn(1);
+        Mockito.when(parallelismChunkListener.getParallelism()).thenReturn(1);
         Mockito.when(mockedStepExecution.getJobParameters().getLong(ODSConstants.PIPELINING)).thenReturn(1L);
 
         LocalDateTime startTime = LocalDateTime.now();
         LocalDateTime endTime = LocalDateTime.now();
-        long testThreadId = Thread.currentThread().getId(), totalBytes = 100;
+        long testThreadId = Thread.currentThread().threadId(), totalBytes = 100;
         testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, InfluxCache.ThroughputType.WRITER,0L);
 
         LocalDateTime startTime2 = LocalDateTime.now();
@@ -170,13 +174,13 @@ public class InfluxCacheTest {
 
     @Test
     public void testAddOneReadAndOneWriteMetricOneThread() {
-        Mockito.when(mockedThreadPoolManager.concurrencyCount()).thenReturn(1);
-        Mockito.when(mockedThreadPoolManager.parallelismCount()).thenReturn(1);
+        Mockito.when(concurrencyStepListener.getConcurrency()).thenReturn(1);
+        Mockito.when(parallelismChunkListener.getParallelism()).thenReturn(1);
         Mockito.when(mockedStepExecution.getJobParameters().getLong(ODSConstants.PIPELINING)).thenReturn(1L);
 
         LocalDateTime startTime = LocalDateTime.now();
         LocalDateTime endTime = LocalDateTime.now();
-        long testThreadId = Thread.currentThread().getId(), totalBytes = 100;
+        long testThreadId = Thread.currentThread().threadId(), totalBytes = 100;
         testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, InfluxCache.ThroughputType.READER,0L);
 
         LocalDateTime startTime2 = LocalDateTime.now();
@@ -205,13 +209,13 @@ public class InfluxCacheTest {
 
     @Test
     public void testAddOneReadAndOneWriteMetricsTwoDifferentThreads() {
-        Mockito.when(mockedThreadPoolManager.concurrencyCount()).thenReturn(1);
-        Mockito.when(mockedThreadPoolManager.parallelismCount()).thenReturn(1);
+        Mockito.when(concurrencyStepListener.getConcurrency()).thenReturn(1);
+        Mockito.when(parallelismChunkListener.getParallelism()).thenReturn(1);
         Mockito.when(mockedStepExecution.getJobParameters().getLong(ODSConstants.PIPELINING)).thenReturn(1L);
 
         LocalDateTime startTime = LocalDateTime.now();
         LocalDateTime endTime = LocalDateTime.now();
-        long testThreadId = Thread.currentThread().getId(), totalBytes = 100;
+        long testThreadId = Thread.currentThread().threadId(), totalBytes = 100;
         testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, InfluxCache.ThroughputType.READER,0L);
         Assertions.assertEquals(1, testObj.threadCache.size());
 
@@ -239,13 +243,13 @@ public class InfluxCacheTest {
 
     @Test
     public void testAddTwoReadTwoThreadTwoWriteTwoThreads() {
-        Mockito.when(mockedThreadPoolManager.concurrencyCount()).thenReturn(1);
-        Mockito.when(mockedThreadPoolManager.parallelismCount()).thenReturn(1);
+        Mockito.when(concurrencyStepListener.getConcurrency()).thenReturn(1);
+        Mockito.when(parallelismChunkListener.getParallelism()).thenReturn(1);
         Mockito.when(mockedStepExecution.getJobParameters().getLong(ODSConstants.PIPELINING)).thenReturn(1L);
 
         LocalDateTime startTime = LocalDateTime.now();
         LocalDateTime endTime = LocalDateTime.now();
-        long testThreadId = Thread.currentThread().getId(), totalBytes = 100;
+        long testThreadId = Thread.currentThread().threadId(), totalBytes = 100;
         testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, InfluxCache.ThroughputType.READER,0L);
         Assertions.assertEquals(1, testObj.threadCache.size());
 
@@ -274,20 +278,20 @@ public class InfluxCacheTest {
 
     @Test
     public void testRunAggWithEmptyThreadCache() {
-        testObj = new InfluxCache(mockedThreadPoolManager);
+        testObj = new InfluxCache(concurrencyStepListener, parallelismChunkListener);
         JobMetric jobMetric = testObj.aggregateMetric();
         Assertions.assertNull(jobMetric);
     }
 
     @Test
     public void testRunAggWithOneObject() {
-        Mockito.when(mockedThreadPoolManager.concurrencyCount()).thenReturn(1);
-        Mockito.when(mockedThreadPoolManager.parallelismCount()).thenReturn(1);
+        Mockito.when(concurrencyStepListener.getConcurrency()).thenReturn(1);
+        Mockito.when(parallelismChunkListener.getParallelism()).thenReturn(1);
         Mockito.when(mockedStepExecution.getJobParameters().getLong(ODSConstants.PIPELINING)).thenReturn(1L);
-        testObj = new InfluxCache(mockedThreadPoolManager);
+        testObj = new InfluxCache(concurrencyStepListener, parallelismChunkListener);
         LocalDateTime startTime = LocalDateTime.now();
         LocalDateTime endTime = LocalDateTime.now();
-        long testThreadId = Thread.currentThread().getId(), totalBytes = 100;
+        long testThreadId = Thread.currentThread().threadId(), totalBytes = 100;
         testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, InfluxCache.ThroughputType.READER,0L);
 
         JobMetric jobMetric = testObj.aggregateMetric();
@@ -298,13 +302,13 @@ public class InfluxCacheTest {
 
     @Test
     public void testRunAggWithTwoThreadsTwoMetricEach() {
-        Mockito.when(mockedThreadPoolManager.concurrencyCount()).thenReturn(1);
-        Mockito.when(mockedThreadPoolManager.parallelismCount()).thenReturn(1);
+        Mockito.when(concurrencyStepListener.getConcurrency()).thenReturn(1);
+        Mockito.when(parallelismChunkListener.getParallelism()).thenReturn(1);
         Mockito.when(mockedStepExecution.getJobParameters().getLong(ODSConstants.PIPELINING)).thenReturn(1L);
 
         LocalDateTime startTime = LocalDateTime.now();
         LocalDateTime endTime = LocalDateTime.now();
-        long testThreadId = Thread.currentThread().getId(), totalBytes = 100;
+        long testThreadId = Thread.currentThread().threadId(), totalBytes = 100;
         testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, InfluxCache.ThroughputType.READER,0L);
         testObj.addMetric(testThreadId, mockedStepExecution, totalBytes, startTime, endTime, InfluxCache.ThroughputType.WRITER,0L);
         Assertions.assertEquals(1, testObj.threadCache.size());

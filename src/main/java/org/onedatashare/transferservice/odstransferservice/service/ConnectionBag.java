@@ -35,9 +35,6 @@ public class ConnectionBag {
     boolean compression;
     private TransferOptions transferOptions;
 
-    @Autowired
-    ThreadPoolManager threadPoolManager;
-
     public ConnectionBag() {
         readerMade = false;
         writerMade = false;
@@ -169,7 +166,7 @@ public class ConnectionBag {
     }
 
     public void createHttpReaderPool(AccountEndpointCredential credential, int connectionCount) {
-        this.httpReaderPool = new HttpConnectionPool(credential, this.threadPoolManager);
+        this.httpReaderPool = new HttpConnectionPool(credential);
         this.httpReaderPool.setCompress(false);
         this.httpReaderPool.addObjects(connectionCount);
         this.httpReaderPool.addObject();

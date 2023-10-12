@@ -27,7 +27,6 @@ public class HsqlConfiguration {
         ResourceDatabasePopulator databasePopulator = new ResourceDatabasePopulator();
         databasePopulator.addScript(new ClassPathResource("org/springframework/batch/core/schema-hsqldb.sql"));
         databasePopulator.setContinueOnError(true);
-
         DataSourceInitializer initializer = new DataSourceInitializer();
         initializer.setDataSource(dataSource);
         initializer.setDatabasePopulator(databasePopulator);

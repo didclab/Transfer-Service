@@ -2,24 +2,18 @@ package org.onedatashare.transferservice.odstransferservice.pools;
 
 import org.apache.commons.pool2.ObjectPool;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 
 public class HttpConnectionPool implements ObjectPool<HttpClient> {
-    private final ThreadPoolManager threadPoolManager;
     AccountEndpointCredential credential;
     private boolean compress;
     HttpClient client;
 
 
-    public HttpConnectionPool(AccountEndpointCredential credential, ThreadPoolManager threadPoolManager) {
+    public HttpConnectionPool(AccountEndpointCredential credential) {
         this.credential = credential;
-        this.threadPoolManager = threadPoolManager;
     }
 
     @Override
@@ -27,7 +21,6 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
         this.client = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_2)
                 .followRedirects(HttpClient.Redirect.NORMAL)
-                .executor(Executors.newVirtualThreadPerTaskExecutor())
                 .connectTimeout(Duration.ofSeconds(20))
                 .build();
     }

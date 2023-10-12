@@ -13,6 +13,7 @@ import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
+import java.time.LocalDateTime;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
@@ -34,7 +35,7 @@ public class JobParamService {
         logger.info("Setting job Parameters");
         EndpointType sourceType = request.getSource().getType();
         EndpointType destType = request.getDestination().getType();
-        builder.addLong(TIME, System.currentTimeMillis());
+        builder.addLocalDateTime(TIME, LocalDateTime.now());
         builder.addString(OWNER_ID, request.getOwnerId());
         builder.addString(SOURCE_BASE_PATH, request.getSource().getFileSourcePath());
         builder.addString(SOURCE_CREDENTIAL_ID, request.getSource().getCredId());
@@ -61,7 +62,7 @@ public class JobParamService {
         }
         builder.addLong(JOB_SIZE, totalSize);
         double value = 0;
-        if (request.getSource().getInfoList().size() > 0) {
+        if (!request.getSource().getInfoList().isEmpty()) {
             value = totalSize / (double) request.getSource().getInfoList().size();
         }
         builder.addLong(FILE_SIZE_AVG, (long) value);

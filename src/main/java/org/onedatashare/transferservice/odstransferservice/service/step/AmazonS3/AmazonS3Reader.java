@@ -41,7 +41,6 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
         this.sourceCredential = sourceCredential;
         this.regionAndBucket = this.sourceCredential.getUri().split(":::");
         this.partitioner = new FilePartitioner(fileInfo.getChunkSize());
-        this.s3Client = S3Utility.constructClient(this.sourceCredential, regionAndBucket[0]);
         this.fileInfo = fileInfo;
         this.setName(ClassUtils.getShortName(AmazonS3Reader.class));
     }

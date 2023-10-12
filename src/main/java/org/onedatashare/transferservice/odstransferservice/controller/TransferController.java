@@ -40,7 +40,7 @@ public class TransferController {
     JobControl jc;
 
     @Autowired
-    JobLauncher jobLauncher;
+    JobLauncher asyncJobLauncher;
 
     @Autowired
     JobParamService jobParamService;
@@ -62,11 +62,9 @@ public class TransferController {
             request.getSource().setInfoList(new ArrayList<>(fileExpandedList));
         }
         JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);
-        logger.info(request.toString());
         jc.setRequest(request);
         Job job = jc.concurrentJobDefinition();
-        logger.info(job.toString());
-        JobExecution jobExecution = jobLauncher.run(job, parameters);
+        JobExecution jobExecution = asyncJobLauncher.run(job, parameters);
         this.jobIds.add(jobExecution.getJobId());
         return ResponseEntity.status(HttpStatus.OK).body("Your batch job has been submitted with \n ID: " + jobExecution.getJobId());
     }
