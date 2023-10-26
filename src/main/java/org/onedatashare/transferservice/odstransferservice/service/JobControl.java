@@ -39,7 +39,6 @@ import org.springframework.batch.core.Job;
 import org.springframework.batch.core.job.builder.FlowBuilder;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.job.flow.Flow;
-import org.springframework.batch.core.job.flow.support.SimpleFlow;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.SimpleStepBuilder;
 import org.springframework.batch.core.step.builder.StepBuilder;
@@ -95,6 +94,9 @@ public class JobControl {
     @Autowired
     ConcurrencyStepListener concurrencyStepListener;
 
+    @Autowired
+    ParallelismChunkListener parallelismChunkListener;
+
 
     private List<Flow> createConcurrentFlow(List<EntityInfo> infoList, String basePath) {
         if (this.request.getSource().getType().equals(EndpointType.vfs)) {
@@ -114,9 +116,9 @@ public class JobControl {
             if (ODSUtility.fullyOptimizableProtocols.contains(this.request.getSource().getType()) && ODSUtility.fullyOptimizableProtocols.contains(this.request.getDestination().getType())) {
                 stepBuilder.taskExecutor(new TaskExecutorAdapter(Executors.newVirtualThreadPerTaskExecutor()));
             }
-            this.concurrencyStepListener.changeConcurrency(this.request.getOptions().getConcurrencyThreadCount());
-            stepBuilder.listener(this.concurrencyStepListener)
-                    .listener(new ParallelismChunkListener())
+            stepBuilder
+                    .listener(this.concurrencyStepListener)
+                    .listener(this.parallelismChunkListener)
                     .reader(getRightReader(request.getSource().getType(), file))
                     .writer(getRightWriter(request.getDestination().getType(), file));
 
@@ -219,18 +221,18 @@ public class JobControl {
         JobBuilder jobBuilder = new JobBuilder(this.request.getJobUuid().toString(), this.jobRepository);
         connectionBag.preparePools(this.request);
         List<Flow> flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getFileSourcePath());
-        logger.info("Created flows");
         this.influxIOService.reconfigureBucketForNewJob(this.request.getOwnerId());
+        this.parallelismChunkListener.changeParallelism(this.request.getOptions().getParallelThreadCount());
+        this.concurrencyStepListener.changeConcurrency(this.request.getOptions().getConcurrencyThreadCount());
         Flow[] fl = new Flow[flows.size()];
-        Flow f = new FlowBuilder<SimpleFlow>("splitFlow")
+        Flow f = new FlowBuilder<Flow>("splitFlow")
                 .split(new TaskExecutorAdapter(Executors.newVirtualThreadPerTaskExecutor()))
                 .add(flows.toArray(fl))
                 .build();
-        logger.info("Created new splitFLow, {} before the return of the concurrentJobDef()", f);
         return jobBuilder
                 .listener(jobCompletionListener)
                 .start(f)
-                .build()
+                .end()
                 .build();
     }
 
