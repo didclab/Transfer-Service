@@ -16,6 +16,7 @@ public class ODSConstants {
     public static final String DEST_HOST = "destURI";
     public static final String DEST_PORT = "destPort";
     public static final String CHUNK_SIZE = "chunkSize";
+    public static final String JOB_UUID = "jobUuid";
     public static final String OWNER_ID = "ownerId";
     public static final int SIXTYFOUR_KB = 64000;
     public static final int FIVE_MB = 5 * 1024 * 1024;

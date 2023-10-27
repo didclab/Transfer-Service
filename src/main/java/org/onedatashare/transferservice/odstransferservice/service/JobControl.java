@@ -113,10 +113,8 @@ public class JobControl {
             SimpleStepBuilder<DataChunk, DataChunk> stepBuilder = new StepBuilder(idForStep, this.jobRepository)
                     .chunk(this.request.getOptions().getPipeSize(), this.platformTransactionManager);
 
-            if (ODSUtility.fullyOptimizableProtocols.contains(this.request.getSource().getType()) && ODSUtility.fullyOptimizableProtocols.contains(this.request.getDestination().getType())) {
-                stepBuilder.taskExecutor(new TaskExecutorAdapter(Executors.newVirtualThreadPerTaskExecutor()));
-            }
             stepBuilder
+                    .taskExecutor(new TaskExecutorAdapter(Executors.newVirtualThreadPerTaskExecutor()))
                     .listener(this.concurrencyStepListener)
                     .listener(this.parallelismChunkListener)
                     .reader(getRightReader(request.getSource().getType(), file))
