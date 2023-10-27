@@ -44,7 +44,7 @@ public class JobParamService {
         builder.addString(DEST_CREDENTIAL_ID, request.getDestination().getCredId());
         builder.addString(DEST_CREDENTIAL_TYPE, destType.toString());
         if (request.getJobUuid() != null) {
-            builder.addString("jobUuid", request.getJobUuid().toString());
+            builder.addString(JOB_UUID, request.getJobUuid().toString());
         }
         //here we are adding the starting optimization parameters to JobParameters
         builder.addLong(CONCURRENCY, (long) request.getOptions().getConcurrencyThreadCount());

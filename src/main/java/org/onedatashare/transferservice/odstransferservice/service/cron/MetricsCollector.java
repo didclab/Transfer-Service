@@ -1,6 +1,5 @@
 package org.onedatashare.transferservice.odstransferservice.service.cron;
 
-import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -21,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
@@ -119,6 +119,7 @@ public class MetricsCollector {
             lastPmeterData.setParallelism(currentAggregateMetric.getParallelism());
             lastPmeterData.setPipelining(currentAggregateMetric.getPipelining());
             lastPmeterData.setChunksize(currentAggregateMetric.getChunkSize());
+            lastPmeterData.setJobUuid(UUID.fromString(currentAggregateMetric.getStepExecution().getJobParameters().getString(JOB_UUID)));
             //JobMetric stuff
             lastPmeterData.setReadThroughput(currentAggregateMetric.getReadThroughput());
             lastPmeterData.setWriteThroughput(currentAggregateMetric.getWriteThroughput());

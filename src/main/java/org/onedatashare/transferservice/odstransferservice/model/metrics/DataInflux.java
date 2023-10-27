@@ -6,8 +6,11 @@ import com.influxdb.annotations.Column;
 import com.influxdb.annotations.Measurement;
 import lombok.Data;
 
+import java.util.UUID;
+
 import static org.onedatashare.transferservice.odstransferservice.constant.DataInfluxConstants.*;
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.CHUNK_SIZE;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.JOB_UUID;
 
 @Data
 @Measurement(name = "transfer_data")
@@ -51,7 +54,7 @@ public class DataInflux {
     private Double packetLossRate;
     //NIC values
     @JsonProperty(value = BYTES_SENT)
-    @Column( name = BYTES_SENT)
+    @Column(name = BYTES_SENT)
     private Long bytesSent;
 
     @JsonProperty(value = BYTES_RECEIVED)
@@ -117,7 +120,7 @@ public class DataInflux {
     private Double readThroughput;
     @Column(name = WRITE_THROUGHPUT)
     private Double writeThroughput;
-    @Column(name=BYTES_UPLOADED)
+    @Column(name = BYTES_UPLOADED)
     private Long bytesWritten;
     @Column(name = BYTES_DOWNLOADED)
     private Long bytesRead;
@@ -148,9 +151,12 @@ public class DataInflux {
 
     @Column(name = DESTINATION_TYPE, tag = true)
     private String destType;
-    @Column(name  = DESTINATION_CRED_IT, tag = true)
+    @Column(name = DESTINATION_CRED_IT, tag = true)
     private String destCredId;
 
     @Column(name = CHUNK_SIZE)
     private Long chunksize;
+
+    @Column(name = JOB_UUID, tag = true)
+    private UUID jobUuid;
 }
