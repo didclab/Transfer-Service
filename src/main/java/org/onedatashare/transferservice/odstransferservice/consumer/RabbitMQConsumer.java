@@ -85,8 +85,12 @@ public class RabbitMQConsumer {
         try {
             TransferApplicationParams params = objectMapper.readValue(jsonStr, TransferApplicationParams.class);
             logger.info("Parsed TransferApplicationParams: {}", params);
-            this.concurrencyStepListener.changeConcurrency(params.getConcurrency());
-            this.parallelismChunkListener.changeParallelism(params.getParallelism());
+            if (params.getConcurrency() > 0) {
+                this.concurrencyStepListener.changeConcurrency(params.getConcurrency());
+            }
+            if (params.getParallelism() > 0) {
+                this.parallelismChunkListener.changeParallelism(params.getParallelism());
+            }
         } catch (Exception e) {
             logger.info("Did not apply transfer params due to parsing message failure");
         }
