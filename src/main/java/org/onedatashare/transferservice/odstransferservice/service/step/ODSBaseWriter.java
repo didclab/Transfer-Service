@@ -38,7 +38,6 @@ public class ODSBaseWriter {
     @BeforeWrite
     public void beforeWrite() {
         LocalDateTime startWriteTime = LocalDateTime.now();
-        logger.info("Thread {} beforeWrite", Thread.currentThread());
         this.writeStartTimes.put(Thread.currentThread().getId(), startWriteTime);
     }
 
@@ -69,7 +68,6 @@ public class ODSBaseWriter {
         }
         LocalDateTime readStartTime = this.readStartTimes.get(Thread.currentThread().getId());
         if (readStartTime == null) return;
-        logger.info("Thread {} after Read", Thread.currentThread());
         influxCache.addMetric(Thread.currentThread().getId(), stepExecution, item.getSize(), readStartTime, endTime, InfluxCache.ThroughputType.READER, item.getSize());
     }
 }
