@@ -25,8 +25,6 @@ public class ODSBaseWriter {
     MetricsCollector metricsCollector;
 
     InfluxCache influxCache;
-    Logger logger = LoggerFactory.getLogger(ODSBaseWriter.class);
-
 
     public ODSBaseWriter(MetricsCollector metricsCollector, InfluxCache influxCache) {
         this.readStartTimes = new HashMap<>();
@@ -47,7 +45,6 @@ public class ODSBaseWriter {
         LocalDateTime writeEndTime = LocalDateTime.now();
         long totalBytes = items.stream().mapToLong(DataChunk::getSize).sum();
         LocalDateTime writeStartTime = this.writeStartTimes.get(Thread.currentThread().getId());
-        logger.info("Thread {} afterWrite", Thread.currentThread());
         //this is a cache for the optimizer directly in. This i actually think should be deleted and all data querying maybe ideally is done through the monitoring interface
         influxCache.addMetric(Thread.currentThread().getId(), stepExecution, totalBytes, writeStartTime, writeEndTime, InfluxCache.ThroughputType.WRITER, items.get(0).getSize());
 
@@ -57,7 +54,6 @@ public class ODSBaseWriter {
     public void beforeRead() {
         LocalDateTime startReadTime = LocalDateTime.now();
         this.readStartTimes.put(Thread.currentThread().getId(), startReadTime);
-        logger.info("Thread {} beforeRead",Thread.currentThread());
     }
 
     @AfterRead
