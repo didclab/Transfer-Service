@@ -34,20 +34,15 @@ public class ParallelismChunkListener implements ChunkListener {
                 logger.error("Failed to acquire locks: " + diff);
             }
         }
-        logger.info("Parallelism: Changed from {} to {}", this.parallelism, nextParallelism);
         this.parallelism = nextParallelism;
     }
 
     public void beforeChunk(ChunkContext context) {
         this.semaphore.acquireUninterruptibly();
-        logger.info("Thread: {} acquired Parallel permit StepName={}", Thread.currentThread(), context.getStepContext().getStepName());
-
-
     }
 
     public void afterChunk(ChunkContext context) {
         this.semaphore.release();
-        logger.info("Thread: {} releasing Parallel permit StepName={}", Thread.currentThread(), context.getStepContext().getStepName());
     }
 
     public void afterChunkError(ChunkContext context) {
