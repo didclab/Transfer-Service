@@ -45,6 +45,7 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.task.VirtualThreadTaskExecutor;
 import org.springframework.core.task.support.TaskExecutorAdapter;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -99,6 +100,7 @@ public class JobControl {
 
 
     private List<Flow> createConcurrentFlow(List<EntityInfo> infoList, String basePath) {
+        VirtualThreadTaskExecutor virtualThreadTaskExecutor = new VirtualThreadTaskExecutor();
         if (this.request.getSource().getType().equals(EndpointType.vfs)) {
             infoList = vfsExpander.expandDirectory(infoList, basePath);
             logger.info("File list: {}", infoList);
@@ -114,7 +116,7 @@ public class JobControl {
                     .chunk(this.request.getOptions().getPipeSize(), this.platformTransactionManager);
 
             stepBuilder
-                    .taskExecutor(new TaskExecutorAdapter(Executors.newVirtualThreadPerTaskExecutor()))
+                    .taskExecutor(virtualThreadTaskExecutor)
                     .listener(this.concurrencyStepListener)
                     .listener(this.parallelismChunkListener)
                     .reader(getRightReader(request.getSource().getType(), file))
