@@ -76,7 +76,7 @@ public class ConnectionBag {
         if (request.getSource().getType().equals(EndpointType.http)) {
             readerMade = true;
             readerType = EndpointType.http;
-            this.createHttpReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount()* request.getOptions().getParallelThreadCount());
+            this.createHttpReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount());
         }
         if (request.getDestination().getType().equals(EndpointType.gdrive)) {
             writerMade = true;

@@ -5,6 +5,7 @@ import org.onedatashare.transferservice.odstransferservice.model.credential.Acco
 
 import java.net.http.HttpClient;
 import java.time.Duration;
+import java.util.concurrent.Executors;
 
 public class HttpConnectionPool implements ObjectPool<HttpClient> {
     AccountEndpointCredential credential;
@@ -21,6 +22,7 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
         this.client = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_2)
                 .followRedirects(HttpClient.Redirect.NORMAL)
+                .executor(Executors.newVirtualThreadPerTaskExecutor())
                 .connectTimeout(Duration.ofSeconds(20))
                 .build();
     }
