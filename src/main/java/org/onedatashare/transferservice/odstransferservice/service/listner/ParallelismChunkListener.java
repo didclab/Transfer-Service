@@ -34,6 +34,7 @@ public class ParallelismChunkListener implements ChunkListener {
                 logger.error("Failed to acquire locks: " + diff);
             }
         }
+        logger.info("Parallelism changed from: {} to {}", this.parallelism, nextParallelism);
         this.parallelism = nextParallelism;
     }
 
