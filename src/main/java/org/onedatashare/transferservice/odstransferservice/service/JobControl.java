@@ -120,7 +120,8 @@ public class JobControl {
                     .listener(this.concurrencyStepListener)
                     .listener(this.parallelismChunkListener)
                     .reader(getRightReader(request.getSource().getType(), file))
-                    .writer(getRightWriter(request.getDestination().getType(), file));
+                    .writer(getRightWriter(request.getDestination().getType(), file))
+                    .throttleLimit(200);
 
             return new FlowBuilder<Flow>(basePath + idForStep)
                     .start(stepBuilder.build()).build();
