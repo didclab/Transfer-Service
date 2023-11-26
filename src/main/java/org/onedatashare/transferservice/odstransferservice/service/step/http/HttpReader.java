@@ -102,6 +102,7 @@ public class HttpReader implements SetPool, ItemReader<DataChunk> {
             request = rangeMode(uri, filePart, this.range);
         }
         HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+        System.out.println(Thread.currentThread().toString() + "File Chunk: " + filePart.toString());
         DataChunk chunk = ODSUtility.makeChunk(response.body().length, response.body(), filePart.getStart(), Long.valueOf(filePart.getPartIdx()).intValue(), this.fileName);
         return chunk;
     }
