@@ -39,11 +39,11 @@ public class ParallelismChunkListener implements ChunkListener {
     }
 
     public void beforeChunk(ChunkContext context) {
-        this.semaphore.acquireUninterruptibly();
+//        this.semaphore.acquireUninterruptibly();
     }
 
     public void afterChunk(ChunkContext context) {
-        this.semaphore.release();
+//        this.semaphore.release();
     }
 
     public void afterChunkError(ChunkContext context) {
