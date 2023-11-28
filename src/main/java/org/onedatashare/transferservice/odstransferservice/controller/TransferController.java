@@ -62,7 +62,6 @@ public class TransferController {
         this.jobIds = jobIds;
     }
 
-
     @RequestMapping(value = "/start", method = RequestMethod.POST)
     @Async
     public ResponseEntity<String> start(@RequestBody TransferJobRequest request) throws Exception {
@@ -75,6 +74,7 @@ public class TransferController {
         jc.setRequest(request);
         Job job = jc.concurrentJobDefinition();
         JobExecution jobExecution = asyncJobLauncher.run(job, parameters);
+        this.jobIds.add(jobExecution.getJobId());
         return ResponseEntity.status(HttpStatus.OK).body("Your batch job has been submitted with \n ID: " + jobExecution.getJobId());
     }
 
@@ -82,7 +82,7 @@ public class TransferController {
     @Async
     public ResponseEntity<String> pause() throws Exception{
         logger.info("Pause Controller Entry point");
-        Long runningJobId = null;
+        Long runningJobId = 0L;
         for(Long jobId : jobIds){
             JobExecution jobExecution = jobExplorer.getJobExecution(jobId);
             if(jobExecution != null && jobExecution.isRunning()){
@@ -91,7 +91,7 @@ public class TransferController {
             }
         }
 
-        if(runningJobId == null){
+        if(runningJobId == 0L){
             return ResponseEntity.status(HttpStatus.OK).body("No running job found");
         }
 
