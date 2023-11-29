@@ -7,11 +7,10 @@ import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
+import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManager;
 import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.InfluxIOService;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
-import org.onedatashare.transferservice.odstransferservice.service.listner.ConcurrencyStepListener;
 import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
-import org.onedatashare.transferservice.odstransferservice.service.listner.ParallelismChunkListener;
 import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3LargeFileWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3Reader;
 import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3SmallFileWriter;
@@ -32,7 +31,6 @@ import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFT
 import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SFTPWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsWriter;
-import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
@@ -45,13 +43,10 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.task.VirtualThreadTaskExecutor;
-import org.springframework.core.task.support.TaskExecutorAdapter;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.FIVE_MB;
@@ -93,14 +88,10 @@ public class JobControl {
     InfluxIOService influxIOService;
 
     @Autowired
-    ConcurrencyStepListener concurrencyStepListener;
-
-    @Autowired
-    ParallelismChunkListener parallelismChunkListener;
+    ThreadPoolManager threadPoolManager;
 
 
     private List<Flow> createConcurrentFlow(List<EntityInfo> infoList, String basePath) {
-        VirtualThreadTaskExecutor virtualThreadTaskExecutor = new VirtualThreadTaskExecutor();
         if (this.request.getSource().getType().equals(EndpointType.vfs)) {
             infoList = vfsExpander.expandDirectory(infoList, basePath);
             logger.info("File list: {}", infoList);
@@ -116,12 +107,9 @@ public class JobControl {
                     .chunk(this.request.getOptions().getPipeSize(), this.platformTransactionManager);
 
             stepBuilder
-                    .taskExecutor(virtualThreadTaskExecutor)
-                    .listener(this.concurrencyStepListener)
-                    .listener(this.parallelismChunkListener)
+                    .taskExecutor(threadPoolManager.parallelThreadPool(request.getOptions().getParallelThreadCount(), file.getPath()))
                     .reader(getRightReader(request.getSource().getType(), file))
-                    .writer(getRightWriter(request.getDestination().getType(), file))
-                    .throttleLimit(200);
+                    .writer(getRightWriter(request.getDestination().getType(), file));
 
             return new FlowBuilder<Flow>(basePath + idForStep)
                     .start(stepBuilder.build()).build();
@@ -223,11 +211,9 @@ public class JobControl {
         connectionBag.preparePools(this.request);
         List<Flow> flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getFileSourcePath());
         this.influxIOService.reconfigureBucketForNewJob(this.request.getOwnerId());
-        this.parallelismChunkListener.changeParallelism(this.request.getOptions().getParallelThreadCount());
-        this.concurrencyStepListener.changeConcurrency(this.request.getOptions().getConcurrencyThreadCount());
         Flow[] fl = new Flow[flows.size()];
         Flow f = new FlowBuilder<Flow>("splitFlow")
-                .split(new TaskExecutorAdapter(Executors.newVirtualThreadPerTaskExecutor()))
+                .split(this.threadPoolManager.stepTaskExecutor(this.request.getOptions().getConcurrencyThreadCount()))
                 .add(flows.toArray(fl))
                 .build();
         return jobBuilder

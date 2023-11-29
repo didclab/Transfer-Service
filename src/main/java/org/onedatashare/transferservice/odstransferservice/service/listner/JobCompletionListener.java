@@ -3,6 +3,7 @@ package org.onedatashare.transferservice.odstransferservice.service.listner;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.optimizer.OptimizerCreateRequest;
 import org.onedatashare.transferservice.odstransferservice.model.optimizer.OptimizerDeleteRequest;
+import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManager;
 import org.onedatashare.transferservice.odstransferservice.service.ConnectionBag;
 import org.onedatashare.transferservice.odstransferservice.service.OptimizerService;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
@@ -20,6 +21,7 @@ import java.time.Duration;
 
 @Service
 public class JobCompletionListener implements JobExecutionListener {
+    private final ThreadPoolManager threadPoolManager;
     Logger logger = LoggerFactory.getLogger(JobCompletionListener.class);
 
     ConnectionBag connectionBag;
@@ -45,11 +47,12 @@ public class JobCompletionListener implements JobExecutionListener {
     @Autowired
     Environment environment;
 
-    public JobCompletionListener(OptimizerService optimizerService, MetricsCollector metricsCollector, ConnectionBag connectionBag) {
+    public JobCompletionListener(OptimizerService optimizerService, MetricsCollector metricsCollector, ConnectionBag connectionBag, ThreadPoolManager threadPoolManager) {
         this.optimizerService = optimizerService;
         this.metricsCollector = metricsCollector;
         this.connectionBag = connectionBag;
         this.optimizerEnable = false;
+        this.threadPoolManager = threadPoolManager;
     }
 
 
@@ -76,6 +79,7 @@ public class JobCompletionListener implements JobExecutionListener {
             this.optimizerService.deleteOptimizerBlocking(new OptimizerDeleteRequest(appName));
             this.optimizerEnable = false;
         }
+        this.threadPoolManager.clearJobPool();
         System.gc();
     }
 }

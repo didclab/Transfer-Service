@@ -34,7 +34,7 @@ public class InfluxCacheTest {
 
     @BeforeEach
     public void init() {
-        testObj = new InfluxCache(concurrencyStepListener, parallelismChunkListener);
+//        testObj = new InfluxCache(concurrencyStepListener, parallelismChunkListener);
     }
 
 
@@ -278,7 +278,7 @@ public class InfluxCacheTest {
 
     @Test
     public void testRunAggWithEmptyThreadCache() {
-        testObj = new InfluxCache(concurrencyStepListener, parallelismChunkListener);
+//        testObj = new InfluxCache(concurrencyStepListener, parallelismChunkListener);
         JobMetric jobMetric = testObj.aggregateMetric();
         Assertions.assertNull(jobMetric);
     }
@@ -288,7 +288,7 @@ public class InfluxCacheTest {
         Mockito.when(concurrencyStepListener.getConcurrency()).thenReturn(1);
         Mockito.when(parallelismChunkListener.getParallelism()).thenReturn(1);
         Mockito.when(mockedStepExecution.getJobParameters().getLong(ODSConstants.PIPELINING)).thenReturn(1L);
-        testObj = new InfluxCache(concurrencyStepListener, parallelismChunkListener);
+//        testObj = new InfluxCache(concurrencyStepListener, parallelismChunkListener);
         LocalDateTime startTime = LocalDateTime.now();
         LocalDateTime endTime = LocalDateTime.now();
         long testThreadId = Thread.currentThread().threadId(), totalBytes = 100;
