@@ -6,19 +6,14 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Executors;
 
 public class HttpConnectionPool implements ObjectPool<HttpClient> {
     AccountEndpointCredential credential;
     private boolean compress;
     HttpClient client;
-    List<ThreadPoolTaskExecutor> threadPoolTaskExecutorList;
 
     public HttpConnectionPool(AccountEndpointCredential credential) {
         this.credential = credential;
-        this.threadPoolTaskExecutorList = new ArrayList<>();
     }
 
     @Override

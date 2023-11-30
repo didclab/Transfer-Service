@@ -5,6 +5,7 @@ import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -18,15 +19,32 @@ public class ThreadPoolManager {
 
     @Getter
     HashMap<String, SimpleAsyncTaskExecutor> executorHashmap;
+    HashMap<String, ThreadPoolTaskExecutor> platformThreadMap;
 
     Logger logger = LoggerFactory.getLogger(ThreadPoolManager.class);
 
     @PostConstruct
     public void createMap() {
         this.executorHashmap = new HashMap<>();
+        this.platformThreadMap = new HashMap<>();
     }
 
-    public SimpleAsyncTaskExecutor createThreadPool(int corePoolSize, String prefix) {
+    public ThreadPoolTaskExecutor createPlatformThreads(int corePoolSize, String prefix){
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+//        executor.setQueueCapacity(1);
+        executor.setAllowCoreThreadTimeOut(false);
+        executor.setCorePoolSize(corePoolSize);
+//        executor.setMaxPoolSize(corePoolSize);
+        executor.setThreadNamePrefix(prefix);
+        executor.initialize();
+        if (this.executorHashmap == null) {
+            this.executorHashmap = new HashMap<>();
+        }
+        this.platformThreadMap.put(prefix, executor);
+        return executor;
+    }
+
+    public SimpleAsyncTaskExecutor createVirtualThreadExecutor(int corePoolSize, String prefix) {
 
         SimpleAsyncTaskExecutor executor = new SimpleAsyncTaskExecutor();
         executor.setThreadNamePrefix(prefix);
@@ -54,37 +72,40 @@ public class ThreadPoolManager {
                     logger.info("Set {} pool size to {}", pool.getThreadNamePrefix(), concurrency);
                 }
             }
+        }
+        for(String key: this.platformThreadMap.keySet()){
+            ThreadPoolTaskExecutor pool = this.platformThreadMap.get(key);
             if (key.contains(PARALLEL_POOL_PREFIX)) {
-                logger.info("Changing {} pool size from {} to {}", pool.getThreadNamePrefix(), pool.getConcurrencyLimit(), parallel);
-                if (parallel > 0 && parallel != pool.getConcurrencyLimit()) {
+                logger.info("Changing {} pool size from {} to {}", pool.getThreadNamePrefix(), pool.getCorePoolSize(), parallel);
+                if (parallel > 0 && parallel != pool.getPoolSize()) {
 //                    pool.setMaxPoolSize(parallel);
-                    pool.setConcurrencyLimit(parallel);
+                    pool.setCorePoolSize(parallel);
                 }
             }
         }
     }
 
     public void clearJobPool() {
-        Iterator<Map.Entry<String, SimpleAsyncTaskExecutor>> iterator = this.executorHashmap.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<String, SimpleAsyncTaskExecutor> cur = iterator.next();
-            SimpleAsyncTaskExecutor pool = cur.getValue();
-            String key = cur.getKey();
-            if (key.contains(STEP_POOL_PREFIX) || key.contains(PARALLEL_POOL_PREFIX)) {
-                pool.close();
-                iterator.remove();
-            }
+        for(String key : this.platformThreadMap.keySet()){
+            ThreadPoolTaskExecutor pool = this.platformThreadMap.get(key);
+            pool.shutdown();
         }
+        for(String key: this.executorHashmap.keySet()){
+            SimpleAsyncTaskExecutor pool = this.executorHashmap.get(key);
+            pool.close();
+        }
+        this.executorHashmap.clear();
+        this.platformThreadMap.clear();
     }
 
     public SimpleAsyncTaskExecutor sequentialThreadPool() {
-        return this.createThreadPool(1, SEQUENTIAL_POOL_PREFIX);
+        return this.createVirtualThreadExecutor(1, SEQUENTIAL_POOL_PREFIX);
     }
 
     public SimpleAsyncTaskExecutor stepTaskExecutor(int threadCount) {
         SimpleAsyncTaskExecutor te = this.executorHashmap.get(STEP_POOL_PREFIX);
         if (te == null) {
-            return this.createThreadPool(threadCount, STEP_POOL_PREFIX);
+            return this.createVirtualThreadExecutor(threadCount, STEP_POOL_PREFIX);
         }
         return te;
     }
@@ -92,13 +113,13 @@ public class ThreadPoolManager {
     public SimpleAsyncTaskExecutor parallelThreadPool(int threadCount) {
         SimpleAsyncTaskExecutor te = this.executorHashmap.get(PARALLEL_POOL_PREFIX);
         if (te == null) {
-            te = this.createThreadPool(threadCount, PARALLEL_POOL_PREFIX);
+            te = this.createVirtualThreadExecutor(threadCount, PARALLEL_POOL_PREFIX);
         }
         return te;
     }
 
-    public SimpleAsyncTaskExecutor parallelThreadPool(int threadCount, String fileName) {
-        return this.createThreadPool(threadCount, new StringBuilder().append(fileName).append("-").append(PARALLEL_POOL_PREFIX).toString());
+    public ThreadPoolTaskExecutor parallelThreadPool(int threadCount, String fileName) {
+        return this.createPlatformThreads(threadCount, new StringBuilder().append(fileName).append("-").append(PARALLEL_POOL_PREFIX).toString());
     }
 
     public Integer concurrencyCount() {
