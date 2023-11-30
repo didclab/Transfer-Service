@@ -140,6 +140,14 @@ public class ThreadPoolManager {
                 }
             }
         }
+        for (String key : this.platformThreadMap.keySet()) {
+            if (key.contains(PARALLEL_POOL_PREFIX)) {
+                parallelism = this.executorHashmap.get(key).getConcurrencyLimit();
+                if (parallelism > 0) {
+                    return parallelism;
+                }
+            }
+        }
         return parallelism;
     }
 
