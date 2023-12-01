@@ -109,9 +109,7 @@ public class JobControl {
                     .chunk(this.request.getOptions().getPipeSize(), this.platformTransactionManager);
 
             stepBuilder
-//                    .taskExecutor(threadPoolManager.parallelThreadPool(request.getOptions().getParallelThreadCount(), file.getPath()))
-                    .taskExecutor(new VirtualThreadTaskExecutor())
-                    .listener(new ParallelismChunkListener(this.request.getOptions().getParallelThreadCount()))
+                    .taskExecutor(threadPoolManager.parallelThreadPool(request.getOptions().getParallelThreadCount(), file.getPath()))
                     .reader(getRightReader(request.getSource().getType(), file))
                     .writer(getRightWriter(request.getDestination().getType(), file));
 

@@ -117,8 +117,8 @@ public class ThreadPoolManager {
         return te;
     }
 
-    public SimpleAsyncTaskExecutor parallelThreadPool(int threadCount, String fileName) {
-        return this.createVirtualThreadExecutor(threadCount, new StringBuilder().append(fileName).append("-").append(PARALLEL_POOL_PREFIX).toString());
+    public ThreadPoolTaskExecutor parallelThreadPool(int threadCount, String fileName) {
+        return this.createPlatformThreads(threadCount, new StringBuilder().append(fileName).append("-").append(PARALLEL_POOL_PREFIX).toString());
     }
 
     public Integer concurrencyCount() {
