@@ -216,6 +216,8 @@ public class JobControl {
         List<Flow> flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getFileSourcePath());
         this.influxIOService.reconfigureBucketForNewJob(this.request.getOwnerId());
         Flow[] fl = new Flow[flows.size()];
+        System.setProperty("jdk.virtualThreadScheduler.parallelism", "192");
+        System.setProperty("jdk.virtualThreadScheduler.maxPoolSize", "500");
         Flow f = new FlowBuilder<Flow>("splitFlow")
                 .split(this.threadPoolManager.stepTaskExecutor(this.request.getOptions().getConcurrencyThreadCount()))
                 .add(flows.toArray(fl))
