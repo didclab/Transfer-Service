@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import java.util.concurrent.Semaphore;
 
 
-@Service
 public class ParallelismChunkListener implements ChunkListener {
 
     Semaphore semaphore;
@@ -20,6 +19,10 @@ public class ParallelismChunkListener implements ChunkListener {
 
     public ParallelismChunkListener() {
         this.semaphore = new Semaphore(1);
+    }
+
+    public ParallelismChunkListener(int parallelThreads){
+        this.semaphore = new Semaphore(parallelThreads);
     }
 
     public void changeParallelism(int nextParallelism) {
@@ -39,13 +42,14 @@ public class ParallelismChunkListener implements ChunkListener {
     }
 
     public void beforeChunk(ChunkContext context) {
-//        this.semaphore.acquireUninterruptibly();
+        this.semaphore.acquireUninterruptibly();
     }
 
     public void afterChunk(ChunkContext context) {
-//        this.semaphore.release();
+        this.semaphore.release();
     }
 
     public void afterChunkError(ChunkContext context) {
+        this.semaphore.release();
     }
 }
