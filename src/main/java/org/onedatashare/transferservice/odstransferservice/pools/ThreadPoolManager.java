@@ -1,6 +1,5 @@
 package org.onedatashare.transferservice.odstransferservice.pools;
 
-import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,8 +8,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
@@ -22,9 +19,7 @@ public class ThreadPoolManager {
     HashMap<String, ThreadPoolTaskExecutor> platformThreadMap;
 
     Logger logger = LoggerFactory.getLogger(ThreadPoolManager.class);
-
-    @PostConstruct
-    public void createMap() {
+    public ThreadPoolManager() {
         this.executorHashmap = new HashMap<>();
         this.platformThreadMap = new HashMap<>();
     }
@@ -45,7 +40,6 @@ public class ThreadPoolManager {
     }
 
     public SimpleAsyncTaskExecutor createVirtualThreadExecutor(int corePoolSize, String prefix) {
-
         SimpleAsyncTaskExecutor executor = new SimpleAsyncTaskExecutor();
         executor.setThreadNamePrefix(prefix);
         executor.setVirtualThreads(true);
@@ -118,8 +112,8 @@ public class ThreadPoolManager {
         return te;
     }
 
-    public ThreadPoolTaskExecutor parallelThreadPool(int threadCount, String fileName) {
-        return this.createPlatformThreads(threadCount, new StringBuilder().append(fileName).append("-").append(PARALLEL_POOL_PREFIX).toString());
+    public SimpleAsyncTaskExecutor parallelThreadPool(int threadCount, String fileName) {
+        return this.createVirtualThreadExecutor(threadCount, new StringBuilder().append(fileName).append("-").append(PARALLEL_POOL_PREFIX).toString());
     }
 
     public Integer concurrencyCount() {
