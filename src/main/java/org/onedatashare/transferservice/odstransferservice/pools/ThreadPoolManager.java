@@ -131,14 +131,14 @@ public class ThreadPoolManager {
 
     public Integer parallelismCount() {
         int parallelism = 0;
-        for (String key : this.executorHashmap.keySet()) {
-            if (key.contains(PARALLEL_POOL_PREFIX)) {
-                parallelism = this.executorHashmap.get(key).getConcurrencyLimit();
-                if (parallelism > 0) {
-                    return parallelism;
-                }
-            }
-        }
+//        for (String key : this.executorHashmap.keySet()) {
+//            if (key.contains(PARALLEL_POOL_PREFIX)) {
+//                parallelism = this.executorHashmap.get(key).getConcurrencyLimit();
+//                if (parallelism > 0) {
+//                    return parallelism;
+//                }
+//            }
+//        }
         for (String key : this.platformThreadMap.keySet()) {
             if (key.contains(PARALLEL_POOL_PREFIX)) {
                 parallelism = this.executorHashmap.get(key).getConcurrencyLimit();
