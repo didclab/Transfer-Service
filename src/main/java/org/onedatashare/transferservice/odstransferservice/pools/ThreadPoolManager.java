@@ -35,6 +35,7 @@ public class ThreadPoolManager {
         if (this.executorHashmap == null) {
             this.executorHashmap = new HashMap<>();
         }
+        logger.info("Created ThreadPoolTaskExecutor: Prefix:{} with size:{}", prefix, corePoolSize);
         this.platformThreadMap.put(prefix, executor);
         return executor;
     }
@@ -47,6 +48,7 @@ public class ThreadPoolManager {
         if (this.executorHashmap == null) {
             this.executorHashmap = new HashMap<>();
         }
+        logger.info("Created a SimpleAsyncTaskExecutor: Prefix:{} with size:{}", prefix, corePoolSize);
         this.executorHashmap.put(prefix, executor);
         return executor;
     }
@@ -83,13 +85,16 @@ public class ThreadPoolManager {
         for(String key : this.platformThreadMap.keySet()){
             ThreadPoolTaskExecutor pool = this.platformThreadMap.get(key);
             pool.shutdown();
+            logger.info("Shutting ThreadPoolTaskExecutor down {}", pool.getThreadNamePrefix());
         }
         for(String key: this.executorHashmap.keySet()){
             SimpleAsyncTaskExecutor pool = this.executorHashmap.get(key);
             pool.close();
+            logger.info("Shutting SimpleAsyncTaskExec down {}", pool.getThreadNamePrefix());
         }
         this.executorHashmap.clear();
         this.platformThreadMap.clear();
+        logger.info("Cleared all thread pools");
     }
 
     public SimpleAsyncTaskExecutor sequentialThreadPool() {
