@@ -55,7 +55,7 @@ public class BatchJobData {
         for (String key : map.keySet()) {
             JobParameter jobParameter = map.get(key);
             if (jobParameter != null) {
-                nextMap.put(key, jobParameter.toString());
+                nextMap.put(key, jobParameter.getValue().toString());
             }
         }
         LocalDateTime createTime = jobExecution.getCreateTime();
