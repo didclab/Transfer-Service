@@ -107,11 +107,12 @@ public class JobControl {
             }
             SimpleStepBuilder<DataChunk, DataChunk> stepBuilder = new StepBuilder(idForStep, this.jobRepository)
                     .chunk(this.request.getOptions().getPipeSize(), this.platformTransactionManager);
-
             stepBuilder
-                    .taskExecutor(threadPoolManager.parallelThreadPool(request.getOptions().getParallelThreadCount(), file.getPath()))
                     .reader(getRightReader(request.getSource().getType(), file))
                     .writer(getRightWriter(request.getDestination().getType(), file));
+            if(this.request.getOptions().getParallelThreadCount() > 0){
+                stepBuilder.taskExecutor(threadPoolManager.parallelThreadPool(request.getOptions().getParallelThreadCount(), file.getPath()));
+            }
 
             return new FlowBuilder<Flow>(basePath + idForStep)
                     .start(stepBuilder.build()).build();
