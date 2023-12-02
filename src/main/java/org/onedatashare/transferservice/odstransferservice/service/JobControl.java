@@ -45,6 +45,7 @@ import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.task.VirtualThreadTaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -94,6 +95,7 @@ public class JobControl {
     ThreadPoolManager threadPoolManager;
 
     private List<Flow> createConcurrentFlow(List<EntityInfo> infoList, String basePath) {
+        ThreadPoolTaskExecutor threadPoolTaskExecutor = threadPoolManager.parallelThreadPool(request.getOptions().getParallelThreadCount() * request.getOptions().getConcurrencyThreadCount(), "all");
         if (this.request.getSource().getType().equals(EndpointType.vfs)) {
             infoList = vfsExpander.expandDirectory(infoList, basePath);
             logger.info("File list: {}", infoList);
@@ -111,7 +113,7 @@ public class JobControl {
                     .reader(getRightReader(request.getSource().getType(), file))
                     .writer(getRightWriter(request.getDestination().getType(), file));
             if(this.request.getOptions().getParallelThreadCount() > 0){
-                stepBuilder.taskExecutor(threadPoolManager.parallelThreadPool(request.getOptions().getParallelThreadCount(), file.getPath()));
+                stepBuilder.taskExecutor(threadPoolTaskExecutor);
             }
 
             return new FlowBuilder<Flow>(basePath + idForStep)
