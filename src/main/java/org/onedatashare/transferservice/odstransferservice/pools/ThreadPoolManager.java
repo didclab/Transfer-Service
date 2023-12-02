@@ -109,6 +109,14 @@ public class ThreadPoolManager {
         return te;
     }
 
+    public ThreadPoolTaskExecutor stepTaskExecutorPlatform(int threadCount){
+        ThreadPoolTaskExecutor te = this.platformThreadMap.get(STEP_POOL_PREFIX);
+        if(te == null){
+            return this.createPlatformThreads(threadCount, STEP_POOL_PREFIX);
+        }
+        return te;
+    }
+
     public SimpleAsyncTaskExecutor parallelThreadPool(int threadCount) {
         SimpleAsyncTaskExecutor te = this.executorHashmap.get(PARALLEL_POOL_PREFIX);
         if (te == null) {

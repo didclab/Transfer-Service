@@ -220,7 +220,8 @@ public class JobControl {
         System.setProperty("jdk.virtualThreadScheduler.parallelism", "192");
         System.setProperty("jdk.virtualThreadScheduler.maxPoolSize", "500");
         Flow f = new FlowBuilder<Flow>("splitFlow")
-                .split(this.threadPoolManager.stepTaskExecutor(this.request.getOptions().getConcurrencyThreadCount()))
+//                .split(this.threadPoolManager.stepTaskExecutor(this.request.getOptions().getConcurrencyThreadCount()))
+                .split(this.threadPoolManager.stepTaskExecutorPlatform(this.request.getOptions().getConcurrencyThreadCount()))
                 .add(flows.toArray(fl))
                 .build();
         return jobBuilder
