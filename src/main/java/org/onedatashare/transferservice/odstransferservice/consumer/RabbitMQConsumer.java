@@ -45,9 +45,6 @@ public class RabbitMQConsumer {
 
     VfsExpander vfsExpander;
 
-    @Autowired
-    Set<Long> jobIds;
-
     public RabbitMQConsumer(VfsExpander vfsExpander, Queue userQueue, JobParamService jobParamService, JobLauncher asyncJobLauncher, JobControl jc, ThreadPoolManager threadPoolManager) {
         this.vfsExpander = vfsExpander;
         this.userQueue = userQueue;
@@ -73,8 +70,7 @@ public class RabbitMQConsumer {
             }
             JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);
             jc.setRequest(request);
-            JobExecution jobExecution = jobLauncher.run(jc.concurrentJobDefinition(), parameters);
-            this.jobIds.add(jobExecution.getJobId());
+            jobLauncher.run(jc.concurrentJobDefinition(), parameters);
             return;
         } catch (Exception e) {
             logger.debug("Failed to parse jsonStr: {} to TransferJobRequest.java", jsonStr);

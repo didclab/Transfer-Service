@@ -48,11 +48,6 @@ public class TransferController {
     @Autowired
     VfsExpander vfsExpander;
 
-    Set<Long> jobIds;
-    public TransferController(Set<Long> jobIds){
-        this.jobIds = jobIds;
-    }
-
     @RequestMapping(value = "/start", method = RequestMethod.POST)
     @Async
     public ResponseEntity<String> start(@RequestBody TransferJobRequest request) throws Exception {
@@ -65,7 +60,6 @@ public class TransferController {
         jc.setRequest(request);
         Job job = jc.concurrentJobDefinition();
         JobExecution jobExecution = asyncJobLauncher.run(job, parameters);
-        this.jobIds.add(jobExecution.getJobId());
         return ResponseEntity.status(HttpStatus.OK).body("Your batch job has been submitted with \n ID: " + jobExecution.getJobId());
     }
 }
