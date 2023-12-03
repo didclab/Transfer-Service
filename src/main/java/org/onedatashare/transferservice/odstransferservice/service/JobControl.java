@@ -11,7 +11,6 @@ import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManag
 import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.InfluxIOService;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
-import org.onedatashare.transferservice.odstransferservice.service.listner.ParallelismChunkListener;
 import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3LargeFileWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3Reader;
 import org.onedatashare.transferservice.odstransferservice.service.step.AmazonS3.AmazonS3SmallFileWriter;
@@ -44,13 +43,10 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.task.VirtualThreadTaskExecutor;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.FIVE_MB;
@@ -111,7 +107,7 @@ public class JobControl {
             stepBuilder
                     .reader(getRightReader(request.getSource().getType(), file))
                     .writer(getRightWriter(request.getDestination().getType(), file));
-            if(this.request.getOptions().getParallelThreadCount() > 0){
+            if (this.request.getOptions().getParallelThreadCount() > 0) {
                 stepBuilder.taskExecutor(threadPoolManager.parallelThreadPool(request.getOptions().getParallelThreadCount() * request.getOptions().getConcurrencyThreadCount(), file.getPath()));
             }
             stepBuilder.throttleLimit(64);
