@@ -9,7 +9,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.PARALLEL_POOL_PREFIX;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.STEP_POOL_PREFIX;
 
 @Service
 public class ThreadPoolManager {
@@ -19,13 +20,15 @@ public class ThreadPoolManager {
     HashMap<String, ThreadPoolTaskExecutor> platformThreadMap;
 
     Logger logger = LoggerFactory.getLogger(ThreadPoolManager.class);
+
     public ThreadPoolManager() {
         this.executorHashmap = new HashMap<>();
         this.platformThreadMap = new HashMap<>();
     }
 
-    public ThreadPoolTaskExecutor createPlatformThreads(int corePoolSize, String prefix){
+    public ThreadPoolTaskExecutor createPlatformThreads(int corePoolSize, String prefix) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setPrestartAllCoreThreads(true);
 //        executor.setQueueCapacity(1);
         executor.setAllowCoreThreadTimeOut(false);
         executor.setCorePoolSize(corePoolSize);
@@ -40,18 +43,18 @@ public class ThreadPoolManager {
         return executor;
     }
 
-    public SimpleAsyncTaskExecutor createVirtualThreadExecutor(int corePoolSize, String prefix) {
-        SimpleAsyncTaskExecutor executor = new SimpleAsyncTaskExecutor();
-        executor.setThreadNamePrefix(prefix);
-        executor.setVirtualThreads(true);
-        executor.setConcurrencyLimit(corePoolSize);
-        if (this.executorHashmap == null) {
-            this.executorHashmap = new HashMap<>();
-        }
-        logger.info("Created a SimpleAsyncTaskExecutor: Prefix:{} with size:{}", prefix, corePoolSize);
-        this.executorHashmap.put(prefix, executor);
-        return executor;
-    }
+//    public SimpleAsyncTaskExecutor createVirtualThreadExecutor(int corePoolSize, String prefix) {
+//        SimpleAsyncTaskExecutor executor = new SimpleAsyncTaskExecutor();
+//        executor.setThreadNamePrefix(prefix);
+//        executor.setVirtualThreads(true);
+//        executor.setConcurrencyLimit(corePoolSize);
+//        if (this.executorHashmap == null) {
+//            this.executorHashmap = new HashMap<>();
+//        }
+//        logger.info("Created a SimpleAsyncTaskExecutor: Prefix:{} with size:{}", prefix, corePoolSize);
+//        this.executorHashmap.put(prefix, executor);
+//        return executor;
+//    }
 
     /**
      * @param concurrency
@@ -69,7 +72,7 @@ public class ThreadPoolManager {
                 }
             }
         }
-        for(String key: this.platformThreadMap.keySet()){
+        for (String key : this.platformThreadMap.keySet()) {
             ThreadPoolTaskExecutor pool = this.platformThreadMap.get(key);
             if (key.contains(PARALLEL_POOL_PREFIX)) {
                 logger.info("Changing {} pool size from {} to {}", pool.getThreadNamePrefix(), pool.getCorePoolSize(), parallel);
@@ -82,12 +85,12 @@ public class ThreadPoolManager {
     }
 
     public void clearJobPool() {
-        for(String key : this.platformThreadMap.keySet()){
+        for (String key : this.platformThreadMap.keySet()) {
             ThreadPoolTaskExecutor pool = this.platformThreadMap.get(key);
             pool.shutdown();
             logger.info("Shutting ThreadPoolTaskExecutor down {}", pool.getThreadNamePrefix());
         }
-        for(String key: this.executorHashmap.keySet()){
+        for (String key : this.executorHashmap.keySet()) {
             SimpleAsyncTaskExecutor pool = this.executorHashmap.get(key);
             pool.close();
             logger.info("Shutting SimpleAsyncTaskExec down {}", pool.getThreadNamePrefix());
@@ -97,33 +100,33 @@ public class ThreadPoolManager {
         logger.info("Cleared all thread pools");
     }
 
-    public SimpleAsyncTaskExecutor sequentialThreadPool() {
-        return this.createVirtualThreadExecutor(1, SEQUENTIAL_POOL_PREFIX);
-    }
+//    public SimpleAsyncTaskExecutor sequentialThreadPool() {
+//        return this.createVirtualThreadExecutor(1, SEQUENTIAL_POOL_PREFIX);
+//    }
+//
+//    public SimpleAsyncTaskExecutor stepTaskExecutor(int threadCount) {
+//        SimpleAsyncTaskExecutor te = this.executorHashmap.get(STEP_POOL_PREFIX);
+//        if (te == null) {
+//            return this.createVirtualThreadExecutor(threadCount, STEP_POOL_PREFIX);
+//        }
+//        return te;
+//    }
 
-    public SimpleAsyncTaskExecutor stepTaskExecutor(int threadCount) {
-        SimpleAsyncTaskExecutor te = this.executorHashmap.get(STEP_POOL_PREFIX);
-        if (te == null) {
-            return this.createVirtualThreadExecutor(threadCount, STEP_POOL_PREFIX);
-        }
-        return te;
-    }
-
-    public ThreadPoolTaskExecutor stepTaskExecutorPlatform(int threadCount){
+    public ThreadPoolTaskExecutor stepTaskExecutorPlatform(int threadCount) {
         ThreadPoolTaskExecutor te = this.platformThreadMap.get(STEP_POOL_PREFIX);
-        if(te == null){
+        if (te == null) {
             return this.createPlatformThreads(threadCount, STEP_POOL_PREFIX);
         }
         return te;
     }
 
-    public SimpleAsyncTaskExecutor parallelThreadPool(int threadCount) {
-        SimpleAsyncTaskExecutor te = this.executorHashmap.get(PARALLEL_POOL_PREFIX);
-        if (te == null) {
-            te = this.createVirtualThreadExecutor(threadCount, PARALLEL_POOL_PREFIX);
-        }
-        return te;
-    }
+//    public SimpleAsyncTaskExecutor parallelThreadPool(int threadCount) {
+//        SimpleAsyncTaskExecutor te = this.executorHashmap.get(PARALLEL_POOL_PREFIX);
+//        if (te == null) {
+//            te = this.createVirtualThreadExecutor(threadCount, PARALLEL_POOL_PREFIX);
+//        }
+//        return te;
+//    }
 
     public ThreadPoolTaskExecutor parallelThreadPool(int threadCount, String fileName) {
         return this.createPlatformThreads(threadCount, new StringBuilder().append(fileName).append("-").append(PARALLEL_POOL_PREFIX).toString());

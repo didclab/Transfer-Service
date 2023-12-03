@@ -169,7 +169,6 @@ public class ConnectionBag {
         this.httpReaderPool = new HttpConnectionPool(credential);
         this.httpReaderPool.setCompress(false);
         this.httpReaderPool.addObjects(connectionCount);
-        this.httpReaderPool.addObject();
         this.compression = false;
     }
 

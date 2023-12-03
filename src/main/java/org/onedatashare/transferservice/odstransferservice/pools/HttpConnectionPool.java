@@ -6,6 +6,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
+import java.util.concurrent.Executors;
 
 public class HttpConnectionPool implements ObjectPool<HttpClient> {
     AccountEndpointCredential credential;
@@ -18,15 +19,10 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
 
     @Override
     public void addObject() {
-        ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
-        threadPoolTaskExecutor.setCorePoolSize(15);
-        threadPoolTaskExecutor.setPrestartAllCoreThreads(true);
-        threadPoolTaskExecutor.setMaxPoolSize(Integer.MAX_VALUE);
-        threadPoolTaskExecutor.initialize();
         this.client = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_2)
                 .followRedirects(HttpClient.Redirect.NORMAL)
-                .executor(threadPoolTaskExecutor)
+                .executor(Executors.newCachedThreadPool())
                 .connectTimeout(Duration.ofSeconds(20))
                 .build();
     }
@@ -54,7 +50,6 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
 //        for (HttpClient httpClient : this.connectionPool) {
 //            this.connectionPool.remove(httpClient);
 //        }
-
         this.client = null;
     }
 

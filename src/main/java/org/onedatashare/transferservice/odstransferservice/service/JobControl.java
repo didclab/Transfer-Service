@@ -95,7 +95,6 @@ public class JobControl {
     ThreadPoolManager threadPoolManager;
 
     private List<Flow> createConcurrentFlow(List<EntityInfo> infoList, String basePath) {
-        ThreadPoolTaskExecutor threadPoolTaskExecutor = threadPoolManager.parallelThreadPool(request.getOptions().getParallelThreadCount() * request.getOptions().getConcurrencyThreadCount(), "all");
         if (this.request.getSource().getType().equals(EndpointType.vfs)) {
             infoList = vfsExpander.expandDirectory(infoList, basePath);
             logger.info("File list: {}", infoList);
@@ -113,9 +112,9 @@ public class JobControl {
                     .reader(getRightReader(request.getSource().getType(), file))
                     .writer(getRightWriter(request.getDestination().getType(), file));
             if(this.request.getOptions().getParallelThreadCount() > 0){
-                stepBuilder.taskExecutor(threadPoolTaskExecutor);
+                stepBuilder.taskExecutor(threadPoolManager.parallelThreadPool(request.getOptions().getParallelThreadCount() * request.getOptions().getConcurrencyThreadCount(), file.getPath()));
             }
-
+            stepBuilder.throttleLimit(64);
             return new FlowBuilder<Flow>(basePath + idForStep)
                     .start(stepBuilder.build()).build();
         }).collect(Collectors.toList());
@@ -217,8 +216,6 @@ public class JobControl {
         List<Flow> flows = createConcurrentFlow(request.getSource().getInfoList(), request.getSource().getFileSourcePath());
         this.influxIOService.reconfigureBucketForNewJob(this.request.getOwnerId());
         Flow[] fl = new Flow[flows.size()];
-        System.setProperty("jdk.virtualThreadScheduler.parallelism", "192");
-        System.setProperty("jdk.virtualThreadScheduler.maxPoolSize", "500");
         Flow f = new FlowBuilder<Flow>("splitFlow")
 //                .split(this.threadPoolManager.stepTaskExecutor(this.request.getOptions().getConcurrencyThreadCount()))
                 .split(this.threadPoolManager.stepTaskExecutorPlatform(this.request.getOptions().getConcurrencyThreadCount()))
