@@ -13,20 +13,27 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
     AccountEndpointCredential credential;
     private boolean compress;
     BlockingQueue<HttpClient> connectionPool;
+    HttpClient client;
 
     public HttpConnectionPool(AccountEndpointCredential credential) {
         this.credential = credential;
         this.connectionPool = new LinkedBlockingQueue<>();
+        this.client = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_2)
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .executor(Executors.newCachedThreadPool())
+                .connectTimeout(Duration.ofSeconds(20))
+                .build();
     }
 
     @Override
     public void addObject() {
-        this.connectionPool.add(HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_2)
-                .followRedirects(HttpClient.Redirect.NORMAL)
+//        this.connectionPool.add(HttpClient.newBuilder()
+//                .version(HttpClient.Version.HTTP_2)
+//                .followRedirects(HttpClient.Redirect.NORMAL)
 //                .executor(Executors.newCachedThreadPool())
-                .connectTimeout(Duration.ofSeconds(20))
-                .build());
+//                .connectTimeout(Duration.ofSeconds(20))
+//                .build());
     }
 
     @Override
@@ -38,7 +45,8 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
 
     @Override
     public HttpClient borrowObject() throws InterruptedException {
-        return this.connectionPool.take();
+//        return this.connectionPool.take();
+        return this.client;
     }
 
     @Override
@@ -48,10 +56,11 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
 
     @Override
     public void close() {
-        for (HttpClient httpClient : this.connectionPool) {
-            httpClient.close();
-        }
-        this.connectionPool.clear();
+//        for (HttpClient httpClient : this.connectionPool) {
+//            httpClient.close();
+//        }
+//        this.connectionPool.clear();
+        this.client.close();
     }
 
     @Override
@@ -71,7 +80,8 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
 
     @Override
     public void returnObject(HttpClient httpClient) {
-        this.connectionPool.add(httpClient);
+//        this.connectionPool.add(httpClient);
+
     }
 
     public void setCompress(boolean compress) {
