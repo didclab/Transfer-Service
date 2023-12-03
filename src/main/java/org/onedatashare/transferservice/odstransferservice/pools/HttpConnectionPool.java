@@ -24,7 +24,6 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
         this.connectionPool.add(HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_2)
                 .followRedirects(HttpClient.Redirect.NORMAL)
-                .executor(Executors.newCachedThreadPool())
                 .connectTimeout(Duration.ofSeconds(20))
                 .build());
     }
