@@ -108,7 +108,7 @@ public class JobControl {
                     .reader(getRightReader(request.getSource().getType(), file))
                     .writer(getRightWriter(request.getDestination().getType(), file));
             if (this.request.getOptions().getParallelThreadCount() > 0) {
-                stepBuilder.taskExecutor(threadPoolManager.parallelThreadPool(request.getOptions().getParallelThreadCount() * request.getOptions().getConcurrencyThreadCount(), file.getPath()));
+                stepBuilder.taskExecutor(threadPoolManager.parallelThreadPoolVirtual(request.getOptions().getParallelThreadCount() * request.getOptions().getConcurrencyThreadCount(), file.getPath()));
             }
             stepBuilder.throttleLimit(64);
             return new FlowBuilder<Flow>(basePath + idForStep)
@@ -213,8 +213,8 @@ public class JobControl {
         this.influxIOService.reconfigureBucketForNewJob(this.request.getOwnerId());
         Flow[] fl = new Flow[flows.size()];
         Flow f = new FlowBuilder<Flow>("splitFlow")
-//                .split(this.threadPoolManager.stepTaskExecutor(this.request.getOptions().getConcurrencyThreadCount()))
-                .split(this.threadPoolManager.stepTaskExecutorPlatform(this.request.getOptions().getConcurrencyThreadCount()))
+//                .split(this.threadPoolManager.stepTaskExecutorVirtual(this.request.getOptions().getConcurrencyThreadCount()))
+                .split(this.threadPoolManager.stepTaskExecutorVirtual(this.request.getOptions().getConcurrencyThreadCount()))
                 .add(flows.toArray(fl))
                 .build();
         return jobBuilder
