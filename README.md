@@ -45,7 +45,8 @@ Before we get into the internals lets look at an api example.
         "scheduledTime": "2023-10-25T14:52:15.183975Z"
     },
     "transferNodeName": ""
-}```
+}
+```
 Let's begin with some verbiage clarification:
 1. vfsDestCredential, vfsSourceCredential, oauthDestCredential, oauthSourceCredential are two sets of credentials to be found to access the source and the destination respectively. There is never a case where the api should have vfs and oauth, its XOR only for both source or destinatino depending on what kind of remote endpoint you are attempting to access.
 2. Options, these options are fully described in the ODS-Starter documentation so please reference that.
@@ -56,7 +57,7 @@ Let's begin with some verbiage clarification:
 ## How to run this locally.
 Things to install:
 1. Install Java 21
-2. Install maven
+2. Install maven 3.9.5+
 3. Get the boot.sh from Jacob or look at application.properties to pass in the appropriate credentials if you have your influx, and rabbitmq deployment.
 
 ## The way this works
@@ -111,3 +112,26 @@ Once we have created
 |----|-------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
 | 1  | HTTP Pipelining for Reader using Apache HTTP client library | [origin/vn/httppipelining](https://github.com/didclab/Transfer-Service/tree/origin/vn/httppipelining) |
 | 2  | Added support for WebDAV reader and writer                  | [origin/vn/webdav](https://github.com/didclab/Transfer-Service/tree/origin/vn/webdav)                 |
+
+## Performance
+
+Ok so currently we have done some benchmarking against RClone here are some of the graphs we got.
+The physical link capacity is 10Gbps as that is the nic used on chameleon cloud skylake nodes. Nginx is the file source running as HTTP 1.1 file server.
+We are gonna explore different version soon.
+
+So why did we pivot to java 21 so fast?? Well the idea of Virtual Threads aligns really well with the idea of this service.
+Set of Graphs showing results of parallelism and concurrency on platform threads.
+![plot](./images/chameleon_tacc_uc_http/platform/concurrency_platform_thrptline.png)
+![plot](./images/chameleon_tacc_uc_http/platform/concurrency_platform_cattail.png)
+![plot](./images/chameleon_tacc_uc_http/platform/parallelism_platform_thrptline.png)
+![plot](./images/chameleon_tacc_uc_http/platform/parallelism_platform_cattail.png)
+
+Some graphs using the new "Virtual Threads", highly similar to goroutines.
+
+![plot](./images/chameleon_tacc_uc_http/virtual/concurrency_virtual_thrptline.png)
+![plot](./images/chameleon_tacc_uc_http/virtual/concurrency_virtual_cattail.png)
+![plot](./images/chameleon_tacc_uc_http/virtual/parallelism_virtual_thrptline.png)
+![plot](./images/chameleon_tacc_uc_http/virtual/parallelism_virtual_cattail.png)
+
+We are currently exploring using jetty once its supported by the latest spring 3.2.0 and then we should be all set to run at a low memory footprint.
+
