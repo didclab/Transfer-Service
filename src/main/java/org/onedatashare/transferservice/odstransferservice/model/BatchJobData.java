@@ -7,6 +7,7 @@ import org.springframework.batch.core.*;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -55,7 +56,7 @@ public class BatchJobData {
         for (String key : map.keySet()) {
             JobParameter jobParameter = map.get(key);
             if (jobParameter != null) {
-                nextMap.put(key, jobParameter.toString());
+                nextMap.put(key, jobParameter.getValue().toString());
             }
         }
         LocalDateTime createTime = jobExecution.getCreateTime();
@@ -66,12 +67,12 @@ public class BatchJobData {
                 .id(jobExecution.getId())
                 .jobInstanceId(jobExecution.getJobInstance().getInstanceId())
                 .version(Long.valueOf(jobExecution.getVersion()))
-                .createTime(createTime == null ? null : createTime.toString())
-                .startTime(startTime == null ? null : startTime.toString())
-                .endTime(endTime == null ? null : endTime.toString())
+                .createTime(createTime.toInstant(ZoneOffset.UTC).toString())
+                .startTime(startTime == null ? null : startTime.toInstant(ZoneOffset.UTC).toString())
+                .endTime(endTime == null ? null : endTime.toInstant(ZoneOffset.UTC).toString())
                 .status(jobExecution.getStatus())
                 .jobParameters(nextMap)
-                .lastUpdated(lastUpdated == null ? null : lastUpdated.toString())
+                .lastUpdated(lastUpdated == null ? null : lastUpdated.toInstant(ZoneOffset.UTC).toString())
                 .exitCode(jobExecution.getExitStatus())
                 .exitMessage(jobExecution.getExitStatus().getExitDescription())
                 .isRunning(jobExecution.isRunning())

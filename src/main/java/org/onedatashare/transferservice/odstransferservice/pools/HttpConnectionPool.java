@@ -5,26 +5,27 @@ import org.onedatashare.transferservice.odstransferservice.model.credential.Acco
 
 import java.net.http.HttpClient;
 import java.time.Duration;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class HttpConnectionPool implements ObjectPool<HttpClient> {
     AccountEndpointCredential credential;
     private boolean compress;
-    HttpClient client;
-
+    BlockingQueue<HttpClient> connectionPool;
 
     public HttpConnectionPool(AccountEndpointCredential credential) {
         this.credential = credential;
+        this.connectionPool = new LinkedBlockingQueue<>();
     }
 
     @Override
     public void addObject() {
-        this.client = HttpClient.newBuilder()
+        this.connectionPool.add(HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_2)
                 .followRedirects(HttpClient.Redirect.NORMAL)
-                .executor(Executors.newVirtualThreadPerTaskExecutor())
                 .connectTimeout(Duration.ofSeconds(20))
-                .build();
+                .build());
     }
 
     @Override
@@ -36,21 +37,20 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
 
     @Override
     public HttpClient borrowObject() throws InterruptedException {
-//        return this.connectionPool.take();
-        return this.client;
+        return this.connectionPool.take();
     }
 
     @Override
     public void clear() {
-        this.client = null;
+        this.close();
     }
 
     @Override
     public void close() {
-//        for (HttpClient httpClient : this.connectionPool) {
-//            this.connectionPool.remove(httpClient);
-//        }
-        this.client = null;
+        for (HttpClient httpClient : this.connectionPool) {
+            httpClient.close();
+        }
+        this.connectionPool.clear();
     }
 
     @Override
@@ -65,13 +65,13 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
 
     @Override
     public void invalidateObject(HttpClient httpClient) {
-//        this.connectionPool.remove(httpClient);
-        this.client = null;
+        httpClient.close();
     }
 
     @Override
     public void returnObject(HttpClient httpClient) {
-//        this.connectionPool.add(httpClient);
+        this.connectionPool.add(httpClient);
+
     }
 
     public void setCompress(boolean compress) {
@@ -82,7 +82,4 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
         return this.compress;
     }
 
-    public int getSize() {
-        return 1;
-    }
 }

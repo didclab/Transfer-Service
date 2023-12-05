@@ -32,4 +32,13 @@ public class HsqlConfiguration {
         initializer.setDatabasePopulator(databasePopulator);
         return initializer;
     }
+    @Bean
+    public JobRepository jobRepository(DataSource dataSource, PlatformTransactionManager transactionManager) throws Exception {
+        JobRepositoryFactoryBean factoryBean = new JobRepositoryFactoryBean();
+        factoryBean.setDataSource(dataSource);
+        factoryBean.setTransactionManager(transactionManager);
+        factoryBean.setIsolationLevelForCreate("READ_UNCOMMITTED");
+        factoryBean.setDatabaseType("HSQL");
+        return factoryBean.getObject();
+    }
 }

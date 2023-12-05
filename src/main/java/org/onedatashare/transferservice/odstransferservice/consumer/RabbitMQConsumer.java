@@ -8,11 +8,10 @@ import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.model.optimizer.TransferApplicationParams;
+import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManager;
 import org.onedatashare.transferservice.odstransferservice.service.JobControl;
 import org.onedatashare.transferservice.odstransferservice.service.JobParamService;
 import org.onedatashare.transferservice.odstransferservice.service.VfsExpander;
-import org.onedatashare.transferservice.odstransferservice.service.listner.ConcurrencyStepListener;
-import org.onedatashare.transferservice.odstransferservice.service.listner.ParallelismChunkListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
@@ -33,8 +32,7 @@ import java.util.Set;
 public class RabbitMQConsumer {
 
     private final ObjectMapper objectMapper;
-    private final ParallelismChunkListener parallelismChunkListener;
-    private final ConcurrencyStepListener concurrencyStepListener;
+    private final ThreadPoolManager threadPoolManager;
     Logger logger = LoggerFactory.getLogger(RabbitMQConsumer.class);
 
     JobControl jc;
@@ -47,10 +45,7 @@ public class RabbitMQConsumer {
 
     VfsExpander vfsExpander;
 
-    @Autowired
-    Set<Long> jobIds;
-
-    public RabbitMQConsumer(VfsExpander vfsExpander, Queue userQueue, JobParamService jobParamService, JobLauncher asyncJobLauncher, JobControl jc, ConcurrencyStepListener concurrencyStepListener, ParallelismChunkListener parallelismChunkListener) {
+    public RabbitMQConsumer(VfsExpander vfsExpander, Queue userQueue, JobParamService jobParamService, JobLauncher asyncJobLauncher, JobControl jc, ThreadPoolManager threadPoolManager) {
         this.vfsExpander = vfsExpander;
         this.userQueue = userQueue;
         this.jobParamService = jobParamService;
@@ -59,8 +54,7 @@ public class RabbitMQConsumer {
         this.objectMapper = new ObjectMapper();
         this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.objectMapper.setDefaultPropertyInclusion(JsonInclude.Include.ALWAYS);
-        this.concurrencyStepListener = concurrencyStepListener;
-        this.parallelismChunkListener = parallelismChunkListener;
+        this.threadPoolManager = threadPoolManager;
     }
 
     @RabbitListener(queues = "#{userQueue}")
@@ -76,8 +70,7 @@ public class RabbitMQConsumer {
             }
             JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);
             jc.setRequest(request);
-            JobExecution jobExecution = jobLauncher.run(jc.concurrentJobDefinition(), parameters);
-            this.jobIds.add(jobExecution.getJobId());
+            jobLauncher.run(jc.concurrentJobDefinition(), parameters);
             return;
         } catch (Exception e) {
             logger.debug("Failed to parse jsonStr: {} to TransferJobRequest.java", jsonStr);
@@ -85,12 +78,7 @@ public class RabbitMQConsumer {
         try {
             TransferApplicationParams params = objectMapper.readValue(jsonStr, TransferApplicationParams.class);
             logger.info("Parsed TransferApplicationParams: {}", params);
-            if (params.getConcurrency() > 0) {
-                this.concurrencyStepListener.changeConcurrency(params.getConcurrency());
-            }
-            if (params.getParallelism() > 0) {
-                this.parallelismChunkListener.changeParallelism(params.getParallelism());
-            }
+            this.threadPoolManager.applyOptimizer(params.getConcurrency(), params.getParallelism());
         } catch (Exception e) {
             logger.info("Did not apply transfer params due to parsing message failure");
         }

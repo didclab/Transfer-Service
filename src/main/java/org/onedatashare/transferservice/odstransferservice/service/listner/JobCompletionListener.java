@@ -3,6 +3,7 @@ package org.onedatashare.transferservice.odstransferservice.service.listner;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.optimizer.OptimizerCreateRequest;
 import org.onedatashare.transferservice.odstransferservice.model.optimizer.OptimizerDeleteRequest;
+import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManager;
 import org.onedatashare.transferservice.odstransferservice.service.ConnectionBag;
 import org.onedatashare.transferservice.odstransferservice.service.OptimizerService;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
@@ -16,10 +17,13 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.Set;
 
 
 @Service
 public class JobCompletionListener implements JobExecutionListener {
+    private final ThreadPoolManager threadPoolManager;
+    private Set<Long> jobIds;
     Logger logger = LoggerFactory.getLogger(JobCompletionListener.class);
 
     ConnectionBag connectionBag;
@@ -45,11 +49,13 @@ public class JobCompletionListener implements JobExecutionListener {
     @Autowired
     Environment environment;
 
-    public JobCompletionListener(OptimizerService optimizerService, MetricsCollector metricsCollector, ConnectionBag connectionBag) {
+    public JobCompletionListener(OptimizerService optimizerService, MetricsCollector metricsCollector, ConnectionBag connectionBag, ThreadPoolManager threadPoolManager, Set<Long> jobIds) {
         this.optimizerService = optimizerService;
         this.metricsCollector = metricsCollector;
         this.connectionBag = connectionBag;
         this.optimizerEnable = false;
+        this.threadPoolManager = threadPoolManager;
+        this.jobIds = jobIds;
     }
 
 
@@ -57,6 +63,7 @@ public class JobCompletionListener implements JobExecutionListener {
     public void beforeJob(JobExecution jobExecution) {
         logger.info("*****Job Execution start Time***** : {} with jobId={}", jobExecution.getStartTime(), jobExecution.getJobId());
         long fileCount = jobExecution.getJobParameters().getLong(ODSConstants.FILE_COUNT);
+        this.jobIds.add(jobExecution.getJobId());
         String optimizerType = jobExecution.getJobParameters().getString(ODSConstants.OPTIMIZER);
         if (optimizerType != null) {
             if (!optimizerType.equals("None") && !optimizerType.isEmpty()) {
@@ -76,6 +83,7 @@ public class JobCompletionListener implements JobExecutionListener {
             this.optimizerService.deleteOptimizerBlocking(new OptimizerDeleteRequest(appName));
             this.optimizerEnable = false;
         }
+        this.threadPoolManager.clearJobPool();
         System.gc();
     }
 }

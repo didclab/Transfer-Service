@@ -6,9 +6,7 @@ import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
-import org.springframework.core.task.SyncTaskExecutor;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
@@ -31,8 +29,8 @@ public class BatchConfig {
     }
 
     @Bean
-    public PlatformTransactionManager transactionManager() {
-        return new JpaTransactionManager();
+    public PlatformTransactionManager transactionManager(DataSource dataSource) {
+        return new DataSourceTransactionManager(dataSource);
     }
 
     @Bean
