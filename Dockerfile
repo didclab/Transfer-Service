@@ -1,4 +1,4 @@
-FROM maven:3.6.3-jdk-11 AS build
+FROM maven:3.9.5-amazoncorretto-21 AS build
 
 COPY src /home/app/src
 COPY pom.xml /home/app
@@ -17,9 +17,7 @@ RUN cd $HOME && pip install pmeter_ods==1.0.8 --user
 ARG ALPINE_VERSION=3.16
 
 # Final Image
-FROM alpine:3.16.2
-RUN apk --no-cache add openjdk11
-#RUN apk --no-cache add openjdk11 python3-dev py3-pip build-base gcc linux-headers
+FROM amazoncorretto:21
 
 RUN #pip install pmeter-ods==1.0.8
 
@@ -67,5 +65,8 @@ ENV OPTIMIZER_ENABLE="${OPTIMIZER_ENABLE}"
 ENV SPRING_PROFILE="${SPRING_PROFILE:-hsql}"
 
 ENV PATH "/home/ods/.local/bin:${PATH}"
+
+RUN mkdir -p $HOME/.pmeter/
+
 EXPOSE 8092
 ENTRYPOINT ["java", "-Dspring.profiles.active=hsql","-jar", "/usr/local/lib/ods-transfer-service-0.0.1-SNAPSHOT.jar"]
