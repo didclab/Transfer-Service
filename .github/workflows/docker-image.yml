@@ -23,5 +23,5 @@ jobs:
     - name: Build the Docker image
       run: docker build . --file Dockerfile --tag onedatashare/transfer_service:$(date +%s)
     - name: docker push
-      run: docker push ${{secrets.DOCKER_USER}}/transfer_service
+      run: docker push docker push onedatashare/transfer_service:latest
     
