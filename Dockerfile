@@ -4,28 +4,13 @@ COPY src /home/app/src
 COPY pom.xml /home/app
 RUN mvn -f /home/app/pom.xml clean package -DskipTests
 
-FROM alpine:3.16.2 as pmeter-build
-RUN apk add --update --no-cache python3-dev py3-pip build-base gcc linux-headers && \
-    ln -sf python3 /usr/bin/python && python -m ensurepip \
-    && pip3 install --upgrade pip setuptools wheel \
-    && rm -r /usr/lib/python*/ensurepip && \
-    if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi && \
-    rm -r /root/.cache
-
-RUN cd $HOME && pip install pmeter_ods==1.0.8 --user
-
-ARG ALPINE_VERSION=3.16
-
 # Final Image
 FROM amazoncorretto:21-alpine-jdk
 
 RUN apk --no-cache add python3-dev py3-pip build-base gcc linux-headers
 RUN pip3 install pmeter-ods==1.0.8
 
-# RUN yum install -y python3
-# RUN pip3 install pmeter_ods==1.0.8
 COPY --from=build /home/app/target/ods-transfer-service-0.0.1-SNAPSHOT.jar /usr/local/lib/ods-transfer-service-0.0.1-SNAPSHOT.jar
-COPY --from=pmeter-build --chown=ods:ods /root/.local /home/ods/.local
 
 ENV PIP_ROOT_USER_ACTION=ignore
 ENV NODE_NAME="${NODE_NAME}"
