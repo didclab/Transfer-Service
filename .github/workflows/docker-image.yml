@@ -21,7 +21,7 @@ jobs:
       run:
         docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
     - name: Build the Docker image
-      run: docker buildx create --use; docker build . --file Dockerfile --tag onedatashare/transfer_service:latest --platform linux/amd64,linux/arm64
+      run:  docker buildx build --platform linux/amd64,linux/arm64 -t onedatashare/transfer_service:latest .
     - name: docker push
       run: docker push onedatashare/transfer_service:latest
     
