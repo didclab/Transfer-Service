@@ -25,7 +25,6 @@ RUN #apk del build-base
 
 COPY --from=build /home/app/target/ods-transfer-service-0.0.1-SNAPSHOT.jar /usr/local/lib/ods-transfer-service-0.0.1-SNAPSHOT.jar
 COPY --from=pmeter-build --chown=ods:ods /root/.local /home/ods/.local
-COPY ./boot.sh /home/app
 
 RUN #chown -R ods:ods /app && chmod u+x /app/scripts/runner.sh
 ENV NODE_NAME="${NODE_NAME}"
