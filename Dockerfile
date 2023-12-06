@@ -17,16 +17,17 @@ RUN cd $HOME && pip install pmeter_ods==1.0.8 --user
 ARG ALPINE_VERSION=3.16
 
 # Final Image
-FROM amazoncorretto:21
+FROM amazoncorretto:21-alpine-jdk
 
-RUN #pip install pmeter-ods==1.0.8
+RUN apk --no-cache add python3-dev py3-pip build-base gcc linux-headers
+RUN pip3 install pmeter-ods==1.0.8
 
-RUN #apk del build-base
-
+# RUN yum install -y python3
+# RUN pip3 install pmeter_ods==1.0.8
 COPY --from=build /home/app/target/ods-transfer-service-0.0.1-SNAPSHOT.jar /usr/local/lib/ods-transfer-service-0.0.1-SNAPSHOT.jar
 COPY --from=pmeter-build --chown=ods:ods /root/.local /home/ods/.local
 
-RUN #chown -R ods:ods /app && chmod u+x /app/scripts/runner.sh
+ENV PIP_ROOT_USER_ACTION=ignore
 ENV NODE_NAME="${NODE_NAME}"
 ENV USER_NAME="${USER_NAME}"
 ENV APP_NAME="${USER_NAME}"-"${NODE_NAME}"
@@ -51,6 +52,7 @@ ENV AMPQ_USER="${AMPQ_USER}"
 ENV AMPQ_PWD="${AMPQ_PWD}"
 
 #change to monitor the active NIC
+ENV PMETER_CLI_OPTIONS="-NS"
 ENV PMETER_NIC_INTERFACE="${PMETER_NIC_INTERFACE:-eth0}"
 ENV INFLUX_ORG="${INFLUX_ORG}"
 ENV INFLUX_BUCKET="${USER_NAME}"
@@ -66,6 +68,7 @@ ENV SPRING_PROFILE="${SPRING_PROFILE:-hsql}"
 ENV PATH "/home/ods/.local/bin:${PATH}"
 
 RUN mkdir -p $HOME/.pmeter/
+RUN touch $HOME/.pmeter/transfer_service_pmeter_measure.txt
 
 EXPOSE 8092
 ENTRYPOINT ["java", "-Dspring.profiles.active=hsql","-jar", "/usr/local/lib/ods-transfer-service-0.0.1-SNAPSHOT.jar"]
