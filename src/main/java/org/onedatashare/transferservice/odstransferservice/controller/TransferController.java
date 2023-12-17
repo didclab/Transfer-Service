@@ -12,6 +12,7 @@ import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -48,6 +49,15 @@ public class TransferController {
     @Autowired
     VfsExpander vfsExpander;
 
+    @Autowired
+    JobExplorer jobExplorer;
+
+    Set<Long> jobIds;
+    public TransferController(Set<Long> jobIds){
+        this.jobIds = jobIds;
+    }
+
+
     @RequestMapping(value = "/start", method = RequestMethod.POST)
     @Async
     public ResponseEntity<String> start(@RequestBody TransferJobRequest request) throws Exception {
@@ -62,5 +72,27 @@ public class TransferController {
         JobExecution jobExecution = asyncJobLauncher.run(job, parameters);
         return ResponseEntity.status(HttpStatus.OK).body("Your batch job has been submitted with \n ID: " + jobExecution.getJobId());
     }
+
+    @RequestMapping(value = "/pause", method = RequestMethod.POST)
+    @Async
+    public ResponseEntity<String> pause() throws Exception{
+        logger.info("Pause Controller Entry point");
+        Long runningJobId = 0L;
+        for(Long jobId : jobIds){
+            JobExecution jobExecution = jobExplorer.getJobExecution(jobId);
+            if(jobExecution != null && jobExecution.isRunning()){
+                runningJobId = jobId;
+                break;
+            }
+        }
+
+        if(runningJobId == 0L){
+            return ResponseEntity.status(HttpStatus.OK).body("No running job found");
+        }
+
+
+        return ResponseEntity.status(HttpStatus.OK).body("Your batch job with id "+runningJobId+"has been paused");
+    }
+
 }
 
