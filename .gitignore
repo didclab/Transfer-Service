@@ -102,3 +102,6 @@ output.log
 
 boot.sh
 certs/
+
+.terraform*
+terraform*
