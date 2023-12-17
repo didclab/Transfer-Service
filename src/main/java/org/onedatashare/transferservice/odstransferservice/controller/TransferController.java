@@ -53,6 +53,11 @@ public class TransferController {
     JobExplorer jobExplorer;
 
     Set<Long> jobIds;
+
+    Long pausedJobId;
+    Integer pausedJobParallelism;
+    Integer pausedJobConcurrency;
+
     public TransferController(Set<Long> jobIds){
         this.jobIds = jobIds;
     }
@@ -77,7 +82,7 @@ public class TransferController {
     @Async
     public ResponseEntity<String> pause() throws Exception{
         logger.info("Pause Controller Entry point");
-        Long runningJobId = 0L;
+        Long runningJobId = null;
         for(Long jobId : jobIds){
             JobExecution jobExecution = jobExplorer.getJobExecution(jobId);
             if(jobExecution != null && jobExecution.isRunning()){
@@ -86,12 +91,43 @@ public class TransferController {
             }
         }
 
-        if(runningJobId == 0L){
+        if(runningJobId == null){
             return ResponseEntity.status(HttpStatus.OK).body("No running job found");
         }
 
+        pausedJobId = runningJobId;
+
+        pausedJobParallelism = jc.getParallelismChunkListener().getParallelism();
+        jc.getParallelismChunkListener().changeParallelism(0);
+
+        pausedJobConcurrency = jc.getConcurrencyStepListener().getConcurrency();
+        jc.getConcurrencyStepListener().changeConcurrency(0);
 
         return ResponseEntity.status(HttpStatus.OK).body("Your batch job with id "+runningJobId+"has been paused");
+    }
+
+    @RequestMapping(value = "/resume", method = RequestMethod.POST)
+    @Async
+    public ResponseEntity<String> resume() throws Exception{
+        logger.info("Pause Controller Entry point");
+        if(pausedJobId == null){
+            return ResponseEntity.status(HttpStatus.OK).body("No paused job found");
+        }
+
+        JobExecution jobExecution = jobExplorer.getJobExecution(pausedJobId);
+        if(jobExecution == null || !(jobExecution.getStatus().equals(BatchStatus.STOPPING) || jobExecution.getStatus().equals(BatchStatus.STOPPED))){
+            return ResponseEntity.status(HttpStatus.OK).body("No paused job found with "+pausedJobId+" jobId");
+        }
+
+        jc.getParallelismChunkListener().changeParallelism(pausedJobParallelism);
+        jc.getConcurrencyStepListener().changeConcurrency(pausedJobConcurrency);
+        pausedJobParallelism = 0;
+        pausedJobConcurrency = 0;
+
+        Long resumedJobId = pausedJobId;
+        pausedJobId = null;
+
+        return ResponseEntity.status(HttpStatus.OK).body("Your batch job with id "+resumedJobId+"has been resumed");
     }
 
 }
