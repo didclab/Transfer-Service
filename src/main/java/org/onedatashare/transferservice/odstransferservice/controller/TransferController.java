@@ -56,8 +56,6 @@ public class TransferController {
     Set<Long> jobIds;
 
     Long pausedJobId;
-    Integer pausedJobParallelism;
-    Integer pausedJobConcurrency;
 
     public TransferController(Set<Long> jobIds){
         this.jobIds = jobIds;
@@ -97,12 +95,7 @@ public class TransferController {
         }
 
         pausedJobId = runningJobId;
-
-        pausedJobParallelism = jc.getParallelismChunkListener().getParallelism();
-        jc.getParallelismChunkListener().changeParallelism(0);
-
-        pausedJobConcurrency = jc.getConcurrencyStepListener().getConcurrency();
-        jc.getConcurrencyStepListener().changeConcurrency(0);
+        jobOperator.stop(pausedJobId);
 
         return ResponseEntity.status(HttpStatus.OK).body("Your batch job with id "+runningJobId+"has been paused");
     }
@@ -120,10 +113,7 @@ public class TransferController {
             return ResponseEntity.status(HttpStatus.OK).body("No paused job found with "+pausedJobId+" jobId");
         }
 
-        jc.getParallelismChunkListener().changeParallelism(pausedJobParallelism);
-        jc.getConcurrencyStepListener().changeConcurrency(pausedJobConcurrency);
-        pausedJobParallelism = 0;
-        pausedJobConcurrency = 0;
+        jobOperator.restart(pausedJobId);
 
         Long resumedJobId = pausedJobId;
         pausedJobId = null;
