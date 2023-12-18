@@ -14,8 +14,8 @@ spec:
     spec:
       containers:
       - name: transfer-service-container
-        image: onedatashare/transfer_service:v1
-        imagePullPolicy: Never
+        image: 148306013631.dkr.ecr.us-east-1.amazonaws.com/transfer-service:v1
+        imagePullPolicy: Always
         envFrom:
         # For the below secrets make sure to execute command:
         # kubectl create secret generic ts-secrets-dev --from-env-file=jacob.env
