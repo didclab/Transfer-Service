@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: transfer-service-deployment
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: transfer-service
@@ -14,7 +14,13 @@ spec:
     spec:
       containers:
       - name: transfer-service-container
-        image: aakashjaswal/transfer-service:v1 #TODO: ECR Setup.
-        # Add environment variables, maybe for dynamic nodename based on above config.
+        image: onedatashare/transfer_service:v1
+        imagePullPolicy: Never
+        envFrom:
+        # For the below secrets make sure to execute command:
+        # kubectl create secret generic ts-secrets-dev --from-env-file=jacob.env
+        # I have the YAML for this but it's not secured as secrets are just base64 encoded.
+        - secretRef:
+            name: ts-secrets-dev
         ports:
         - containerPort: 8092
