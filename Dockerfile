@@ -48,7 +48,6 @@ ENV PMETER_CRON_EXP="*/15 * * * * *"
 
 ENV OPTIMIZER_URL="${OPTIMIZER_URL}"
 ENV OPTIMIZER_ENABLE="${OPTIMIZER_ENABLE}"
-ENV SPRING_PROFILE="${SPRING_PROFILE:-hsql}"
 
 ENV PATH "/home/ods/.local/bin:${PATH}"
 
@@ -56,4 +55,4 @@ RUN mkdir -p $HOME/.pmeter/
 RUN touch $HOME/.pmeter/transfer_service_pmeter_measure.txt
 
 EXPOSE 8092
-ENTRYPOINT ["java", "-Dspring.profiles.active=hsql","-jar", "/usr/local/lib/ods-transfer-service-0.0.1-SNAPSHOT.jar"]
+ENTRYPOINT ["java","-jar", "/usr/local/lib/ods-transfer-service-0.0.1-SNAPSHOT.jar"]
