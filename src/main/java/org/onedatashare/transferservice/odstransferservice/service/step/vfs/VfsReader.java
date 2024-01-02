@@ -13,6 +13,7 @@ import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 import org.springframework.util.ClassUtils;
+import sun.misc.Unsafe;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -32,14 +33,12 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
     FilePartitioner filePartitioner;
     EntityInfo fileInfo;
     AccountEndpointCredential credential;
-    ConcurrentHashMap<Long, ByteBuffer> bufferMap;
 
     public VfsReader(AccountEndpointCredential credential, EntityInfo fInfo) {
         this.setExecutionContextName(ClassUtils.getShortName(VfsReader.class));
         this.credential = credential;
         this.filePartitioner = new FilePartitioner(fInfo.getChunkSize());
         this.fileInfo = fInfo;
-        bufferMap = new ConcurrentHashMap<>();
     }
 
     @BeforeStep
@@ -57,11 +56,7 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
         if (chunkParameters == null) return null;// done as there are no more FileParts in the queue
         logger.info("currently reading {}", chunkParameters);
         int totalBytes = 0;
-        ByteBuffer buffer = bufferMap.get(Thread.currentThread().getId());
-        if (buffer == null) {
-            buffer = ByteBuffer.allocate(chunkParameters.getSize());
-            bufferMap.put(Thread.currentThread().getId(), buffer);
-        }
+        ByteBuffer buffer = ByteBuffer.allocate(this.fileInfo.getChunkSize());
         while (totalBytes < chunkParameters.getSize()) {
             int bytesRead = 0;
             try {
@@ -99,6 +94,5 @@ public class VfsReader extends AbstractItemCountingItemStreamItemReader<DataChun
             logger.error("Not able to close the input Stream");
             ex.printStackTrace();
         }
-        this.bufferMap.clear();
     }
 }
