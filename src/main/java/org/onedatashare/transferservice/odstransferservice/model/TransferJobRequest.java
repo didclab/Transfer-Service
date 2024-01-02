@@ -22,6 +22,7 @@ public class TransferJobRequest {
     private TransferOptions options;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private UUID jobUuid;
+    public String transferNodeName;
 
     @Data
     @AllArgsConstructor

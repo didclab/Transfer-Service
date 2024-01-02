@@ -9,9 +9,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class OptimizerService {
@@ -31,14 +34,17 @@ public class OptimizerService {
         headers.setContentType(MediaType.APPLICATION_JSON);
     }
 
+    @Async("optimizerTaskExecutor")
     public void createOptimizerBlocking(OptimizerCreateRequest optimizerCreateRequest) throws RestClientException {
         optimizerCreateRequest.setNodeId(this.appName);
         logger.info("Sending OptimizerCreateRequest {}", optimizerCreateRequest);
         HttpEntity<OptimizerCreateRequest> createRequestHttpEntity = new HttpEntity<>(optimizerCreateRequest, this.headers);
         logger.info(createRequestHttpEntity.getBody().toString());
         this.optimizerTemplate.postForLocation("/optimizer/create", createRequestHttpEntity, Void.class);
+        CompletableFuture.completedFuture(null);
     }
 
+    @Async("optimizerTaskExecutor")
     public void deleteOptimizerBlocking(OptimizerDeleteRequest optimizerDeleteRequest) {
         optimizerDeleteRequest.setNodeId(this.appName);
         try {
@@ -47,5 +53,6 @@ public class OptimizerService {
             logger.error("Failed to Delete optimizer. {}", optimizerDeleteRequest);
         }
         logger.info("Deleted {}", optimizerDeleteRequest);
+        CompletableFuture.completedFuture(null);
     }
 }

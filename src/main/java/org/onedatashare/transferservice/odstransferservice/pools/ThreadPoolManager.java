@@ -66,19 +66,34 @@ public class ThreadPoolManager {
             if (key.contains(STEP_POOL_PREFIX)) {
                 logger.info("Changing {} pool size from {} to {}", pool.getThreadNamePrefix(), pool.getConcurrencyLimit(), concurrency);
                 if (concurrency > 0 && concurrency != pool.getConcurrencyLimit()) {
-//                    pool.setMaxPoolSize(concurrency);
                     pool.setConcurrencyLimit(concurrency);
                     logger.info("Set {} pool size to {}", pool.getThreadNamePrefix(), concurrency);
                 }
             }
+            if (key.contains(PARALLEL_POOL_PREFIX)) {
+                logger.info("Changing {} pool size from {} to {}", pool.getThreadNamePrefix(), pool.getConcurrencyLimit(), parallel);
+                if (parallel > 0 && parallel != pool.getConcurrencyLimit()) {
+                    pool.setConcurrencyLimit(parallel);
+                    logger.info("Set {} pool size to {}", pool.getThreadNamePrefix(), parallel);
+                }
+            }
         }
+
         for (String key : this.platformThreadMap.keySet()) {
             ThreadPoolTaskExecutor pool = this.platformThreadMap.get(key);
+            if (key.contains(STEP_POOL_PREFIX)) {
+                logger.info("Changing {} pool size from {} to {}", pool.getThreadNamePrefix(), pool.getCorePoolSize(), concurrency);
+                if (concurrency > 0 && concurrency != pool.getCorePoolSize()) {
+                    pool.setCorePoolSize(concurrency);
+                    logger.info("Set {} pool size to {}", pool.getThreadNamePrefix(), concurrency);
+                }
+            }
             if (key.contains(PARALLEL_POOL_PREFIX)) {
                 logger.info("Changing {} pool size from {} to {}", pool.getThreadNamePrefix(), pool.getCorePoolSize(), parallel);
-                if (parallel > 0 && parallel != pool.getPoolSize()) {
-//                    pool.setMaxPoolSize(parallel);
+                if (parallel > 0 && parallel != pool.getCorePoolSize()) {
                     pool.setCorePoolSize(parallel);
+                    logger.info("Set {} pool size to {}", pool.getThreadNamePrefix(), parallel);
+
                 }
             }
         }
@@ -100,7 +115,7 @@ public class ThreadPoolManager {
         logger.info("Cleared all thread pools");
     }
 
-//    public SimpleAsyncTaskExecutor sequentialThreadPool() {
+    //    public SimpleAsyncTaskExecutor sequentialThreadPool() {
 //        return this.createVirtualThreadExecutor(1, SEQUENTIAL_POOL_PREFIX);
 //    }
 //
