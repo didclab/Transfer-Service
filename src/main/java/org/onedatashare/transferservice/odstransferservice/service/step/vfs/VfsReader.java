@@ -13,7 +13,6 @@ import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 import org.springframework.util.ClassUtils;
-import sun.misc.Unsafe;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
