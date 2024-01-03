@@ -17,16 +17,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 @Service
 public class RabbitMQConsumer {
@@ -52,7 +49,7 @@ public class RabbitMQConsumer {
         this.jobLauncher = asyncJobLauncher;
         this.jc = jc;
         this.objectMapper = new ObjectMapper();
-        this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
         this.objectMapper.setDefaultPropertyInclusion(JsonInclude.Include.ALWAYS);
         this.threadPoolManager = threadPoolManager;
     }
@@ -60,10 +57,12 @@ public class RabbitMQConsumer {
     @RabbitListener(queues = "#{userQueue}")
     public void consumeDefaultMessage(final Message message) {
         String jsonStr = new String(message.getBody());
+
         logger.info("Message recv: {}", jsonStr);
         try {
             TransferJobRequest request = objectMapper.readValue(jsonStr, TransferJobRequest.class);
             logger.info("Job Recieved: {}", request.toString());
+
             if (request.getSource().getType().equals(EndpointType.vfs)) {
                 List<EntityInfo> fileExpandedList = vfsExpander.expandDirectory(request.getSource().getInfoList(), request.getSource().getFileSourcePath());
                 request.getSource().setInfoList(new ArrayList<>(fileExpandedList));
@@ -71,16 +70,17 @@ public class RabbitMQConsumer {
             JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);
             jc.setRequest(request);
             jobLauncher.run(jc.concurrentJobDefinition(), parameters);
+
             return;
         } catch (Exception e) {
-            logger.debug("Failed to parse jsonStr: {} to TransferJobRequest.java", jsonStr);
+            logger.error("Failed to parse jsonStr: {} to TransferJobRequest.java", jsonStr);
         }
         try {
             TransferApplicationParams params = objectMapper.readValue(jsonStr, TransferApplicationParams.class);
             logger.info("Parsed TransferApplicationParams: {}", params);
             this.threadPoolManager.applyOptimizer(params.getConcurrency(), params.getParallelism());
         } catch (Exception e) {
-            logger.info("Did not apply transfer params due to parsing message failure");
+            logger.error("Did not apply transfer params due to parsing message failure");
         }
     }
 }
