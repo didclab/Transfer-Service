@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -22,7 +23,8 @@ public class JobParamService {
 
     Logger logger = LoggerFactory.getLogger(JobParamService.class);
 
-
+    @Value("${spring.application.name}")
+    private String appName;
     /**
      * Here we are adding basically the whole request except for sensitive credentials to the Job Params table.
      * B/C we do not add
@@ -52,7 +54,7 @@ public class JobParamService {
         builder.addLong(PIPELINING, (long) request.getOptions().getPipeSize());
         builder.addString(COMPRESS, String.valueOf(request.getOptions().getCompress()));
         builder.addLong(RETRY, (long) request.getOptions().getRetry());
-        builder.addString(APP_NAME, System.getenv("APP_NAME"));
+        builder.addString(APP_NAME, this.appName);
         builder.addString(OPTIMIZER, request.getOptions().getOptimizer());
         builder.addLong(FILE_COUNT, (long) request.getSource().getInfoList().size());
         long totalSize = 0L;
