@@ -146,7 +146,6 @@ public class InfluxCache {
             double writeThroughput = ODSConstants.computeThroughput(agg.getWrittenBytes(), Duration.between(agg.getWriteStartTime(), agg.getWriteEndTime()));
             agg.setWriteThroughput(writeThroughput);
         }
-        logger.info("Aggregate Metric created: {}", agg);
         return agg;
     }
 

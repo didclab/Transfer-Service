@@ -3,6 +3,8 @@ package org.onedatashare.transferservice.odstransferservice.controller;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
+import org.onedatashare.transferservice.odstransferservice.model.optimizer.TransferApplicationParams;
+import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManager;
 import org.onedatashare.transferservice.odstransferservice.service.JobControl;
 import org.onedatashare.transferservice.odstransferservice.service.JobParamService;
 import org.onedatashare.transferservice.odstransferservice.service.VfsExpander;
@@ -48,6 +50,9 @@ public class TransferController {
     @Autowired
     VfsExpander vfsExpander;
 
+    @Autowired
+    ThreadPoolManager threadPoolManager;
+
     @RequestMapping(value = "/start", method = RequestMethod.POST)
     @Async
     public ResponseEntity<String> start(@RequestBody TransferJobRequest request) throws Exception {
@@ -61,6 +66,12 @@ public class TransferController {
         Job job = jc.concurrentJobDefinition();
         JobExecution jobExecution = asyncJobLauncher.run(job, parameters);
         return ResponseEntity.status(HttpStatus.OK).body("Your batch job has been submitted with \n ID: " + jobExecution.getJobId());
+    }
+
+    @RequestMapping(value="/param", method = RequestMethod.POST)
+    public ResponseEntity<String> paramChange(@RequestBody TransferApplicationParams params){
+        this.threadPoolManager.applyOptimizer(params.getConcurrency(), params.getParallelism());
+        return ResponseEntity.ok("");
     }
 }
 
