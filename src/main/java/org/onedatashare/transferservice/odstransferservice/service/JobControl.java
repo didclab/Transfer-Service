@@ -108,7 +108,7 @@ public class JobControl {
                     .reader(getRightReader(request.getSource().getType(), file))
                     .writer(getRightWriter(request.getDestination().getType(), file));
             if (this.request.getOptions().getParallelThreadCount() > 0) {
-                stepBuilder.taskExecutor(threadPoolManager.parallelThreadPoolVirtual(request.getOptions().getParallelThreadCount(), file.getPath()));
+                stepBuilder.taskExecutor(threadPoolManager.parallelThreadPoolPlatform(request.getOptions().getParallelThreadCount(), file.getPath()));
             }
             return new FlowBuilder<Flow>(basePath + idForStep)
                     .start(stepBuilder.build()).build();
@@ -213,7 +213,7 @@ public class JobControl {
         Flow[] fl = new Flow[flows.size()];
         Flow f = new FlowBuilder<Flow>("splitFlow")
 //                .split(this.threadPoolManager.stepTaskExecutorVirtual(this.request.getOptions().getConcurrencyThreadCount()))
-                .split(this.threadPoolManager.stepTaskExecutorVirtual(this.request.getOptions().getConcurrencyThreadCount()))
+                .split(this.threadPoolManager.stepTaskExecutorPlatform(this.request.getOptions().getConcurrencyThreadCount()))
                 .add(flows.toArray(fl))
                 .build();
         return jobBuilder
