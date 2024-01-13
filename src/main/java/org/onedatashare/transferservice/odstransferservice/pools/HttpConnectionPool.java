@@ -22,6 +22,7 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
     @Override
     public void addObject() {
         this.connectionPool.add(HttpClient.newBuilder()
+                .executor(Executors.newVirtualThreadPerTaskExecutor())
                 .version(HttpClient.Version.HTTP_2)
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .connectTimeout(Duration.ofSeconds(20))
