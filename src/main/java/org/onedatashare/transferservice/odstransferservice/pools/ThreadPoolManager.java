@@ -1,5 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.pools;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,6 +9,8 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.PARALLEL_POOL_PREFIX;
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.STEP_POOL_PREFIX;
@@ -28,8 +31,8 @@ public class ThreadPoolManager {
 
     public ThreadPoolTaskExecutor createPlatformThreads(int corePoolSize, String prefix) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setThreadFactory(Thread.ofPlatform().factory());
         executor.setPrestartAllCoreThreads(true);
-//        executor.setQueueCapacity(1);
         executor.setAllowCoreThreadTimeOut(false);
         executor.setCorePoolSize(corePoolSize);
 //        executor.setMaxPoolSize(corePoolSize);
