@@ -6,6 +6,7 @@ import org.onedatashare.transferservice.odstransferservice.model.credential.Acco
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -22,6 +23,7 @@ public class HttpConnectionPool implements ObjectPool<HttpClient> {
     @Override
     public void addObject() {
         this.connectionPool.add(HttpClient.newBuilder()
+                .executor(Executors.newVirtualThreadPerTaskExecutor())
                 .version(HttpClient.Version.HTTP_2)
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .connectTimeout(Duration.ofSeconds(20))
