@@ -8,7 +8,7 @@ import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.model.optimizer.TransferApplicationParams;
-import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManager;
+import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolContract;
 import org.onedatashare.transferservice.odstransferservice.service.JobControl;
 import org.onedatashare.transferservice.odstransferservice.service.JobParamService;
 import org.onedatashare.transferservice.odstransferservice.service.VfsExpander;
@@ -29,7 +29,7 @@ import java.util.List;
 public class RabbitMQConsumer {
 
     private final ObjectMapper objectMapper;
-    private final ThreadPoolManager threadPoolManager;
+    private final ThreadPoolContract threadPool;
     Logger logger = LoggerFactory.getLogger(RabbitMQConsumer.class);
 
     JobControl jc;
@@ -42,7 +42,7 @@ public class RabbitMQConsumer {
 
     VfsExpander vfsExpander;
 
-    public RabbitMQConsumer(VfsExpander vfsExpander, Queue userQueue, JobParamService jobParamService, JobLauncher asyncJobLauncher, JobControl jc, ThreadPoolManager threadPoolManager) {
+    public RabbitMQConsumer(VfsExpander vfsExpander, Queue userQueue, JobParamService jobParamService, JobLauncher asyncJobLauncher, JobControl jc, ThreadPoolContract threadPool) {
         this.vfsExpander = vfsExpander;
         this.userQueue = userQueue;
         this.jobParamService = jobParamService;
@@ -51,7 +51,7 @@ public class RabbitMQConsumer {
         this.objectMapper = new ObjectMapper();
         this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
         this.objectMapper.setDefaultPropertyInclusion(JsonInclude.Include.ALWAYS);
-        this.threadPoolManager = threadPoolManager;
+        this.threadPool = threadPool;
     }
 
     @RabbitListener(queues = "#{userQueue}")
@@ -78,7 +78,7 @@ public class RabbitMQConsumer {
         try {
             TransferApplicationParams params = objectMapper.readValue(jsonStr, TransferApplicationParams.class);
             logger.info("Parsed TransferApplicationParams: {}", params);
-            this.threadPoolManager.applyOptimizer(params.getConcurrency(), params.getParallelism());
+            this.threadPool.applyOptimizer(params.getConcurrency(), params.getParallelism());
         } catch (Exception e) {
             logger.error("Did not apply transfer params due to parsing message failure");
         }

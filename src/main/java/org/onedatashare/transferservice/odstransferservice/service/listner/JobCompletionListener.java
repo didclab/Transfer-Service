@@ -3,7 +3,7 @@ package org.onedatashare.transferservice.odstransferservice.service.listner;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.optimizer.OptimizerCreateRequest;
 import org.onedatashare.transferservice.odstransferservice.model.optimizer.OptimizerDeleteRequest;
-import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManager;
+import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolContract;
 import org.onedatashare.transferservice.odstransferservice.service.ConnectionBag;
 import org.onedatashare.transferservice.odstransferservice.service.OptimizerService;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
@@ -26,7 +26,7 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
 
 @Service
 public class JobCompletionListener implements JobExecutionListener {
-    private final ThreadPoolManager threadPoolManager;
+    private final ThreadPoolContract threadPool;
     private Set<Long> jobIds;
     Logger logger = LoggerFactory.getLogger(JobCompletionListener.class);
 
@@ -53,12 +53,12 @@ public class JobCompletionListener implements JobExecutionListener {
     @Autowired
     Environment environment;
 
-    public JobCompletionListener(OptimizerService optimizerService, MetricsCollector metricsCollector, ConnectionBag connectionBag, ThreadPoolManager threadPoolManager, Set<Long> jobIds) {
+    public JobCompletionListener(OptimizerService optimizerService, MetricsCollector metricsCollector, ConnectionBag connectionBag, ThreadPoolContract threadPool, Set<Long> jobIds) {
         this.optimizerService = optimizerService;
         this.metricsCollector = metricsCollector;
         this.connectionBag = connectionBag;
         this.optimizerEnable = false;
-        this.threadPoolManager = threadPoolManager;
+        this.threadPool = threadPool;
         this.jobIds = jobIds;
     }
 
@@ -91,7 +91,7 @@ public class JobCompletionListener implements JobExecutionListener {
             this.optimizerService.deleteOptimizerBlocking(new OptimizerDeleteRequest(appName));
             this.optimizerEnable = false;
         }
-        this.threadPoolManager.clearJobPool();
+        this.threadPool.clearPools();
         System.gc();
     }
 }

@@ -7,7 +7,7 @@ import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
-import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolManager;
+import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolContract;
 import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.InfluxIOService;
 import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
@@ -88,7 +88,7 @@ public class JobControl {
     InfluxIOService influxIOService;
 
     @Autowired
-    ThreadPoolManager threadPoolManager;
+    ThreadPoolContract threadPool;
 
     private List<Flow> createConcurrentFlow(List<EntityInfo> infoList, String basePath) {
         if (this.request.getSource().getType().equals(EndpointType.vfs)) {
@@ -108,7 +108,7 @@ public class JobControl {
                     .reader(getRightReader(request.getSource().getType(), file))
                     .writer(getRightWriter(request.getDestination().getType(), file));
             if (this.request.getOptions().getParallelThreadCount() > 0) {
-                stepBuilder.taskExecutor(threadPoolManager.parallelThreadPoolVirtual(request.getOptions().getParallelThreadCount() * request.getOptions().getConcurrencyThreadCount()));
+                stepBuilder.taskExecutor(threadPool.parallelPool(request.getOptions().getParallelThreadCount(), file.getPath()));
             }
             stepBuilder.throttleLimit(64);
             return new FlowBuilder<Flow>(basePath + idForStep)
@@ -214,7 +214,7 @@ public class JobControl {
         Flow[] fl = new Flow[flows.size()];
         Flow f = new FlowBuilder<Flow>("splitFlow")
 //                .split(this.threadPoolManager.stepTaskExecutorVirtual(this.request.getOptions().getConcurrencyThreadCount()))
-                .split(this.threadPoolManager.stepTaskExecutorVirtual(this.request.getOptions().getConcurrencyThreadCount()))
+                .split(this.threadPool.stepPool(this.request.getOptions().getConcurrencyThreadCount()))
                 .add(flows.toArray(fl))
                 .build();
         return jobBuilder
