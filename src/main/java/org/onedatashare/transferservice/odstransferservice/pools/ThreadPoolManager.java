@@ -53,7 +53,7 @@ public class ThreadPoolManager {
             if (key.contains(PARALLEL_POOL_PREFIX)) {
                 logger.info("Changing {} pool size from {} to {}", pool.getThreadNamePrefix(), pool.getConcurrencyLimit(), parallel);
                 if (parallel > 0 && parallel != pool.getConcurrencyLimit()) {
-                    pool.setConcurrencyLimit(parallel * concurrency);
+                    pool.setConcurrencyLimit(parallel);
                     logger.info("Set {} pool size to {}", pool.getThreadNamePrefix(), parallel);
                 }
             }
@@ -79,9 +79,9 @@ public class ThreadPoolManager {
     }
 
     public SimpleAsyncTaskExecutor parallelThreadPoolVirtual(int threadCount, String fileName) {
-        SimpleAsyncTaskExecutor te = this.executorHashmap.get(PARALLEL_POOL_PREFIX);
+        SimpleAsyncTaskExecutor te = this.executorHashmap.get(PARALLEL_POOL_PREFIX + fileName);
         if (te == null) {
-            te = this.createVirtualThreadExecutor(threadCount, PARALLEL_POOL_PREFIX);
+            te = this.createVirtualThreadExecutor(threadCount, PARALLEL_POOL_PREFIX + fileName);
         }
         return te;
     }
