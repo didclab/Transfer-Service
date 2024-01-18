@@ -41,21 +41,18 @@ public class ThreadPoolManager {
      * @param parallel
      */
     public void applyOptimizer(int concurrency, int parallel) {
-        for (String key : this.executorHashmap.keySet()) {
-            SimpleAsyncTaskExecutor pool = this.executorHashmap.get(key);
-            if (key.contains(STEP_POOL_PREFIX)) {
-                logger.info("Changing {} pool size from {} to {}", pool.getThreadNamePrefix(), pool.getConcurrencyLimit(), concurrency);
-                if (concurrency > 0 && concurrency != pool.getConcurrencyLimit()) {
-                    pool.setConcurrencyLimit(concurrency);
-                    logger.info("Set {} pool size to {}", pool.getThreadNamePrefix(), concurrency);
-                }
+        SimpleAsyncTaskExecutor stepPool = this.executorHashmap.get(STEP_POOL_PREFIX);
+        if (stepPool != null) {
+            if (concurrency > 0 && concurrency != stepPool.getConcurrencyLimit()) {
+                stepPool.setConcurrencyLimit(concurrency);
+                logger.info("Set {} pool size to {}", stepPool.getThreadNamePrefix(), concurrency);
             }
-            if (key.contains(PARALLEL_POOL_PREFIX)) {
-                logger.info("Changing {} pool size from {} to {}", pool.getThreadNamePrefix(), pool.getConcurrencyLimit(), parallel);
-                if (parallel > 0 && parallel != pool.getConcurrencyLimit()) {
-                    pool.setConcurrencyLimit(parallel);
-                    logger.info("Set {} pool size to {}", pool.getThreadNamePrefix(), parallel);
-                }
+        }
+        SimpleAsyncTaskExecutor parallelPool = this.executorHashmap.get(PARALLEL_POOL_PREFIX);
+        if (parallelPool != null) {
+            if (parallel > 0 && parallel != parallelPool.getConcurrencyLimit()) {
+                parallelPool.setConcurrencyLimit(parallel * concurrency);
+                logger.info("Set {} pool size to {}", parallelPool.getThreadNamePrefix(), parallel);
             }
         }
     }
@@ -78,10 +75,10 @@ public class ThreadPoolManager {
         return te;
     }
 
-    public SimpleAsyncTaskExecutor parallelThreadPoolVirtual(int threadCount, String fileName) {
-        SimpleAsyncTaskExecutor te = this.executorHashmap.get(PARALLEL_POOL_PREFIX + fileName);
+    public SimpleAsyncTaskExecutor parallelThreadPoolVirtual(int threadCount) {
+        SimpleAsyncTaskExecutor te = this.executorHashmap.get(PARALLEL_POOL_PREFIX);
         if (te == null) {
-            te = this.createVirtualThreadExecutor(threadCount, PARALLEL_POOL_PREFIX + fileName);
+            te = this.createVirtualThreadExecutor(threadCount, PARALLEL_POOL_PREFIX);
         }
         return te;
     }
@@ -95,16 +92,11 @@ public class ThreadPoolManager {
     }
 
     public Integer parallelismCount() {
-        int parallelism = 0;
-        for (String key : this.executorHashmap.keySet()) {
-            if (key.contains(PARALLEL_POOL_PREFIX)) {
-                parallelism = this.executorHashmap.get(key).getConcurrencyLimit();
-                if (parallelism > 0) {
-                    return parallelism;
-                }
-            }
+        SimpleAsyncTaskExecutor threadPoolManager = this.executorHashmap.get(PARALLEL_POOL_PREFIX);
+        if (threadPoolManager == null) {
+            return 0;
         }
-        return parallelism;
+        return threadPoolManager.getConcurrencyLimit();
     }
 
 }

@@ -108,7 +108,7 @@ public class JobControl {
                     .reader(getRightReader(request.getSource().getType(), file))
                     .writer(getRightWriter(request.getDestination().getType(), file));
             if (this.request.getOptions().getParallelThreadCount() > 0) {
-                stepBuilder.taskExecutor(threadPoolManager.parallelThreadPoolVirtual(request.getOptions().getParallelThreadCount() * request.getOptions().getConcurrencyThreadCount(), file.getPath()));
+                stepBuilder.taskExecutor(threadPoolManager.parallelThreadPoolVirtual(request.getOptions().getParallelThreadCount()));
             }
             stepBuilder.throttleLimit(64);
             return new FlowBuilder<Flow>(basePath + idForStep)
