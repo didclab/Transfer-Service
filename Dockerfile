@@ -1,14 +1,16 @@
-FROM maven:3.9.5-amazoncorretto-21 AS build
+FROM maven:3.9.6-amazoncorretto-21 AS build
 
 COPY src /home/app/src
 COPY pom.xml /home/app
 RUN mvn -f /home/app/pom.xml clean package -DskipTests
 
 # Final Image
-FROM amazoncorretto:21-alpine-jdk
+FROM amazoncorretto:21-alpine3.18-jdk
 
+RUN apk update
 RUN apk --no-cache add python3-dev py3-pip build-base gcc linux-headers
-RUN pip3 install pmeter-ods==1.0.11
+
+RUN pip install pmeter-ods==1.0.11
 
 COPY --from=build /home/app/target/ods-transfer-service-0.0.1-SNAPSHOT.jar /usr/local/lib/ods-transfer-service-0.0.1-SNAPSHOT.jar
 
@@ -24,8 +26,6 @@ ENV ODS_GDRIVE_PROJECT_ID="onedatashare-dev"
 ENV EUREKA_URI="${EUREKA_URI}"
 ENV EUREKA_PASS="${EUREKA_PASS}"
 ENV EUREKA_USER="${EUREKA_USER}"
-ENV FOLDER_WITH_CERTS="${FOLDER_WITH_CERTS}"
-COPY ${FOLDER_WITH_CERTS} /certs/
 ENV COCKROACH_URI="${COCKROACH_URI}"
 ENV COCKROACH_USER="${COCKROACH_USER}"
 ENV COCKROACH_PASS="${COCKROACH_PASS}"
