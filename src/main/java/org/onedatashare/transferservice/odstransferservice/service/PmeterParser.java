@@ -95,9 +95,9 @@ public class PmeterParser {
         return ret;
     }
 
-    public CarbonScore runCarbonPmeter(String ip){
+    public CarbonScore runCarbonPmeter(String ip) {
         //pmeter carbon 129.114.108.45
-         CommandLine carbonCmd= CommandLine.parse(String.format("pmeter carbon %s", ip));
+        CommandLine carbonCmd = CommandLine.parse(String.format("pmeter carbon %s", ip));
         try {
             DefaultExecutor carbonExecutor = new DefaultExecutor();
             carbonExecutor.execute(carbonCmd);
@@ -108,7 +108,7 @@ public class PmeterParser {
             Path filePath = Paths.get(this.pmeterCarbonPath);
             List<String> lines = Files.readAllLines(filePath);
             CarbonScore score = new CarbonScore();
-            for(String line: lines){
+            for (String line : lines) {
                 score = this.pmeterMapper.readValue(line, CarbonScore.class);
                 break;
             }
