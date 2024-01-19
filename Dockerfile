@@ -8,7 +8,7 @@ RUN mvn -f /home/app/pom.xml clean package -DskipTests
 FROM amazoncorretto:21-alpine-jdk
 
 RUN apk --no-cache add python3-dev py3-pip build-base gcc linux-headers
-RUN pip3 install pmeter-ods==1.0.8
+RUN pip3 install pmeter-ods==1.0.11
 
 COPY --from=build /home/app/target/ods-transfer-service-0.0.1-SNAPSHOT.jar /usr/local/lib/ods-transfer-service-0.0.1-SNAPSHOT.jar
 
