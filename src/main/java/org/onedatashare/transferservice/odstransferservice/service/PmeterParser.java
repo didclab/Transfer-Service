@@ -49,6 +49,10 @@ public class PmeterParser {
 
     @Value("${pmeter.options}")
     String pmeterOptions;
+
+    @Value("${pmeter.carbon.toggle}")
+    private boolean toggle;
+
     ObjectMapper pmeterMapper;
     private CommandLine cmdLine;
 
@@ -97,6 +101,7 @@ public class PmeterParser {
 
     public CarbonScore runCarbonPmeter(String ip) {
         //pmeter carbon 129.114.108.45
+        if(this.toggle == false){return new CarbonScore();}
         CommandLine carbonCmd = CommandLine.parse(String.format("pmeter carbon %s", ip));
         try {
             DefaultExecutor carbonExecutor = new DefaultExecutor();
