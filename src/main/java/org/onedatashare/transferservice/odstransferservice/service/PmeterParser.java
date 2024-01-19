@@ -6,6 +6,7 @@ import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteWatchdog;
 import org.apache.commons.exec.PumpStreamHandler;
+import org.onedatashare.transferservice.odstransferservice.model.metrics.CarbonScore;
 import org.onedatashare.transferservice.odstransferservice.model.metrics.DataInflux;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +32,8 @@ public class PmeterParser {
 
     Logger logger = LoggerFactory.getLogger(PmeterParser.class);
 
+    @Value("${pmeter.carbon.path}")
+    String pmeterCarbonPath;
 
     @Value("${pmeter.report.path}")
     String pmeterReportPath;
@@ -91,5 +94,29 @@ public class PmeterParser {
         path.toFile().delete();
         path.toFile().createNewFile();
         return ret;
+    }
+
+    public CarbonScore runCarbonPmeter(String ip){
+        //pmeter carbon 129.114.108.45
+         CommandLine carbonCmd= CommandLine.parse(String.format("pmeter carbon %s", ip));
+        try {
+            executor.execute(carbonCmd);
+        } catch (IOException e) {
+            return new CarbonScore();
+        }
+        try {
+            Path filePath = Paths.get(this.pmeterCarbonPath);
+            List<String> lines = Files.readAllLines(filePath);
+            CarbonScore score = new CarbonScore();
+            for(String line: lines){
+                score = this.pmeterMapper.readValue(line, CarbonScore.class);
+                break;
+            }
+            filePath.toFile().delete();
+            filePath.toFile().createNewFile();
+            return score;
+        } catch (IOException e) {
+            return new CarbonScore();
+        }
     }
 }
