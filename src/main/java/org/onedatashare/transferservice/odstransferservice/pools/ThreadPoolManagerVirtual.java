@@ -103,9 +103,9 @@ public class ThreadPoolManagerVirtual implements ThreadPoolContract {
     public int parallelismCount() {
         for (String key : this.executorHashmap.keySet()) {
             if (key.contains(PARALLEL_POOL_PREFIX)) {
-                SimpleAsyncTaskExecutor threadPoolManager = this.executorHashmap.get(PARALLEL_POOL_PREFIX);
-                if (threadPoolManager != null) {
-                    return threadPoolManager.getConcurrencyLimit();
+                SimpleAsyncTaskExecutor executor = this.executorHashmap.get(key);
+                if (executor != null) {
+                    return executor.getConcurrencyLimit();
                 }
             }
         }
