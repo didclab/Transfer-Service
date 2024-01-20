@@ -79,8 +79,9 @@ public class ThreadPoolManagerPlatform implements ThreadPoolContract {
         for (String key : this.platformThreadMap.keySet()) {
             if (key.contains(PARALLEL_POOL_PREFIX)) {
                 ThreadPoolTaskExecutor threadPoolManager = this.platformThreadMap.get(PARALLEL_POOL_PREFIX);
-                if (threadPoolManager != null) {
-                    return threadPoolManager.getCorePoolSize();
+                int parallelismCount = threadPoolManager.getCorePoolSize();
+                if(parallelismCount != 0){
+                    return parallelismCount;
                 }
             }
         }
