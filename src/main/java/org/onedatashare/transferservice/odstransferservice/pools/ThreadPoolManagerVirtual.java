@@ -52,7 +52,7 @@ public class ThreadPoolManagerVirtual implements ThreadPoolContract {
         }
         for (String key : this.executorHashmap.keySet()) {
             if (key.contains(PARALLEL_POOL_PREFIX)) {
-                SimpleAsyncTaskExecutor parallelPool = this.executorHashmap.get(PARALLEL_POOL_PREFIX);
+                SimpleAsyncTaskExecutor parallelPool = this.executorHashmap.get(key);
                 if (parallelPool != null) {
                     if (parallel > 0 && parallel != parallelPool.getConcurrencyLimit()) {
                         parallelPool.setConcurrencyLimit(parallel);
