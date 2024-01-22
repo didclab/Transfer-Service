@@ -159,4 +159,7 @@ public class DataInflux {
 
     @Column(name = JOB_UUID, tag = true)
     private UUID jobUuid;
+
+    @Column(name = IS_RUNNING)
+    private Boolean isRunning;
 }

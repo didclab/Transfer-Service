@@ -134,6 +134,9 @@ public class MetricsCollector {
             lastPmeterData.setJobSize(jobParameters.getLong(ODSConstants.JOB_SIZE));
             lastPmeterData.setAvgFileSize(jobParameters.getLong(ODSConstants.FILE_SIZE_AVG));
             lastPmeterData.setOdsUser(jobParameters.getString(ODSConstants.OWNER_ID));
+            lastPmeterData.setIsRunning(currentAggregateMetric.getStepExecution().getJobExecution().isRunning());
+        }else{
+            lastPmeterData.setIsRunning(false);
         }
         log.info(lastPmeterData.toString());
         this.influxCache.clearCache();

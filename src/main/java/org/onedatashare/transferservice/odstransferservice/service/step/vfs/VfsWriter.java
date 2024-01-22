@@ -70,8 +70,7 @@ public class VfsWriter extends ODSBaseWriter implements ItemWriter<DataChunk> {
         for (int i = 0; i < items.size(); i++) {
             DataChunk chunk = items.get(i);
             int bytesWritten = this.fileChannel.write(ByteBuffer.wrap(chunk.getData()), chunk.getStartPosition());
-            if (chunk.getSize() != bytesWritten)
-                chunk = null;
+            chunk = null;
         }
     }
 }
