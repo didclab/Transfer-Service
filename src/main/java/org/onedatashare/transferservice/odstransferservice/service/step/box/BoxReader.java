@@ -45,7 +45,11 @@ public class BoxReader extends AbstractItemCountingItemStreamItemReader<DataChun
         FilePart filePart = filePartitioner.nextPart();
         if (filePart == null) return null;
         ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
-        this.currentFile.downloadRange(byteArray, filePart.getStart(), filePart.getEnd());
+        if(this.fileInfo.getSize() == this.fileInfo.getChunkSize()){
+            this.currentFile.download(byteArray);
+        }else{
+            this.currentFile.downloadRange(byteArray, filePart.getStart(), filePart.getEnd());
+        }
         DataChunk chunk = ODSUtility.makeChunk(filePart.getSize(), byteArray.toByteArray(), filePart.getStart(), Math.toIntExact(filePart.getPartIdx()), currentFile.getInfo().getName());
         logger.info(chunk.toString());
         return chunk;
