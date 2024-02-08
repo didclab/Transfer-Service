@@ -25,13 +25,17 @@ public class BoxSmallFileUpload {
         this.dataChunkPriorityQueue.addAll(chunks);
     }
 
-    public InputStream condenseListToOneStream(long size){
-        byte[] data = new byte[Long.valueOf(size).intValue()];//we know this file will always be <= 20MB
-        ByteBuffer buffer = ByteBuffer.wrap(data);
-        for(DataChunk chunk : this.dataChunkPriorityQueue){
-            buffer.put(chunk.getData());
+    public InputStream condenseListToOneStream(){
+        int totalLength = this.dataChunkPriorityQueue.stream().mapToInt(byteArray -> byteArray.getData().length).sum();
+        byte[] combinedBytes = new byte[totalLength];
+
+        int currentIndex = 0;
+        for (DataChunk chunk : dataChunkPriorityQueue) {
+            byte[] byteArray = chunk.getData();
+            System.arraycopy(byteArray, 0, combinedBytes, currentIndex, byteArray.length);
+            currentIndex += byteArray.length;
         }
-        this.dataChunkPriorityQueue.clear();
-        return new ByteArrayInputStream(buffer.array());
+
+        return new ByteArrayInputStream(combinedBytes);
     }
 }

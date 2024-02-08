@@ -2,9 +2,7 @@ package org.onedatashare.transferservice.odstransferservice.service.step;
 
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
-import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.onedatashare.transferservice.odstransferservice.service.MetricsCollector;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterRead;
 import org.springframework.batch.core.annotation.AfterWrite;

@@ -11,7 +11,7 @@ import org.onedatashare.transferservice.odstransferservice.model.optimizer.Trans
 import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolContract;
 import org.onedatashare.transferservice.odstransferservice.service.JobControl;
 import org.onedatashare.transferservice.odstransferservice.service.JobParamService;
-import org.onedatashare.transferservice.odstransferservice.service.VfsExpander;
+import org.onedatashare.transferservice.odstransferservice.service.expanders.VfsExpander;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
@@ -40,10 +40,8 @@ public class RabbitMQConsumer {
 
     Queue userQueue;
 
-    VfsExpander vfsExpander;
 
-    public RabbitMQConsumer(VfsExpander vfsExpander, Queue userQueue, JobParamService jobParamService, JobLauncher asyncJobLauncher, JobControl jc, ThreadPoolContract threadPool) {
-        this.vfsExpander = vfsExpander;
+    public RabbitMQConsumer(Queue userQueue, JobParamService jobParamService, JobLauncher asyncJobLauncher, JobControl jc, ThreadPoolContract threadPool) {
         this.userQueue = userQueue;
         this.jobParamService = jobParamService;
         this.jobLauncher = asyncJobLauncher;
@@ -63,10 +61,6 @@ public class RabbitMQConsumer {
             TransferJobRequest request = objectMapper.readValue(jsonStr, TransferJobRequest.class);
             logger.info("Job Recieved: {}", request.toString());
 
-            if (request.getSource().getType().equals(EndpointType.vfs)) {
-                List<EntityInfo> fileExpandedList = vfsExpander.expandDirectory(request.getSource().getInfoList(), request.getSource().getFileSourcePath());
-                request.getSource().setInfoList(new ArrayList<>(fileExpandedList));
-            }
             JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);
             jc.setRequest(request);
             jobLauncher.run(jc.concurrentJobDefinition(), parameters);

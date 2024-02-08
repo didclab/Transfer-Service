@@ -1,4 +1,4 @@
-package org.onedatashare.transferservice.odstransferservice.service.cron;
+package org.onedatashare.transferservice.odstransferservice.service;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -7,9 +7,6 @@ import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants
 import org.onedatashare.transferservice.odstransferservice.model.JobMetric;
 import org.onedatashare.transferservice.odstransferservice.model.metrics.DataInflux;
 import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.InfluxIOService;
-import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
-import org.onedatashare.transferservice.odstransferservice.service.LatencyRtt;
-import org.onedatashare.transferservice.odstransferservice.service.PmeterParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.JobParameters;
@@ -85,7 +82,7 @@ public class MetricsCollector {
         long maxMem = Runtime.getRuntime().maxMemory();
         JobMetric currentAggregateMetric = influxCache.aggregateMetric(); //this metrics throughput is the throughput of the whole map in influxCache.
         DataInflux lastPmeterData;
-        if (this.metrics.size() < 1) {
+        if (this.metrics.isEmpty()) {
             this.metrics.add(new DataInflux());
             lastPmeterData = metrics.get(metrics.size() - 1);
         } else {

@@ -6,7 +6,7 @@ import org.onedatashare.transferservice.odstransferservice.model.optimizer.Optim
 import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolContract;
 import org.onedatashare.transferservice.odstransferservice.service.ConnectionBag;
 import org.onedatashare.transferservice.odstransferservice.service.OptimizerService;
-import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
+import org.onedatashare.transferservice.odstransferservice.service.MetricsCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.JobExecution;

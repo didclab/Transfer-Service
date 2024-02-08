@@ -8,7 +8,7 @@ import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
-import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
+import org.onedatashare.transferservice.odstransferservice.service.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,14 +34,14 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
  */
 public class BoxWriterLargeFile extends ODSBaseWriter implements ItemWriter<DataChunk> {
 
-    private BoxAPIConnection boxAPIConnection;
     EntityInfo fileInfo;
-    private HashMap<String, BoxFileUploadSession> fileMap;
-    private HashMap<String, MessageDigest> digestMap;
-    private List<BoxFileUploadSessionPart> parts;
     String destinationBasePath;
     BoxFolder boxFolder;
     Logger logger = LoggerFactory.getLogger(BoxWriterLargeFile.class);
+    private final BoxAPIConnection boxAPIConnection;
+    private final HashMap<String, BoxFileUploadSession> fileMap;
+    private final HashMap<String, MessageDigest> digestMap;
+    private final List<BoxFileUploadSessionPart> parts;
 
     public BoxWriterLargeFile(OAuthEndpointCredential oAuthDestCredential, EntityInfo fileInfo, MetricsCollector metricsCollector, InfluxCache influxCache) {
         super(metricsCollector, influxCache);
@@ -93,10 +93,7 @@ public class BoxWriterLargeFile extends ODSBaseWriter implements ItemWriter<Data
      * @return
      */
     private boolean ready(String fileName) {
-        if (!this.fileMap.containsKey(fileName) || !this.digestMap.containsKey(fileName)) {
-            return false;
-        }
-        return true;
+        return this.fileMap.containsKey(fileName) && this.digestMap.containsKey(fileName);
     }
 
     /**
@@ -116,7 +113,7 @@ public class BoxWriterLargeFile extends ODSBaseWriter implements ItemWriter<Data
             BoxFileUploadSessionPart part = session.uploadPart(dataChunk.getData(), dataChunk.getStartPosition(), Long.valueOf(dataChunk.getSize()).intValue(), this.fileInfo.getSize());
             this.parts.add(part);
             digest.update(dataChunk.getData());
-            logger.info("Current chunk in BoxLargeFile Writer " + dataChunk.toString());
+            logger.info("Current chunk in BoxLargeFile Writer " + dataChunk);
         }
         this.digestMap.put(fileName, digest);
 

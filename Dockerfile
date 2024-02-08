@@ -10,7 +10,7 @@ FROM amazoncorretto:21-alpine3.18-jdk
 RUN apk update
 RUN apk --no-cache add python3-dev py3-pip build-base gcc linux-headers
 
-RUN pip install pmeter-ods==1.0.11
+RUN pip install pmeter-ods
 
 COPY --from=build /home/app/target/ods-transfer-service-0.0.1-SNAPSHOT.jar /usr/local/lib/ods-transfer-service-0.0.1-SNAPSHOT.jar
 
