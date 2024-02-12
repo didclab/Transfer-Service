@@ -50,4 +50,4 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ secrets.AWS_REPO_URI }}/onedatashare/transfer_service:latest
+          tags: "${{ secrets.AWS_REPO_URI }}/onedatashare/transfer_service:latest"
