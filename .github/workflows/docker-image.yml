@@ -25,7 +25,9 @@ jobs:
           DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
         run:
           docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-      - name: Build and push
+
+      - name: Build and push dockerhub
+        id: dockerhub
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -44,10 +46,13 @@ jobs:
         run: |
           aws ecr get-login-password --region us-west-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_REPO_URI }}
 
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: onedatashare/transfer_service:latest
+      - name: Build and push AWS
+        run: |
+          # Retrieve the image reference from the dockerhub step
+          DOCKERHUB_IMAGE_REF=$(echo "${{ steps.dockerhub.outputs.images }}")
+          
+          # Tag the image for ECR
+          docker tag $DOCKERHUB_IMAGE_REF ${{ secrets.AWS_REPO_URI }}/onedatashare/transfer_service:latest
+          
+          # Push the image to ECR
+          docker push ${{ secrets.AWS_REPO_URI }}/onedatashare/transfer_service:latest
