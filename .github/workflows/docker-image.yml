@@ -27,7 +27,6 @@ jobs:
           docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
 
       - name: Build and push dockerhub
-        id: dockerhub
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -46,7 +45,7 @@ jobs:
         run: |
           aws ecr get-login-password --region us-west-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_REPO_URI }}
   
-      - name: Build, tag, and push docker image to Amazon ECR Public
+      - name: Build, tag, and push docker image to Amazon ECR Private
         env:
           REGISTRY: ${{ secrets.AWS_REPO_URI }}
           REPOSITORY: onedatashare/transfer_service
