@@ -48,8 +48,7 @@ jobs:
       - name: Build, tag, and push docker image to Amazon ECR Private
         env:
           REGISTRY: ${{ secrets.AWS_REPO_URI }}
-          REPOSITORY: onedatashare/transfer_service
           IMAGE_TAG: lastest
         run: |
-          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
-          docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:$IMAGE_TAG
+          docker build -t $REGISTRY/onedatashare/transfer_service:$IMAGE_TAG .
+          docker push $REGISTRY/onedatashare/transfer_service:$IMAGE_TAG
