@@ -50,5 +50,5 @@ jobs:
           REGISTRY: ${{ secrets.AWS_REPO_URI }}
           IMAGE_TAG: latest
         run: |
-          docker build -t 148306013631.dkr.ecr.us-west-1.amazonaws.com/onedatashare/transfer_service:$IMAGE_TAG .
-          docker push 148306013631.dkr.ecr.us-west-1.amazonaws.com/onedatashare/transfer_service:$IMAGE_TAG
+          docker build -t $REGISTRY/onedatashare/transfer_service:$IMAGE_TAG .
+          docker push $REGISTRY/onedatashare/transfer_service:$IMAGE_TAG
