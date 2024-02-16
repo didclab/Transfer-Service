@@ -45,14 +45,12 @@ jobs:
       - name: docker login to ECR
         run: |
           aws ecr get-login-password --region us-west-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_REPO_URI }}
-
-      - name: Build and push AWS
+  
+      - name: Build, tag, and push docker image to Amazon ECR Public
+        env:
+          REGISTRY: ${{ secrets.AWS_REPO_URI }}
+          REPOSITORY: onedatashare/transfer_service
+          IMAGE_TAG: lastest
         run: |
-          # Retrieve the image reference from the dockerhub step
-          DOCKERHUB_IMAGE_REF=$(echo "${{ steps.dockerhub.outputs.images }}")
-          
-          # Tag the image for ECR
-          docker tag $DOCKERHUB_IMAGE_REF ${{ secrets.AWS_REPO_URI }}/onedatashare/transfer_service:latest
-          
-          # Push the image to ECR
-          docker push ${{ secrets.AWS_REPO_URI }}/onedatashare/transfer_service:latest
+          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
+          docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:$IMAGE_TAG
