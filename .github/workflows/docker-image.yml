@@ -40,15 +40,20 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-west-1
-
-      - name: docker login to ECR
-        run: |
-          aws ecr get-login-password --region us-west-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_REPO_URI }}
   
-      - name: Build, tag, and push docker image to Amazon ECR Private
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+  
+      - name: Build, tag, and push the image to Amazon ECR
+        id: build-image
         env:
-          REGISTRY: ${{ secrets.AWS_REPO_URI }}
+          ECR_REGISTRY: ${{ secrets.AWS_REPO_URI }}
+          ECR_REPOSITORY: onedatashare/transfer_service
           IMAGE_TAG: latest
         run: |
-          docker build -t $REGISTRY/onedatashare/transfer_service:$IMAGE_TAG .
-          docker push $REGISTRY/onedatashare/transfer_service:$IMAGE_TAG
+          # Build a docker container and push it to ECR 
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          echo "Pushing image to ECR..."
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
