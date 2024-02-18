@@ -21,7 +21,7 @@ jobs:
           DOCKER_USER: ${{secrets.DOCKER_USER}}
           DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
         run:
-          docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+          sudo docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
 
       - name: Build Docker Image
         uses: docker/build-push-action@v5
@@ -49,8 +49,8 @@ jobs:
     
       - name: Push to DockerHub
         run: |
-          docker load -i /var/lib/docker/image/docker-image
-          docker push onedatashare/transfer_service:latest
+          sudo docker load -i /var/lib/docker/image/docker-image
+          sudo docker push onedatashare/transfer_service:latest
 
   push-to-ecr:
     runs-on: ubuntu-latest
