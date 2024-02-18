@@ -31,10 +31,18 @@ jobs:
           push: false  # Do not push in this step
           tags: onedatashare/transfer_service:latest
 
+      - name: Save Docker Image
+        run: |
+          docker save -o transfer_service.tar onedatashare/transfer_service:latest
+          echo "::set-output name=image::transfer_service.tar"
+        id: save-image
+
   push-to-dockerhub:
     runs-on: ubuntu-latest
     needs: build
     steps:
+      - name: Load Docker Image
+        run: docker load -i ${{ needs.build.outputs.save-image }}
       - name: Push to DockerHub
         run: |
           docker push onedatashare/transfer_service:latest
