@@ -1,0 +1,41 @@
+name: Push to ECR
+
+on:
+  workflow_run:
+    workflows: ["Push to DockerHub"]
+    types:
+      - completed
+
+jobs:
+  announce:
+    # This job does nothing except to bypass the atleast one independent job check in workflow
+    runs-on: ubuntu-latest
+    steps:
+      - name: announce
+        run:
+          echo "Pushing Image to AWS ECR..."
+
+  push_to_ecr:
+    runs-on: ubuntu-latest
+    needs: push_to_dockerhub
+    steps:
+      - name: Setup AWS ECR Details
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-1
+
+      - name: Login to Amazon ECR
+        id: login-pf-aws-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Push to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-pf-aws-ecr.outputs.registry }}
+          ECR_REPOSITORY: onedatashare/transfer_service
+          IMAGE_TAG: latest
+        run: |
+          docker pull onedatashare/transfer_service:latest
+          docker tag onedatashare/transfer_service:latest $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG

@@ -1,0 +1,31 @@
+name: Push to DockerHub
+
+on:
+  workflow_run:
+    workflows: ["Build Docker Image"]
+    types:
+      - completed
+
+jobs:
+  announce:
+    # This job does nothing except to bypass the atleast one independent job check in workflow
+    runs-on: ubuntu-latest
+    steps:
+      - name: announce
+        run:
+          echo "Pushing Image to dockerhub..."
+  
+  push_to_dockerhub:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Push to DockerHub
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: onedatashare/transfer_service:latest
