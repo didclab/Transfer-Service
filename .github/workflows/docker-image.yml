@@ -35,7 +35,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: docker-image
-          path: /var/lib/docker/image
+          path: /tmp/image
   
   push-to-dockerhub:
     runs-on: ubuntu-latest
@@ -43,13 +43,13 @@ jobs:
     steps:
       - name: permissions
         run: |
-          sudo chown $USER /var/lib/docker/image
+          sudo chown $USER /tmp/image
     
       - name: Restore Cached Docker Image
         uses: actions/download-artifact@v2
         with:
           name: docker-image
-          path: /var/lib/docker/image
+          path: /tmp/image
     
       - name: Push to DockerHub
         run: |
