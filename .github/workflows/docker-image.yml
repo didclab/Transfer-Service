@@ -41,6 +41,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
+      - name: permissions
+        run: |
+          sudo chown $USER /var/lib/docker/image
+    
       - name: Restore Cached Docker Image
         uses: actions/download-artifact@v2
         with:
