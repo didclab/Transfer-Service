@@ -16,7 +16,6 @@ jobs:
           echo "Pushing Image to dockerhub..."
   
   push_to_dockerhub:
-    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
