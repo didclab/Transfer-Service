@@ -28,39 +28,12 @@ jobs:
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          push: false  # Do not push in this step
+          push: true  # Do not push in this step
           tags: onedatashare/transfer_service:latest
-
-      - name: Create a file
-        run: |
-          mkdir -p /tmp/image
-          touch /tmp/image/docker-image
-        
-      - name: Cache Docker Image
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-image
-          path: /tmp/image
-          overwrite: true
-  
-  push-to-dockerhub:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Restore Cached Docker Image
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-image
-          path: /tmp/image
-    
-      - name: Push to DockerHub
-        run: |
-          sudo docker load -i /tmp/image/docker-image
-          sudo docker push onedatashare/transfer_service:latest
 
   push-to-ecr:
     runs-on: ubuntu-latest
-    needs: push-to-dockerhub
+    needs: build
     steps:
       - name: Setup AWS ECR Details
         uses: aws-actions/configure-aws-credentials@v1
