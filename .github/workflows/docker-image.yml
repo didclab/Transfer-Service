@@ -34,8 +34,8 @@ jobs:
       - name: Create a file
         run: |
           mkdir -p /tmp/image
-          cat "" > /tmp/image/docker-image
-          
+          touch /tmp/image/docker-image
+        
       - name: Cache Docker Image
         uses: actions/upload-artifact@v4
         with:
@@ -55,7 +55,7 @@ jobs:
     
       - name: Push to DockerHub
         run: |
-          sudo docker load -i /var/lib/docker/image/docker-image
+          sudo docker load -i /tmp/image/docker-image
           sudo docker push onedatashare/transfer_service:latest
 
   push-to-ecr:
