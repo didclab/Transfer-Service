@@ -32,8 +32,10 @@ jobs:
           tags: onedatashare/transfer_service:latest
 
       - name: Create a file
-        run: cat "" > /tmp/image/docker-image
-
+        run: |
+          mkdir -p /tmp/image
+          cat "" > /tmp/image/docker-image
+          
       - name: Cache Docker Image
         uses: actions/upload-artifact@v4
         with:
