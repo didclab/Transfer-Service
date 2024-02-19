@@ -31,8 +31,11 @@ jobs:
           push: true
           tags: onedatashare/transfer_service:latest
 
+  push-to-ecr:
+    runs-on: ubuntu-latest
+    steps:
       - name: Setup AWS ECR Details
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v3
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -40,7 +43,7 @@ jobs:
 
       - name: Login to Amazon ECR
         id: login-pf-aws-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
         
       - name: Build and push the tagged docker image to Amazon ECR
         env:
@@ -48,5 +51,6 @@ jobs:
           ECR_REPOSITORY: onedatashare/transfer_service
           IMAGE_TAG: latest
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker pull onedatashare/transfer_service:latest
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG onedatashare/transfer_service:latest
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
