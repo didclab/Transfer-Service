@@ -32,6 +32,7 @@ jobs:
           tags: onedatashare/transfer_service:latest
 
   push-to-ecr:
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Setup AWS ECR Details
