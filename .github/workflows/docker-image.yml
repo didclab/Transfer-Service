@@ -43,6 +43,8 @@ jobs:
   push-to-ecr:
     needs: build
     runs-on: ubuntu-latest
+    env:
+      TAG_NAME: ${{ needs.build.outputs.TAG_NAME }}
     steps:
       - name: Setup AWS ECR Details
         uses: aws-actions/configure-aws-credentials@v3
