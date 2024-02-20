@@ -52,6 +52,6 @@ jobs:
           ECR_REPOSITORY: onedatashare/transfer_service
           IMAGE_TAG: v1.${{ github.run_number }}
         run: |
-          docker pull onedatashare/transfer_service:v1.${{ github.run_number }}
-          docker tag onedatashare/transfer_service:v1.${{ github.run_number }} $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker pull onedatashare/transfer_service:$IMAGE_TAG
+          docker tag onedatashare/transfer_service:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
