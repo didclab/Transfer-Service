@@ -25,8 +25,6 @@ jobs:
         run: |
           TAG_NAME=$(echo ${{ github.ref }} | sed 's|refs/tags/||')
           echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
-      - name: Debug Tag Name
-        run: echo "TAG_NAME=${TAG_NAME}"
       - name: docker login
         env:
           DOCKER_USER: ${{secrets.DOCKER_USER}}
@@ -36,11 +34,13 @@ jobs:
 
       - name: Build and push dockerhub
         uses: docker/build-push-action@v5
+        env:
+          TAG_NAME: ${{ needs.build.outputs.TAG_NAME }}     
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: onedatashare/transfer_service:${TAG_NAME}
+          tags: onedatashare/transfer_service:$TAG_NAME
 
   push-to-ecr:
     needs: build
@@ -64,6 +64,6 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-pf-aws-ecr.outputs.registry }}
           ECR_REPOSITORY: onedatashare/transfer_service
         run: |
-          docker pull onedatashare/transfer_service:${TAG_NAME}
-          docker tag onedatashare/transfer_service:${TAG_NAME} $ECR_REGISTRY/$ECR_REPOSITORY:${TAG_NAME}
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${TAG_NAME}
+          docker pull onedatashare/transfer_service:$TAG_NAME
+          docker tag onedatashare/transfer_service:$TAG_NAME $ECR_REGISTRY/$ECR_REPOSITORY:$TAG_NAME
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$TAG_NAME
