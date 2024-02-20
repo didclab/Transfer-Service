@@ -25,6 +25,8 @@ jobs:
         run: |
           TAG_NAME=$(echo ${{ github.ref }} | sed 's|refs/tags/||')
           echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+      - name: Debug Tag Name
+        run: echo "TAG_NAME=${TAG_NAME}"
       - name: docker login
         env:
           DOCKER_USER: ${{secrets.DOCKER_USER}}
