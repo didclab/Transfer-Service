@@ -29,8 +29,8 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: onedatashare/transfer_service:$GITHUB_REF_NAME
-
+          tags: onedatashare/transfer_service:${{  github.ref_name }}
+          
   push-to-ecr:
     needs: build
     runs-on: ubuntu-latest
@@ -50,7 +50,7 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-pf-aws-ecr.outputs.registry }}
           ECR_REPOSITORY: onedatashare/transfer_service
-          IMAGE_TAG: $GITHUB_REF_NAME
+          IMAGE_TAG: ${{  github.ref_name }}
         run: |
           docker pull onedatashare/transfer_service:$IMAGE_TAG
           docker tag onedatashare/transfer_service:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
