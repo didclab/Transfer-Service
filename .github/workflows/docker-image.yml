@@ -1,6 +1,8 @@
 name: Docker Image CI
 
 on:
+  tags:
+    - '*'
   push:
     branches: [ "master" ]
   pull_request:
@@ -22,14 +24,19 @@ jobs:
           DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
         run:
           docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-
+      - name: Get tag
+        id: tag
+        uses: dawidd6/action-get-tag@v1
+        with:
+          # Optionally strip `v` prefix
+          strip_v: false
       - name: Build and push dockerhub
         uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: onedatashare/transfer_service:${{ github.event.release.tag_name }}
+          tags: onedatashare/transfer_service:${{steps.tag.outputs.tag}}
 
   push-to-ecr:
     needs: build
@@ -50,7 +57,7 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-pf-aws-ecr.outputs.registry }}
           ECR_REPOSITORY: onedatashare/transfer_service
-          IMAGE_TAG: ${{ github.event.release.tag_name }}
+          IMAGE_TAG: ${{steps.tag.outputs.tag}}
         run: |
           docker pull onedatashare/transfer_service:$IMAGE_TAG
           docker tag onedatashare/transfer_service:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
