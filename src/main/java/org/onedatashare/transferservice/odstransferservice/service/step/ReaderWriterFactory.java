@@ -31,8 +31,7 @@ import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.stereotype.Service;
 
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.FIVE_MB;
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.TWENTY_MB;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
 @Service
 public class ReaderWriterFactory {
@@ -110,7 +109,7 @@ public class ReaderWriterFactory {
                     return amazonS3LargeFileWriter;
                 }
             case box:
-                if (fileInfo.getSize() < TWENTY_MB) {
+                if (fileInfo.getSize() < FIFTY_MB) {
                     BoxWriterSmallFile boxWriterSmallFile = new BoxWriterSmallFile(destination.getOauthDestCredential(), fileInfo, this.metricsCollector, this.influxCache);
                     return boxWriterSmallFile;
                 } else {

@@ -23,6 +23,7 @@ public class ODSConstants {
     public static final int SIXTYFOUR_KB = 64000;
     public static final int FIVE_MB = 5 * 1024 * 1024;
     public static final int TWENTY_MB = 20 * 1024 * 1024;
+    public static final int FIFTY_MB = 40 * 1024 * 1024;
     public static final int GOOGLE_DRIVE_MIN_BYTES = 262144;
     public static final String RANGE = "Range";
     public static final String byteRange = "bytes=%s-%s";
