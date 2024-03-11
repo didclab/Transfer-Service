@@ -25,7 +25,6 @@ jobs:
         run:
           docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
       - name: Get tag from GITHUB_REF
-        id: tag
         run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
       - name: Build and push dockerhub
         uses: docker/build-push-action@v5
@@ -33,7 +32,7 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: onedatashare/transfer_service:${{steps.tag.outputs.TAG}}
+          tags: onedatashare/transfer_service:${TAG}
 
   push-to-ecr:
     needs: build
@@ -54,7 +53,7 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-pf-aws-ecr.outputs.registry }}
           ECR_REPOSITORY: onedatashare/transfer_service
-          IMAGE_TAG: ${{steps.tag.outputs.TAG}}
+          IMAGE_TAG: ${{ env.TAG }}
         run: |
           docker pull onedatashare/transfer_service:$IMAGE_TAG
           docker tag onedatashare/transfer_service:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
