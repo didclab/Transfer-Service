@@ -17,7 +17,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Run git tag
-        run: echo $(git)
+        run: echo $(git tag)
         shell: bash      
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
