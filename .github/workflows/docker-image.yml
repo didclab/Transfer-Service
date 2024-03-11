@@ -16,9 +16,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Determine tag type
+        id: tag_type
+        run: echo "::set-output name=is_release_tag::$(echo ${GITHUB_REF#refs/tags/} | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || echo 'false')"
       - name: Set version
         id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+        run: |
+          if [ "${{ steps.tag_type.outputs.is_release_tag }}" == "false" ]; then
+            echo "VERSION=v1.$GITHUB_RUN_NUMBER" >> $GITHUB_ENV
+          else
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          fi
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -41,9 +49,17 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Determine tag type
+        id: tag_type
+        run: echo "::set-output name=is_release_tag::$(echo ${GITHUB_REF#refs/tags/} | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || echo 'false')"
       - name: Set version
         id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+        run: |
+          if [ "${{ steps.tag_type.outputs.is_release_tag }}" == "false" ]; then
+            echo "VERSION=v1.$GITHUB_RUN_NUMBER" >> $GITHUB_ENV
+          else
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          fi
       - name: Setup AWS ECR Details
         uses: aws-actions/configure-aws-credentials@v3
         with:
