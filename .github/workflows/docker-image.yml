@@ -16,9 +16,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Run git tag
-        run: echo $(git tag)
-        shell: bash      
+      - name: Tag
+        run: git tag
+        shell: /usr/bin/bash {0}     
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
