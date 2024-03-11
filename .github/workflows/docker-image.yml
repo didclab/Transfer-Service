@@ -11,7 +11,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      id: git_tag_output
     steps:
+      - name: Get Git Tag
+        id: git_tag_step
+        run: echo "::set-output name=git_tag_output::$(git tag)"
       - name: Checkout
         uses: actions/checkout@v4
       - name: Set up QEMU
@@ -24,15 +29,13 @@ jobs:
           DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
         run:
           docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-      - name: Get tag from git tag
-        run: echo "TAG=$(git tag)" >> $GITHUB_ENV
       - name: Build and push dockerhub
         uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: onedatashare/transfer_service:${{ env.TAG }}
+          tags: onedatashare/transfer_service:${{ needs.build.outputs.git_tag_output }}
 
   push-to-ecr:
     needs: build
@@ -53,7 +56,7 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-pf-aws-ecr.outputs.registry }}
           ECR_REPOSITORY: onedatashare/transfer_service
-          IMAGE_TAG: ${{ env.TAG }}
+          IMAGE_TAG: ${{ needs.build.outputs.git_tag_output }}
         run: |
           docker pull onedatashare/transfer_service:$IMAGE_TAG
           docker tag onedatashare/transfer_service:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
