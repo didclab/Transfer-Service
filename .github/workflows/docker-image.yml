@@ -3,7 +3,7 @@ name: Docker Image CI
 on:
   push:
     tags:
-      - 'v*.*.*-beta'
+      - '*'
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
@@ -24,19 +24,15 @@ jobs:
           DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
         run:
           docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-      - name: Set env
-        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-      - name: Test
-        run: |
-          echo $RELEASE_VERSION
-          echo ${{ env.RELEASE_VERSION }}
+      - name: Get tag from git tag
+        run: echo "TAG=$(git tag)" >> $GITHUB_ENV
       - name: Build and push dockerhub
         uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: onedatashare/transfer_service:${{ env.RELEASE_VERSION }}
+          tags: onedatashare/transfer_service:${{ env.TAG }}
 
   push-to-ecr:
     needs: build
@@ -57,7 +53,7 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-pf-aws-ecr.outputs.registry }}
           ECR_REPOSITORY: onedatashare/transfer_service
-          IMAGE_TAG: ${{ env.RELEASE_VERSION }}
+          IMAGE_TAG: ${{ env.TAG }}
         run: |
           docker pull onedatashare/transfer_service:$IMAGE_TAG
           docker tag onedatashare/transfer_service:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
