@@ -14,11 +14,11 @@ jobs:
     outputs:
       id: git_tag_output
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Get Git Tag
         id: git_tag_step
         run: echo "::set-output name=git_tag_output::$(git tag)"
-      - name: Checkout
-        uses: actions/checkout@v4
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
