@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Set version
         id: version
-        run: echo "VERSION=$(($(git describe --tags --abbrev=0 | sed 's/v//')+1))" >> $GITHUB_ENV
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -58,6 +58,6 @@ jobs:
           ECR_REPOSITORY: onedatashare/transfer_service
           IMAGE_TAG: ${{ env.VERSION }}
         run: |
-          docker pull onedatashare/transfer_service:${IMAGE_TAG}
-          docker tag onedatashare/transfer_service:${IMAGE_TAG} $ECR_REGISTRY/$ECR_REPOSITORY:${IMAGE_TAG}
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${IMAGE_TAG}
+          docker pull onedatashare/transfer_service:$IMAGE_TAG
+          docker tag onedatashare/transfer_service:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
