@@ -16,9 +16,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Tag
-        run: git tag
-        shell: /usr/bin/bash {0}     
+      - name: Set version
+        id: version
+        run: echo "VERSION=$(($(git describe --tags --abbrev=0 | sed 's/v//')+1))" >> $GITHUB_ENV
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -31,11 +31,13 @@ jobs:
           docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
       - name: Build and push dockerhub
         uses: docker/build-push-action@v5
+        env:
+          APP_VERSION: ${{ env.VERSION }}  
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: onedatashare/transfer_service:${{ needs.build.outputs.git_tag_output }}
+          tags: onedatashare/transfer_service:${APP_VERSION}
 
   push-to-ecr:
     needs: build
@@ -56,8 +58,8 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-pf-aws-ecr.outputs.registry }}
           ECR_REPOSITORY: onedatashare/transfer_service
-          IMAGE_TAG: ${{ needs.build.outputs.git_tag_output }}
+          IMAGE_TAG: ${{ env.VERSION }}
         run: |
-          docker pull onedatashare/transfer_service:$IMAGE_TAG
-          docker tag onedatashare/transfer_service:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker pull onedatashare/transfer_service:${IMAGE_TAG}
+          docker tag onedatashare/transfer_service:${IMAGE_TAG} $ECR_REGISTRY/$ECR_REPOSITORY:${IMAGE_TAG}
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${IMAGE_TAG}
