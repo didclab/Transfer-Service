@@ -41,6 +41,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Set version
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
       - name: Setup AWS ECR Details
         uses: aws-actions/configure-aws-credentials@v3
         with:
