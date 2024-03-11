@@ -37,7 +37,7 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: onedatashare/transfer_service:${APP_VERSION}
+          tags: onedatashare/transfer_service:$APP_VERSION
 
   push-to-ecr:
     needs: build
