@@ -1,12 +1,8 @@
-name: Docker Image CI ( Dockerhub and ECR )
+name: Docker Image Publish CI ( Dockerhub and ECR )
 
 on:
-  push:
-    tags:
-      - '*'
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
+  release:
+    types: [created]
 
 jobs:
   build:
@@ -22,11 +18,7 @@ jobs:
       - name: Set version
         id: version
         run: |
-          if [ "${{ steps.tag_type.outputs.is_release_tag }}" == "false" ]; then
-            echo "VERSION=v1.$GITHUB_RUN_NUMBER" >> $GITHUB_ENV
-          else
             echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-          fi
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -55,17 +47,13 @@ jobs:
       - name: Set version
         id: version
         run: |
-          if [ "${{ steps.tag_type.outputs.is_release_tag }}" == "false" ]; then
-            echo "VERSION=v1.$GITHUB_RUN_NUMBER" >> $GITHUB_ENV
-          else
             echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-          fi
       - name: Setup AWS ECR Details
         uses: aws-actions/configure-aws-credentials@v3
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-west-1
+          aws-region: us-east-1
 
       - name: Login to Amazon ECR
         id: login-pf-aws-ecr
