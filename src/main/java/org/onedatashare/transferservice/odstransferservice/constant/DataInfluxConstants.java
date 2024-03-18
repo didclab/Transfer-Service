@@ -2,6 +2,7 @@ package org.onedatashare.transferservice.odstransferservice.constant;
 
 public class DataInfluxConstants {
     public static final String NETWORK_INTERFACE = "interface";
+    public static final String IS_RUNNING = "isRunning";
     public static final String ODS_USER = "ods_user";
     public static final String TRANSFER_NODE_NAME = "transfer_node_name";
     public static final String ACTIVE_CORE_COUNT = "active_core_count";

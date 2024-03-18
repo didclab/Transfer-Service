@@ -6,6 +6,7 @@ import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteWatchdog;
 import org.apache.commons.exec.PumpStreamHandler;
+import org.onedatashare.transferservice.odstransferservice.model.metrics.CarbonScore;
 import org.onedatashare.transferservice.odstransferservice.model.metrics.DataInflux;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,11 +27,13 @@ public class PmeterParser {
     private final String MEASURE = "measure";
     private final ByteArrayOutputStream outputStream;
     private final PumpStreamHandler streamHandler;
-    private final DefaultExecutor executor;
+    private final DefaultExecutor pmeterExecutor;
     private final ExecuteWatchdog watchDog;
 
     Logger logger = LoggerFactory.getLogger(PmeterParser.class);
 
+    @Value("${pmeter.carbon.path}")
+    String pmeterCarbonPath;
 
     @Value("${pmeter.report.path}")
     String pmeterReportPath;
@@ -46,6 +49,10 @@ public class PmeterParser {
 
     @Value("${pmeter.options}")
     String pmeterOptions;
+
+    @Value("${pmeter.carbon.toggle}")
+    private boolean toggle;
+
     ObjectMapper pmeterMapper;
     private CommandLine cmdLine;
 
@@ -61,11 +68,10 @@ public class PmeterParser {
         this.outputStream = new ByteArrayOutputStream();
         this.streamHandler = new PumpStreamHandler(outputStream);
 
-        this.executor = new DefaultExecutor();
-
+        this.pmeterExecutor = new DefaultExecutor();
         this.watchDog = new ExecuteWatchdog(ExecuteWatchdog.INFINITE_TIMEOUT);
-        executor.setWatchdog(watchDog);
-        executor.setStreamHandler(streamHandler);
+        pmeterExecutor.setWatchdog(watchDog);
+        pmeterExecutor.setStreamHandler(streamHandler);
 
         this.pmeterMapper = pmeterMapper;
     }
@@ -73,7 +79,7 @@ public class PmeterParser {
 
     public void runPmeter() {
         try {
-            executor.execute(cmdLine);
+            pmeterExecutor.execute(cmdLine);
         } catch (IOException e) {
             logger.error("Failed in executing pmeter script:\n " + cmdLine);
             e.printStackTrace();
@@ -91,5 +97,31 @@ public class PmeterParser {
         path.toFile().delete();
         path.toFile().createNewFile();
         return ret;
+    }
+
+    public CarbonScore runCarbonPmeter(String ip) {
+        //pmeter carbon 129.114.108.45
+        if(this.toggle == false){return new CarbonScore();}
+        CommandLine carbonCmd = CommandLine.parse(String.format("pmeter carbon %s", ip));
+        try {
+            DefaultExecutor carbonExecutor = new DefaultExecutor();
+            carbonExecutor.execute(carbonCmd);
+        } catch (IOException e) {
+            return new CarbonScore();
+        }
+        try {
+            Path filePath = Paths.get(this.pmeterCarbonPath);
+            List<String> lines = Files.readAllLines(filePath);
+            CarbonScore score = new CarbonScore();
+            for (String line : lines) {
+                score = this.pmeterMapper.readValue(line, CarbonScore.class);
+                break;
+            }
+            filePath.toFile().delete();
+            filePath.toFile().createNewFile();
+            return score;
+        } catch (IOException e) {
+            return new CarbonScore();
+        }
     }
 }
