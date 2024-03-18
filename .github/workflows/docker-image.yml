@@ -1,20 +1,24 @@
-name: Docker Image CI
+name: Docker Image Publish CI ( Dockerhub and ECR )
 
 on:
-  push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
+  release:
+    types: [created]
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
-
+    outputs:
+      id: git_tag_output
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Determine tag type
+        id: tag_type
+        run: echo "::set-output name=is_release_tag::$(echo ${GITHUB_REF#refs/tags/} | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || echo 'false')"
+      - name: Set version
+        id: version
+        run: |
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -25,11 +29,42 @@ jobs:
           DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
         run:
           docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-      - name: Build and push
-        uses: docker/build-push-action@v5
+      - name: Build and push dockerhub
+        uses: docker/build-push-action@v5 
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: onedatashare/transfer_service:latest
+          tags: onedatashare/transfer_service:${{ env.VERSION }} 
 
+  push-to-ecr:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine tag type
+        id: tag_type
+        run: echo "::set-output name=is_release_tag::$(echo ${GITHUB_REF#refs/tags/} | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || echo 'false')"
+      - name: Set version
+        id: version
+        run: |
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+      - name: Setup AWS ECR Details
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-pf-aws-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        
+      - name: Build and push the tagged docker image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-pf-aws-ecr.outputs.registry }}
+          ECR_REPOSITORY: onedatashare/transfer_service
+          IMAGE_TAG: ${{ env.VERSION }}
+        run: |
+          docker pull onedatashare/transfer_service:$IMAGE_TAG
+          docker tag onedatashare/transfer_service:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
