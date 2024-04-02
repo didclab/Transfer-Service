@@ -1,13 +1,13 @@
 package org.onedatashare.transferservice.odstransferservice.config;
 
-import com.google.gson.*;
-import org.springframework.amqp.core.*;
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.core.Queue;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.Date;
-import java.util.Locale;
 
 @Configuration
 public class RabbitMQConfig {
@@ -22,25 +22,17 @@ public class RabbitMQConfig {
     String routingKey;
 
     @Bean
-    public Gson gson() {
-        GsonBuilder builder = new GsonBuilder()
-                .registerTypeAdapter(Date.class, (JsonDeserializer<Date>) (json, typeOfT, context) -> new Date(json.getAsJsonPrimitive().getAsLong()));
-        return builder.create();
-    }
-
-    @Bean
-    Queue userQueue(){
-        //String name, boolean durable, boolean exclusive, boolean autoDelete
+    Queue userQueue() {
         return new Queue(this.queueName, true, false, false);
     }
 
     @Bean
-    public DirectExchange exchange(){
+    public DirectExchange exchange() {
         return new DirectExchange(exchange);
     }
 
     @Bean
-    public Binding binding(DirectExchange exchange, Queue userQueue){
+    public Binding binding(DirectExchange exchange, Queue userQueue) {
         return BindingBuilder.bind(userQueue)
                 .to(exchange)
                 .with(routingKey);

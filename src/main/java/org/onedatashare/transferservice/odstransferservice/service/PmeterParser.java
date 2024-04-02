@@ -19,7 +19,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class PmeterParser {
@@ -35,8 +37,11 @@ public class PmeterParser {
     @Value("${pmeter.carbon.path}")
     String pmeterCarbonPath;
 
+    @Value("${pmeter.carbon.map}")
+    String pmeterCarbonMapPath;
+
     @Value("${pmeter.report.path}")
-    String pmeterReportPath;
+    String pmeterMetricsPath;
 
     @Value("${pmeter.interface}")
     String pmeterNic;
@@ -61,7 +66,7 @@ public class PmeterParser {
         this.cmdLine = CommandLine.parse(
                 String.format("pmeter " + MEASURE + " %s --user %s --measure %s %s --file_name %s",
                         pmeterNic, odsUser,
-                        measureCount, pmeterOptions, pmeterReportPath));
+                        measureCount, pmeterOptions, pmeterMetricsPath));
     }
 
     public PmeterParser(ObjectMapper pmeterMapper) {
@@ -87,7 +92,7 @@ public class PmeterParser {
     }
 
     public List<DataInflux> parsePmeterOutput() throws IOException {
-        Path path = Paths.get(pmeterReportPath);
+        Path path = Paths.get(pmeterMetricsPath);
         List<String> allLines = Files.readAllLines(path);
         List<DataInflux> ret = new ArrayList<>();
         for (String line : allLines) {
@@ -99,14 +104,18 @@ public class PmeterParser {
         return ret;
     }
 
-    public CarbonScore runCarbonPmeter(String ip) {
+    public CarbonScore carbonAverageTraceRoute(String ip) {
         //pmeter carbon 129.114.108.45
-        if(this.toggle == false){return new CarbonScore();}
+        if (this.toggle == false) {
+            return new CarbonScore();
+        }
+        if (ip == null || ip.isEmpty()) return new CarbonScore();
         CommandLine carbonCmd = CommandLine.parse(String.format("pmeter carbon %s", ip));
         try {
             DefaultExecutor carbonExecutor = new DefaultExecutor();
             carbonExecutor.execute(carbonCmd);
         } catch (IOException e) {
+            e.printStackTrace();
             return new CarbonScore();
         }
         try {
@@ -123,5 +132,32 @@ public class PmeterParser {
         } catch (IOException e) {
             return new CarbonScore();
         }
+    }
+
+    public Map<String, Object> carbonPerIp(String ip) {
+        if (ip == null || ip.isEmpty()) return new HashMap<>();
+        CommandLine carbonCmd = CommandLine.parse(String.format("pmeter carbon %s --save_per_ip=True", ip));
+        try {
+            DefaultExecutor carbonExecutor = new DefaultExecutor();
+            carbonExecutor.execute(carbonCmd);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return new HashMap<>();
+        }
+        try {
+            Path filePath = Paths.get(this.pmeterCarbonMapPath);
+            logger.info("Pmeter Carbon map file path: {}", filePath);
+            List<String> lines = Files.readAllLines(filePath);
+            logger.info("CarbonMap lines: {}", lines);
+            String lastLine = lines.getLast();
+            HashMap<String, Object> measurement = this.pmeterMapper.readValue(lastLine, HashMap.class);
+            filePath.toFile().delete();
+            filePath.toFile().createNewFile();
+            logger.info("Carbon IP Map: {}", measurement);
+            return measurement;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return new HashMap<>();
     }
 }
