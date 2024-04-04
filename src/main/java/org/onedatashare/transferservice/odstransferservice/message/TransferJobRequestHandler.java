@@ -13,6 +13,8 @@ import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+
 @Service
 public class TransferJobRequestHandler implements MessageHandler {
 
@@ -31,7 +33,7 @@ public class TransferJobRequestHandler implements MessageHandler {
     }
 
     @Override
-    public void messageHandler(Message message) throws JsonProcessingException {
+    public void messageHandler(Message message) throws IOException {
         String jsonStr = new String(message.getBody());
         TransferJobRequest request = objectMapper.readValue(jsonStr, TransferJobRequest.class);
         logger.info("Job Received: {}", request.toString());

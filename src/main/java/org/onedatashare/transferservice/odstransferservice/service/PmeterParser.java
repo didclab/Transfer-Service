@@ -1,5 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -8,6 +9,7 @@ import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteWatchdog;
 import org.apache.commons.exec.PumpStreamHandler;
+import org.onedatashare.transferservice.odstransferservice.model.CarbonIpEntry;
 import org.onedatashare.transferservice.odstransferservice.model.metrics.CarbonScore;
 import org.onedatashare.transferservice.odstransferservice.model.metrics.DataInflux;
 import org.slf4j.Logger;
@@ -20,10 +22,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class PmeterParser {
@@ -138,30 +137,32 @@ public class PmeterParser {
         }
     }
 
-    public Map<String, Object> carbonPerIp(String ip) {
-        if (ip == null || ip.isEmpty()) return new HashMap<>();
+    public List<CarbonIpEntry> carbonPerIp(String ip) throws IOException{
+        if (ip == null || ip.isEmpty()) return new ArrayList<>();
         CommandLine carbonCmd = CommandLine.parse(String.format("pmeter carbon %s --save_per_ip=True", ip));
-        try {
-            DefaultExecutor carbonExecutor = new DefaultExecutor();
-            carbonExecutor.execute(carbonCmd);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return new HashMap<>();
+        DefaultExecutor carbonExecutor = new DefaultExecutor();
+        carbonExecutor.execute(carbonCmd);
+        Path filePath = Paths.get(this.pmeterCarbonMapPath);
+        logger.info("Pmeter Carbon map file path: {}", filePath);
+        List<String> lines = Files.readAllLines(filePath);
+        logger.info("CarbonMap lines: {}", lines);
+        String lastLine = lines.getLast();
+
+        Map<String, Object> measurement = this.pmeterMapper.readValue(lastLine, new TypeReference<Map<String, Object>>() {});
+        List<CarbonIpEntry> retList = new ArrayList<>();
+        for(Map.Entry<String, Object> entry: measurement.entrySet()){
+            if(entry.getKey().equals("time")) continue;;
+            LinkedHashMap<String, Object> value = (LinkedHashMap<String, Object>) entry.getValue();
+            CarbonIpEntry carbonIpEntry = new CarbonIpEntry();
+            carbonIpEntry.setIp(entry.getKey());
+            carbonIpEntry.setCarbonIntensity((int) value.get("carbon_intensity"));
+            carbonIpEntry.setLon((double) value.get("lon"));
+            carbonIpEntry.setLat((double) value.get("lat"));
+            retList.add(carbonIpEntry);
         }
-        try {
-            Path filePath = Paths.get(this.pmeterCarbonMapPath);
-            logger.info("Pmeter Carbon map file path: {}", filePath);
-            List<String> lines = Files.readAllLines(filePath);
-            logger.info("CarbonMap lines: {}", lines);
-            String lastLine = lines.getLast();
-            HashMap<String, Object> measurement = this.pmeterMapper.readValue(lastLine, HashMap.class);
-            filePath.toFile().delete();
-            filePath.toFile().createNewFile();
-            logger.info("Carbon IP Map: {}", measurement);
-            return measurement;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return new HashMap<>();
+        filePath.toFile().delete();
+        filePath.toFile().createNewFile();
+        logger.info("Carbon IP List: {}", retList);
+        return retList;
     }
 }

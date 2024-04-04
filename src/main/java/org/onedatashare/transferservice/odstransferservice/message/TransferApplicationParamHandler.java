@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+
 @Service
 public class TransferApplicationParamHandler implements MessageHandler{
 
@@ -22,7 +24,7 @@ public class TransferApplicationParamHandler implements MessageHandler{
     }
 
     @Override
-    public void messageHandler(Message message) throws JsonProcessingException {
+    public void messageHandler(Message message) throws IOException {
         String jsonStr = new String(message.getBody());
         TransferApplicationParams params = mesageObjectMapper.readValue(jsonStr, TransferApplicationParams.class);
         logger.info("Parsed TransferApplicationParams: {}", params);
