@@ -35,8 +35,6 @@ import java.util.stream.Collectors;
 @Setter
 public class JobControl {
 
-    public TransferJobRequest request;
-
     Logger logger = LoggerFactory.getLogger(JobControl.class);
 
     @Autowired
@@ -66,8 +64,9 @@ public class JobControl {
     @Autowired
     BackOffPolicy backOffPolicy;
 
-    private List<Flow> createConcurrentFlow(String basePath) {
-        List<EntityInfo> fileInfo = expanderFactory.getExpander(this.request.getSource());
+    private List<Flow> createConcurrentFlow(TransferJobRequest request) {
+        String basePath = request.getSource().getFileSourcePath();
+        List<EntityInfo> fileInfo = expanderFactory.getExpander(request.getSource());
         return fileInfo.stream().map(file -> {
             String idForStep = "";
             if (!file.getId().isEmpty()) {
@@ -76,11 +75,11 @@ public class JobControl {
                 idForStep = file.getPath();
             }
             SimpleStepBuilder<DataChunk, DataChunk> stepBuilder = new StepBuilder(idForStep, this.jobRepository)
-                    .chunk(this.request.getOptions().getPipeSize(), this.platformTransactionManager);
+                    .chunk(request.getOptions().getPipeSize(), this.platformTransactionManager);
             stepBuilder
-                    .reader(readerWriterFactory.getRightReader(this.request.getSource(), file, this.request.getOptions()))
+                    .reader(readerWriterFactory.getRightReader(request.getSource(), file, request.getOptions()))
                     .writer(readerWriterFactory.getRightWriter(request.getDestination(), file));
-            if (this.request.getOptions().getParallelThreadCount() > 0) {
+            if (request.getOptions().getParallelThreadCount() > 0) {
                 stepBuilder.taskExecutor(threadPool.parallelPool(request.getOptions().getParallelThreadCount(), file.getPath()));
             }
             stepBuilder.throttleLimit(64);
@@ -91,14 +90,14 @@ public class JobControl {
         }).collect(Collectors.toList());
     }
 
-    public Job concurrentJobDefinition() {
-        JobBuilder jobBuilder = new JobBuilder(this.request.getJobUuid().toString(), this.jobRepository);
-        connectionBag.preparePools(this.request);
-        List<Flow> flows = createConcurrentFlow(request.getSource().getFileSourcePath());
-        this.influxIOService.reconfigureBucketForNewJob(this.request.getOwnerId());
+    public Job concurrentJobDefinition(TransferJobRequest request) {
+        JobBuilder jobBuilder = new JobBuilder(request.getJobUuid().toString(), this.jobRepository);
+        connectionBag.preparePools(request);
+        List<Flow> flows = createConcurrentFlow(request);
+        this.influxIOService.reconfigureBucketForNewJob(request.getOwnerId());
         Flow[] fl = new Flow[flows.size()];
         Flow f = new FlowBuilder<Flow>("splitFlow")
-                .split(this.threadPool.stepPool(this.request.getOptions().getConcurrencyThreadCount()))
+                .split(this.threadPool.stepPool(request.getOptions().getConcurrencyThreadCount()))
                 .add(flows.toArray(fl))
                 .build();
         return jobBuilder

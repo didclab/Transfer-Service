@@ -1,6 +1,8 @@
 package org.onedatashare.transferservice.odstransferservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
@@ -69,7 +71,7 @@ public class PmeterParser {
                         measureCount, pmeterOptions, pmeterMetricsPath));
     }
 
-    public PmeterParser(ObjectMapper pmeterMapper) {
+    public PmeterParser() {
         this.outputStream = new ByteArrayOutputStream();
         this.streamHandler = new PumpStreamHandler(outputStream);
 
@@ -78,7 +80,9 @@ public class PmeterParser {
         pmeterExecutor.setWatchdog(watchDog);
         pmeterExecutor.setStreamHandler(streamHandler);
 
-        this.pmeterMapper = pmeterMapper;
+        this.pmeterMapper = new ObjectMapper();
+        this.pmeterMapper.registerModule(new JavaTimeModule());
+        this.pmeterMapper.configure(SerializationFeature.WRITE_DATE_KEYS_AS_TIMESTAMPS, false);
     }
 
 
