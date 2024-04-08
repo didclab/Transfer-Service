@@ -1,6 +1,5 @@
 package org.onedatashare.transferservice.odstransferservice.message;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.service.JobControl;

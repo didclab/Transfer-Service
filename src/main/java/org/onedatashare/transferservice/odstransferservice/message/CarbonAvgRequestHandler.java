@@ -1,7 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.message;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.onedatashare.transferservice.odstransferservice.consumer.RabbitMQConsumer;
@@ -18,6 +17,8 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+
+import java.io.IOException;
 
 @Service
 public class CarbonAvgRequestHandler implements MessageHandler {
@@ -41,7 +42,7 @@ public class CarbonAvgRequestHandler implements MessageHandler {
     }
 
     @Override
-    public void messageHandler(Message message) throws JsonProcessingException {
+    public void messageHandler(Message message) throws IOException {
         String jsonStr = new String(message.getBody());
         CarbonMeasureRequest carbonMeasureRequest = objectMapper.readValue(jsonStr, CarbonMeasureRequest.class);
         logger.info("Received CarbonMeasureRequest: {}", carbonMeasureRequest);

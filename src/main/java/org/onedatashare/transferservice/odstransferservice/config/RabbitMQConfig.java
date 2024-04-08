@@ -42,7 +42,7 @@ public class RabbitMQConfig {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setPrefetchCount(1); // Set prefetch count to 1
-        factory.setAcknowledgeMode(AcknowledgeMode.MANUAL); // Use manual acknowledgment mode
+        factory.setAcknowledgeMode(AcknowledgeMode.AUTO);
         return factory;
     }
 
