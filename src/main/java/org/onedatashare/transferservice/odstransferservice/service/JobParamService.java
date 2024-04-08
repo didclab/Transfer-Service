@@ -79,7 +79,7 @@ public class JobParamService {
             String sourceIp = this.uriFromEndpointCredential(request.getSource().getVfsSourceCredential(), sourceType);
             builder.addString(SOURCE_HOST, sourceIp);
             builder.addLong(SOURCE_PORT, (long) this.portFromEndpointCredential(request.getSource().getVfsSourceCredential(), sourceType));
-            CarbonScore score = this.pmeterParser.runCarbonPmeter(sourceIp);
+            CarbonScore score = this.pmeterParser.carbonAverageTraceRoute(sourceIp);
             logger.info("Source Carbon Score: {}", score.avgCarbon);
             builder.addLong(CARBON_SCORE_SOURCE, (long) score.avgCarbon);
         } else if (request.getSource().getOauthSourceCredential() != null) {
@@ -90,7 +90,7 @@ public class JobParamService {
             String destIp = this.uriFromEndpointCredential(request.getDestination().getVfsDestCredential(), destType);
             builder.addString(DEST_HOST, destIp);
             builder.addLong(DEST_PORT, (long) this.portFromEndpointCredential(request.getDestination().getVfsDestCredential(), destType));
-            CarbonScore score = this.pmeterParser.runCarbonPmeter(destIp);
+            CarbonScore score = this.pmeterParser.carbonAverageTraceRoute(destIp);
             logger.info("Destination Carbon Score: {}", score.avgCarbon);
             builder.addLong(CARBON_SCORE_DEST, (long)score.avgCarbon);
         } else if (request.getDestination().getOauthDestCredential() != null) {

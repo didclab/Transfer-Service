@@ -1,80 +1,79 @@
 package org.onedatashare.transferservice.odstransferservice.consumer;
 
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
-import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
-import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
-import org.onedatashare.transferservice.odstransferservice.model.optimizer.TransferApplicationParams;
-import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolContract;
-import org.onedatashare.transferservice.odstransferservice.service.JobControl;
-import org.onedatashare.transferservice.odstransferservice.service.JobParamService;
-import org.onedatashare.transferservice.odstransferservice.service.expanders.VfsExpander;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.onedatashare.transferservice.odstransferservice.Enum.MessageType;
+import org.onedatashare.transferservice.odstransferservice.message.CarbonAvgRequestHandler;
+import org.onedatashare.transferservice.odstransferservice.message.CarbonIpRequestHandler;
+import org.onedatashare.transferservice.odstransferservice.message.TransferApplicationParamHandler;
+import org.onedatashare.transferservice.odstransferservice.message.TransferJobRequestHandler;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.batch.core.JobParameters;
-import org.springframework.batch.core.JobParametersBuilder;
-import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.IOException;
+
+import static org.springframework.amqp.core.MessageProperties.CONTENT_TYPE_JSON;
 
 @Service
 public class RabbitMQConsumer {
 
-    private final ObjectMapper objectMapper;
-    private final ThreadPoolContract threadPool;
-    Logger logger = LoggerFactory.getLogger(RabbitMQConsumer.class);
+    private final TransferJobRequestHandler transferJobRequestHandler;
+    private final CarbonAvgRequestHandler carbonAvgRequestHandler;
+    private final TransferApplicationParamHandler transferApplicationParamHandler;
 
-    JobControl jc;
-
-    JobLauncher jobLauncher;
-
-    JobParamService jobParamService;
+    private final CarbonIpRequestHandler carbonIpRequestHandler;
 
     Queue userQueue;
 
+    RabbitTemplate rabbitTemplate;
 
-    public RabbitMQConsumer(Queue userQueue, JobParamService jobParamService, JobLauncher asyncJobLauncher, JobControl jc, ThreadPoolContract threadPool) {
+
+    public RabbitMQConsumer(RabbitTemplate rabbitTemplate, Queue userQueue, TransferJobRequestHandler transferJobRequestHandler, CarbonAvgRequestHandler carbonAvgRequestHandler, TransferApplicationParamHandler transferApplicationParamHandler, CarbonIpRequestHandler carbonIpRequestHandler) {
         this.userQueue = userQueue;
-        this.jobParamService = jobParamService;
-        this.jobLauncher = asyncJobLauncher;
-        this.jc = jc;
-        this.objectMapper = new ObjectMapper();
-        this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
-        this.objectMapper.setDefaultPropertyInclusion(JsonInclude.Include.ALWAYS);
-        this.threadPool = threadPool;
+        this.transferJobRequestHandler = transferJobRequestHandler;
+        this.carbonAvgRequestHandler = carbonAvgRequestHandler;
+        this.transferApplicationParamHandler = transferApplicationParamHandler;
+        this.carbonIpRequestHandler = carbonIpRequestHandler;
+        this.rabbitTemplate = rabbitTemplate;
     }
 
     @RabbitListener(queues = "#{userQueue}")
-    public void consumeDefaultMessage(final Message message) {
-        String jsonStr = new String(message.getBody());
-
-        logger.info("Message recv: {}", jsonStr);
+    public void consumeDefaultMessage(Message message) {
+        MessageType messageType = MessageType.valueOf(message.getMessageProperties().getHeader("type"));
         try {
-            TransferJobRequest request = objectMapper.readValue(jsonStr, TransferJobRequest.class);
-            logger.info("Job Recieved: {}", request.toString());
+            switch (messageType) {
+                case TRANSFER_JOB_REQUEST: {
+                    this.transferJobRequestHandler.messageHandler(message);
+                }
 
-            JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);
-            jc.setRequest(request);
-            jobLauncher.run(jc.concurrentJobDefinition(), parameters);
+                case APPLICATION_PARAM_CHANGE: {
+                    this.transferApplicationParamHandler.messageHandler(message);
+                }
 
-            return;
-        } catch (Exception e) {
-            logger.error("Failed to parse jsonStr: {} to TransferJobRequest.java", jsonStr);
+                case CARBON_AVG_REQUEST: {
+                    this.carbonAvgRequestHandler.messageHandler(message);
+                }
+
+                case CARBON_IP_REQUEST: {
+                    this.carbonIpRequestHandler.messageHandler(message);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        try {
-            TransferApplicationParams params = objectMapper.readValue(jsonStr, TransferApplicationParams.class);
-            logger.info("Parsed TransferApplicationParams: {}", params);
-            this.threadPool.applyOptimizer(params.getConcurrency(), params.getParallelism());
-        } catch (Exception e) {
-            logger.error("Did not apply transfer params due to parsing message failure");
-        }
+
+//        channel.basicAck(tag, false);
     }
+
+    public static MessagePostProcessor embedMessageType(String correlationId) {
+        return message -> {
+            message.getMessageProperties().setCorrelationId(correlationId);
+            message.getMessageProperties().setType(CONTENT_TYPE_JSON);
+            return message;
+        };
+    }
+
 }
