@@ -47,18 +47,22 @@ public class RabbitMQConsumer {
             switch (messageType) {
                 case TRANSFER_JOB_REQUEST: {
                     this.transferJobRequestHandler.messageHandler(message);
+                    break;
                 }
 
                 case APPLICATION_PARAM_CHANGE: {
                     this.transferApplicationParamHandler.messageHandler(message);
+                    break;
                 }
 
                 case CARBON_AVG_REQUEST: {
                     this.carbonAvgRequestHandler.messageHandler(message);
+                    break;
                 }
 
                 case CARBON_IP_REQUEST: {
                     this.carbonIpRequestHandler.messageHandler(message);
+                    break;
                 }
             }
         } catch (IOException e) {
