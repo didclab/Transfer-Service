@@ -76,7 +76,6 @@ public class JobControl {
             if (request.getOptions().getParallelThreadCount() > 0) {
                 stepBuilder.taskExecutor(threadPool.parallelPool(request.getOptions().getParallelThreadCount(), file.getPath()));
             }
-            stepBuilder.throttleLimit(64);
             stepBuilder.faultTolerant()
                     .backOffPolicy(this.backOffPolicy);
             return new FlowBuilder<Flow>(basePath + idForStep)

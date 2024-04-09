@@ -26,6 +26,7 @@ public class ThreadPoolManagerPlatform implements ThreadPoolContract {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setAllowCoreThreadTimeOut(false);
         executor.setCorePoolSize(threadCount);
+        executor.setPrestartAllCoreThreads(true);
         executor.setThreadNamePrefix(prefix);
         executor.initialize();
         if (this.platformThreadMap == null) {
