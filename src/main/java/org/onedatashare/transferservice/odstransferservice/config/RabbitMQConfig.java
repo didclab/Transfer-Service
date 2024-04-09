@@ -17,9 +17,6 @@ public class RabbitMQConfig {
     @Value("${ods.rabbitmq.exchange}")
     String exchange;
 
-    @Value("${ods.rabbitmq.routingkey}")
-    String routingKey;
-
     @Bean
     Queue userQueue() {
         return new Queue(this.queueName, true, false, false);
@@ -34,7 +31,7 @@ public class RabbitMQConfig {
     public Binding binding(DirectExchange exchange, Queue userQueue) {
         return BindingBuilder.bind(userQueue)
                 .to(exchange)
-                .with(routingKey);
+                .with(queueName);
     }
 
     @Bean
