@@ -126,7 +126,7 @@ public class PmeterParser {
             filePath.toFile().createNewFile();
             return score;
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Error Carbon Average Trace Route:\n {}", e.getMessage());
             return new CarbonScore();
         }
     }

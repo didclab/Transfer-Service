@@ -57,7 +57,6 @@ public class HttpExpander implements FileExpander{
                     Document doc = Jsoup.connect(this.credential.getUri() + basePath + selectedFiles.getPath())
                             .ignoreContentType(true)
                             .get();
-                    logger.info(doc.toString());
                     Elements links = doc.select("body a");
                     for (Element elem : links) {
                         if (elem.text().endsWith("/")) { //directory to expand
@@ -77,7 +76,7 @@ public class HttpExpander implements FileExpander{
             if (directory.text().contains("..") || directory.text().contains(".")) {
                 continue;
             }
-            logger.info(directory.baseUri() + directory.text());
+            logger.info("File: {}", directory.baseUri() + directory.text());
             Document doc = Jsoup.connect(directory.baseUri() + basePath +directory.text()).get();
             Elements links = doc.select("body a");
             for (Element elem : links) {
