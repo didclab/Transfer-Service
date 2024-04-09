@@ -4,11 +4,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
-import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolContract;
 import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.InfluxIOService;
-import org.onedatashare.transferservice.odstransferservice.service.expanders.ExpanderFactory;
 import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
 import org.onedatashare.transferservice.odstransferservice.service.step.ReaderWriterFactory;
 import org.slf4j.Logger;
@@ -38,9 +36,6 @@ public class JobControl {
     Logger logger = LoggerFactory.getLogger(JobControl.class);
 
     @Autowired
-    ExpanderFactory expanderFactory;
-
-    @Autowired
     ReaderWriterFactory readerWriterFactory;
 
     @Autowired
@@ -66,8 +61,7 @@ public class JobControl {
 
     private List<Flow> createConcurrentFlow(TransferJobRequest request) {
         String basePath = request.getSource().getFileSourcePath();
-        List<EntityInfo> fileInfo = expanderFactory.getExpander(request.getSource());
-        return fileInfo.stream().map(file -> {
+        return request.getSource().getInfoList().stream().map(file -> {
             String idForStep = "";
             if (!file.getId().isEmpty()) {
                 idForStep = file.getId();

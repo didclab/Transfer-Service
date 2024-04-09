@@ -34,13 +34,12 @@ public class RabbitMQConfig {
                 .with(queueName);
     }
 
-    @Bean
-    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory) {
-        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
-        factory.setConnectionFactory(connectionFactory);
-        factory.setPrefetchCount(1); // Set prefetch count to 1
-        factory.setAcknowledgeMode(AcknowledgeMode.AUTO);
-        return factory;
-    }
+//    @Bean
+//    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory) {
+//        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+//        factory.setConnectionFactory(connectionFactory);
+//        factory.setPrefetchCount(1); // Set prefetch count to 1
+//        return factory;
+//    }
 
 }
