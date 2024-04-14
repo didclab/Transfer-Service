@@ -1,6 +1,5 @@
 package org.onedatashare.transferservice.odstransferservice.service.expanders;
 
-import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.springframework.stereotype.Service;

@@ -1,7 +1,7 @@
 package org.onedatashare.transferservice.odstransferservice.service.expanders;
 
+import com.onedatashare.commonservice.model.credential.EndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
-import org.onedatashare.transferservice.odstransferservice.model.credential.EndpointCredential;
 
 import java.util.List;
 

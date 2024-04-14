@@ -1,11 +1,11 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.googleDrive;
 
+import com.onedatashare.commonservice.model.credential.OAuthEndpointCredential;
 import org.apache.commons.pool2.ObjectPool;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.SetPool;
-import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.pools.GDriveConnectionPool;
 import org.onedatashare.transferservice.odstransferservice.utility.GDriveHelper;
 import org.slf4j.Logger;

@@ -1,11 +1,9 @@
 package org.onedatashare.transferservice.odstransferservice.service.expanders;
 
+import com.onedatashare.commonservice.model.credential.EndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
-import org.onedatashare.transferservice.odstransferservice.model.credential.EndpointCredential;
-import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.nio.file.Path;

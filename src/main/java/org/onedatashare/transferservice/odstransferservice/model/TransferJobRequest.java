@@ -1,10 +1,10 @@
 package org.onedatashare.transferservice.odstransferservice.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.onedatashare.commonservice.model.credential.AccountEndpointCredential;
+import com.onedatashare.commonservice.model.credential.OAuthEndpointCredential;
 import lombok.*;
-import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
-import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
-import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
+import com.onedatashare.commonservice.model.credential.EndpointCredentialType;
 
 import java.util.List;
 import java.util.UUID;
@@ -31,7 +31,7 @@ public class TransferJobRequest {
     @NoArgsConstructor
     public static class Destination {
         @NonNull
-        private EndpointType type;
+        private EndpointCredentialType type;
         String credId;
         private AccountEndpointCredential vfsDestCredential;
         private OAuthEndpointCredential oauthDestCredential;
@@ -43,7 +43,7 @@ public class TransferJobRequest {
     @NoArgsConstructor
     public static class Source {
         @NonNull
-        private EndpointType type;
+        private EndpointCredentialType type;
         String credId;
         private AccountEndpointCredential vfsSourceCredential;
         private OAuthEndpointCredential oauthSourceCredential;

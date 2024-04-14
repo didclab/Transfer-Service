@@ -2,10 +2,10 @@ package org.onedatashare.transferservice.odstransferservice.service.step.box;
 
 import com.box.sdk.BoxAPIConnection;
 import com.box.sdk.BoxFile;
+import com.onedatashare.commonservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
-import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;

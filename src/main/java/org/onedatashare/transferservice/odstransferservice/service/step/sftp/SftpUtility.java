@@ -1,8 +1,8 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.sftp;
 
 import com.jcraft.jsch.*;
+import com.onedatashare.commonservice.model.credential.AccountEndpointCredential;
 import lombok.SneakyThrows;
-import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

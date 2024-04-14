@@ -3,8 +3,8 @@ package org.onedatashare.transferservice.odstransferservice.pools;
 import com.jcraft.jsch.ConfigRepository;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
+import com.onedatashare.commonservice.model.credential.AccountEndpointCredential;
 import org.apache.commons.pool2.ObjectPool;
-import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.step.sftp.SftpUtility;
 
 import java.util.Objects;

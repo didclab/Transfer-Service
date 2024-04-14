@@ -8,10 +8,9 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
-import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
+import com.onedatashare.commonservice.model.credential.EndpointCredentialType;
+import com.onedatashare.commonservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
-import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -102,7 +101,7 @@ public class ODSUtility {
         return uploadPartRequest;
     }
 
-    public static final EndpointType[] SEEKABLE_PROTOCOLS = new EndpointType[]{EndpointType.s3, EndpointType.vfs, EndpointType.http, EndpointType.box};
+    public static final EndpointCredentialType[] SEEKABLE_PROTOCOLS = new EndpointCredentialType[]{EndpointCredentialType.s3, EndpointCredentialType.vfs, EndpointCredentialType.http, EndpointCredentialType.box};
 
-    public static final HashSet<EndpointType> fullyOptimizableProtocols = new HashSet<EndpointType>(Arrays.asList(SEEKABLE_PROTOCOLS));
+    public static final HashSet<EndpointCredentialType> fullyOptimizableProtocols = new HashSet<EndpointCredentialType>(Arrays.asList(SEEKABLE_PROTOCOLS));
 }

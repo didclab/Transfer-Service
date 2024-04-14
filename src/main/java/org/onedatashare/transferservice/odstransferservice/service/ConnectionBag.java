@@ -1,15 +1,14 @@
 package org.onedatashare.transferservice.odstransferservice.service;
 
+import com.onedatashare.commonservice.model.credential.AccountEndpointCredential;
+import com.onedatashare.commonservice.model.credential.EndpointCredentialType;
+import com.onedatashare.commonservice.model.credential.OAuthEndpointCredential;
 import lombok.Getter;
-import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.model.TransferOptions;
-import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
-import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.pools.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -28,8 +27,8 @@ public class ConnectionBag {
     private S3ConnectionPool s3ReaderPool;
     private S3ConnectionPool s3WriterPool;
     private GDriveConnectionPool googleDriveWriterPool;
-    EndpointType readerType;
-    EndpointType writerType;
+    EndpointCredentialType readerType;
+    EndpointCredentialType writerType;
     boolean readerMade;
     boolean writerMade;
     boolean compression;
@@ -43,54 +42,54 @@ public class ConnectionBag {
 
     public void preparePools(TransferJobRequest request) {
         this.transferOptions = request.getOptions();
-        if (request.getSource().getType().equals(EndpointType.sftp)) {
+        if (request.getSource().getType().equals(EndpointCredentialType.sftp)) {
             readerMade = true;
-            readerType = EndpointType.sftp;
+            readerType = EndpointCredentialType.sftp;
             this.createSftpReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount());
         }
-        if (request.getDestination().getType().equals(EndpointType.sftp)) {
+        if (request.getDestination().getType().equals(EndpointCredentialType.sftp)) {
             writerMade = true;
-            writerType = EndpointType.sftp;
+            writerType = EndpointCredentialType.sftp;
             this.createSftpWriterPool(request.getDestination().getVfsDestCredential(), request.getOptions().getConcurrencyThreadCount());
         }
-        if (request.getSource().getType().equals(EndpointType.scp)) {
+        if (request.getSource().getType().equals(EndpointCredentialType.scp)) {
             readerMade = true;
-            readerType = EndpointType.scp;
+            readerType = EndpointCredentialType.scp;
             this.createSftpReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount());
         }
-        if (request.getDestination().getType().equals(EndpointType.scp)) {
+        if (request.getDestination().getType().equals(EndpointCredentialType.scp)) {
             writerMade = true;
-            writerType = EndpointType.scp;
+            writerType = EndpointCredentialType.scp;
             this.createSftpWriterPool(request.getDestination().getVfsDestCredential(), request.getOptions().getConcurrencyThreadCount());
         }
-        if (request.getSource().getType().equals(EndpointType.ftp)) {
-            readerType = EndpointType.ftp;
+        if (request.getSource().getType().equals(EndpointCredentialType.ftp)) {
+            readerType = EndpointCredentialType.ftp;
             readerMade = true;
             this.createFtpReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount(), request.getConnectionBufferSize());
         }
-        if (request.getDestination().getType().equals(EndpointType.ftp)) {
+        if (request.getDestination().getType().equals(EndpointCredentialType.ftp)) {
             writerMade = true;
-            writerType = EndpointType.ftp;
+            writerType = EndpointCredentialType.ftp;
             this.createFtpWriterPool(request.getDestination().getVfsDestCredential(), request.getOptions().getConcurrencyThreadCount(), request.getConnectionBufferSize());
         }
-        if (request.getSource().getType().equals(EndpointType.http)) {
+        if (request.getSource().getType().equals(EndpointCredentialType.http)) {
             readerMade = true;
-            readerType = EndpointType.http;
+            readerType = EndpointCredentialType.http;
             this.createHttpReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions().getConcurrencyThreadCount());
         }
-        if (request.getDestination().getType().equals(EndpointType.gdrive)) {
+        if (request.getDestination().getType().equals(EndpointCredentialType.gdrive)) {
             writerMade = true;
-            writerType = EndpointType.gdrive;
+            writerType = EndpointCredentialType.gdrive;
             this.createGoogleDriveWriterPool(request.getDestination().getOauthDestCredential(), request.getOptions().getConcurrencyThreadCount());
         }
-        if (request.getSource().getType().equals(EndpointType.s3)) {
+        if (request.getSource().getType().equals(EndpointCredentialType.s3)) {
             readerMade = true;
-            readerType = EndpointType.s3;
+            readerType = EndpointCredentialType.s3;
             this.createS3ReaderPool(request.getSource().getVfsSourceCredential(), request.getOptions());
         }
-        if (request.getDestination().getType().equals(EndpointType.s3)) {
+        if (request.getDestination().getType().equals(EndpointCredentialType.s3)) {
             writerMade = true;
-            writerType = EndpointType.s3;
+            writerType = EndpointCredentialType.s3;
             this.createS3WriterPool(request.getDestination().getVfsDestCredential(), request.getOptions());
         }
     }

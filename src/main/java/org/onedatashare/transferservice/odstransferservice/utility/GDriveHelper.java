@@ -2,11 +2,11 @@ package org.onedatashare.transferservice.odstransferservice.utility;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.onedatashare.commonservice.model.credential.OAuthEndpointCredential;
 import lombok.Builder;
 import lombok.Getter;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
-import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.pools.GDriveConnectionPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

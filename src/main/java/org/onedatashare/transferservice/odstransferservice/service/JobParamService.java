@@ -1,10 +1,10 @@
 package org.onedatashare.transferservice.odstransferservice.service;
 
-import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
+import com.onedatashare.commonservice.model.credential.AccountEndpointCredential;
+import com.onedatashare.commonservice.model.credential.EndpointCredential;
+import com.onedatashare.commonservice.model.credential.EndpointCredentialType;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
-import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
-import org.onedatashare.transferservice.odstransferservice.model.credential.EndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.model.metrics.CarbonScore;
 import org.onedatashare.transferservice.odstransferservice.utility.S3Utility;
 import org.slf4j.Logger;
@@ -40,8 +40,8 @@ public class JobParamService {
      */
     public JobParameters translate(JobParametersBuilder builder, TransferJobRequest request) {
         logger.info("Setting job Parameters");
-        EndpointType sourceType = request.getSource().getType();
-        EndpointType destType = request.getDestination().getType();
+        EndpointCredentialType sourceType = request.getSource().getType();
+        EndpointCredentialType destType = request.getDestination().getType();
         builder.addLocalDateTime(TIME, LocalDateTime.now());
         builder.addString(OWNER_ID, request.getOwnerId());
         builder.addString(SOURCE_BASE_PATH, request.getSource().getFileSourcePath());
@@ -100,7 +100,7 @@ public class JobParamService {
         return builder.toJobParameters();
     }
 
-    public String uriFromEndpointCredential(EndpointCredential credential, EndpointType type) {
+    public String uriFromEndpointCredential(EndpointCredential credential, EndpointCredentialType type) {
         AccountEndpointCredential ac;
         switch (type) {
             case ftp:
@@ -125,7 +125,7 @@ public class JobParamService {
         }
     }
 
-    public int portFromEndpointCredential(EndpointCredential credential, EndpointType type) {
+    public int portFromEndpointCredential(EndpointCredential credential, EndpointCredentialType type) {
         switch (type) {
             case http:
             case scp:

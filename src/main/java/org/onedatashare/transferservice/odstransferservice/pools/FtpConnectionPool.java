@@ -1,11 +1,11 @@
 package org.onedatashare.transferservice.odstransferservice.pools;
 
+import com.onedatashare.commonservice.model.credential.AccountEndpointCredential;
+import com.onedatashare.commonservice.model.credential.EndpointCredentialType;
 import lombok.SneakyThrows;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPReply;
 import org.apache.commons.pool2.ObjectPool;
-import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
-import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 
 import java.io.IOException;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -26,7 +26,7 @@ public class FtpConnectionPool implements ObjectPool<FTPClient> {
     @Override
     public void addObject() throws IOException {
         FTPClient client = new FTPClient();
-        String[] hostAndPort = AccountEndpointCredential.uriFormat(credential, EndpointType.ftp);
+        String[] hostAndPort = AccountEndpointCredential.uriFormat(credential, EndpointCredentialType.ftp);
         if(hostAndPort.length >1){
             client.connect(hostAndPort[0], Integer.parseInt(hostAndPort[1]));
         }else{
