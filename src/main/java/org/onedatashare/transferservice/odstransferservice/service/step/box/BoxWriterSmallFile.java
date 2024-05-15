@@ -1,7 +1,9 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.box;
+ 
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
-import com.box.sdk.BoxAPIConnection;
-import com.box.sdk.BoxFolder;
+import java.util.List;
+
 import org.onedatashare.transferservice.odstransferservice.model.BoxSmallFileUpload;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
@@ -18,9 +20,8 @@ import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
 
-import java.util.List;
-
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
+import com.box.sdk.BoxAPIConnection;
+import com.box.sdk.BoxFolder;
 
 public class BoxWriterSmallFile extends ODSBaseWriter implements ItemWriter<DataChunk> {
 
