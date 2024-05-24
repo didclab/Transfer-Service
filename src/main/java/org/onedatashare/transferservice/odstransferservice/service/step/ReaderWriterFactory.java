@@ -1,6 +1,5 @@
 package org.onedatashare.transferservice.odstransferservice.service.step;
 
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
@@ -33,6 +32,9 @@ import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsW
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.stereotype.Service;
+
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.FIVE_MB;
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.TWENTY_MB;
 
 @Service
 public class ReaderWriterFactory {
