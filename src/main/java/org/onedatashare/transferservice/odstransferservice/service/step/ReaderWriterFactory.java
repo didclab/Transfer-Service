@@ -1,5 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service.step;
 
+
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
@@ -15,6 +16,7 @@ import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxW
 import org.onedatashare.transferservice.odstransferservice.service.step.box.BoxWriterSmallFile;
 import org.onedatashare.transferservice.odstransferservice.service.step.dropbox.DropBoxChunkedWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.dropbox.DropBoxReader;
+import org.onedatashare.transferservice.odstransferservice.service.step.dropbox.DropBoxWriterSmallFile;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPReader;
 import org.onedatashare.transferservice.odstransferservice.service.step.ftp.FTPWriter;
 import org.onedatashare.transferservice.odstransferservice.service.step.googleDrive.GDriveReader;
@@ -118,7 +120,12 @@ public class ReaderWriterFactory {
                     return boxWriterLargeFile;
                 }
             case dropbox:
-                return new DropBoxChunkedWriter(destination.getOauthDestCredential(), this.metricsCollector, this.influxCache);
+                final long DROPBOX_SINGLE_UPLOAD_LIMIT = 150L * 1024L * 1024L;
+                if (fileInfo.getSize() < DROPBOX_SINGLE_UPLOAD_LIMIT){
+                    return new DropBoxWriterSmallFile(destination.getOauthDestCredential(), fileInfo, this.metricsCollector, this.influxCache);
+                }else {
+                    return new DropBoxChunkedWriter(destination.getOauthDestCredential(), this.metricsCollector, this.influxCache);
+                }
             case scp:
                 SCPWriter scpWriter = new SCPWriter(fileInfo, this.metricsCollector, this.influxCache);
                 scpWriter.setPool(connectionBag.getSftpWriterPool());
