@@ -10,6 +10,7 @@ import org.onedatashare.transferservice.odstransferservice.model.credential.OAut
 import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
 import org.onedatashare.transferservice.odstransferservice.service.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
+import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.ExitStatus;
@@ -35,8 +36,7 @@ public class DropBoxWriterSmallFile extends ODSBaseWriter implements ItemWriter<
 
     public DropBoxWriterSmallFile(OAuthEndpointCredential credential, EntityInfo fileInfo, MetricsCollector metricsCollector, InfluxCache influxCache) {
         super(metricsCollector, influxCache);
-        DbxRequestConfig config = DbxRequestConfig.newBuilder("dropbox/java-tutorial").build();
-        this.dropboxClient = new DbxClientV2(config, credential.getToken());
+        this.dropboxClient = new DbxClientV2(ODSUtility.dbxRequestConfig, credential.getToken());
         this.fileInfo = fileInfo;
         smallFileUpload = new SmallFileUpload();
     }
