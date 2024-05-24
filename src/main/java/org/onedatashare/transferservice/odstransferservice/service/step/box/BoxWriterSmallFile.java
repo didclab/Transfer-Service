@@ -4,9 +4,9 @@ import static org.onedatashare.transferservice.odstransferservice.constant.ODSCo
 
 import java.util.List;
 
-import org.onedatashare.transferservice.odstransferservice.model.BoxSmallFileUpload;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
+import org.onedatashare.transferservice.odstransferservice.model.SmallFileUpload;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
 import org.onedatashare.transferservice.odstransferservice.service.MetricsCollector;
@@ -28,7 +28,7 @@ public class BoxWriterSmallFile extends ODSBaseWriter implements ItemWriter<Data
     EntityInfo fileInfo;
     String destinationBasePath;
     BoxFolder boxFolder;
-    BoxSmallFileUpload smallFileUpload;
+    SmallFileUpload smallFileUpload;
     Logger logger = LoggerFactory.getLogger(BoxWriterSmallFile.class);
     private final BoxAPIConnection boxAPIConnection;
     private String fileName;
@@ -37,7 +37,7 @@ public class BoxWriterSmallFile extends ODSBaseWriter implements ItemWriter<Data
         super(metricsCollector, influxCache);
         this.boxAPIConnection = new BoxAPIConnection(credential.getToken());
         this.fileInfo = fileInfo;
-        smallFileUpload = new BoxSmallFileUpload();
+        smallFileUpload = new SmallFileUpload();
     }
 
     @BeforeStep

@@ -1,13 +1,11 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.dropbox;
 
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
-
-import java.io.InputStream;
-import java.util.List;
-
+import com.dropbox.core.DbxRequestConfig;
+import com.dropbox.core.v2.DbxClientV2;
+import com.dropbox.core.v2.files.WriteMode;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
-import org.onedatashare.transferservice.odstransferservice.model.DropBoxSmallFileUpload;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
+import org.onedatashare.transferservice.odstransferservice.model.SmallFileUpload;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
 import org.onedatashare.transferservice.odstransferservice.service.MetricsCollector;
@@ -21,15 +19,16 @@ import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
 
-import com.dropbox.core.DbxRequestConfig;
-import com.dropbox.core.v2.DbxClientV2;
-import com.dropbox.core.v2.files.WriteMode;
+import java.io.InputStream;
+import java.util.List;
+
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
 
 public class DropBoxWriterSmallFile extends ODSBaseWriter implements ItemWriter<DataChunk> {
 
     EntityInfo fileInfo;
     String destinationBasePath;
-    DropBoxSmallFileUpload smallFileUpload;
+    SmallFileUpload smallFileUpload;
     DbxClientV2 dropboxClient;
     Logger logger = LoggerFactory.getLogger(DropBoxWriterSmallFile.class);
     private String fileName;
@@ -39,11 +38,12 @@ public class DropBoxWriterSmallFile extends ODSBaseWriter implements ItemWriter<
         DbxRequestConfig config = DbxRequestConfig.newBuilder("dropbox/java-tutorial").build();
         this.dropboxClient = new DbxClientV2(config, credential.getToken());
         this.fileInfo = fileInfo;
-        smallFileUpload = new DropBoxSmallFileUpload();
+        smallFileUpload = new SmallFileUpload();
     }
+
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
-        this.destinationBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH); 
+        this.destinationBasePath = stepExecution.getJobParameters().getString(DEST_BASE_PATH);
         this.stepExecution = stepExecution;
     }
 
@@ -59,7 +59,7 @@ public class DropBoxWriterSmallFile extends ODSBaseWriter implements ItemWriter<
         }
         return stepExecution.getExitStatus();
     }
-    
+
 
     @Override
     public void write(Chunk<? extends DataChunk> chunk) throws Exception {

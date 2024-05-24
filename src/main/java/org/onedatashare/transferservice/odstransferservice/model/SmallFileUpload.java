@@ -5,19 +5,16 @@ import lombok.Setter;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.PriorityQueue;
 
-/**
- * This class is used to Buffer all of the data from a small file. So any file less than 20MB according to the box api
- */
 @Getter
 @Setter
-public class BoxSmallFileUpload {
+public class SmallFileUpload {
+
     private PriorityQueue<DataChunk> dataChunkPriorityQueue;
 
-    public BoxSmallFileUpload(){
+    public SmallFileUpload(){
         this.dataChunkPriorityQueue = new PriorityQueue<DataChunk>(new DataChunkComparator());
     }
 
