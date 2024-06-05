@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: TransferService
+  cloud:
+    vault:
+      uri: ${VAULT_URI}
+      authentication: aws_iam
+      aws-iam:
+        role: aws-role
+      kv:
+        enabled: true
+        profile-separator: '/'
+        default-context: TransferService
+        backend: secrets

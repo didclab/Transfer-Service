@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: TransferService
+  cloud:
+    vault:
+      uri: ${VAULT_URI}
+      authentication: TOKEN
+      token: ${VAULT_ODS_TOKEN}
+      kv:
+        enabled: true
+        profile-separator: '/'
+        default-context: TransferService
+        backend: secrets
