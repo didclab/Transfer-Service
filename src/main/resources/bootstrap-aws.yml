@@ -4,12 +4,13 @@ spring:
   cloud:
     vault:
       uri: ${VAULT_URI}
-      authentication: aws_iam
-      aws-iam:
-        role: aws-role
-        region: us-east-2
       kv:
         enabled: true
         profile-separator: '/'
         default-context: TransferService
         backend: secrets
+      authentication: aws_iam
+      aws-iam:
+        role: aws-role
+        region: us-east-2
+        server-name: vault
