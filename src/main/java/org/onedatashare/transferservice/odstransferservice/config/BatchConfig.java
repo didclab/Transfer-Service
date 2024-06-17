@@ -1,5 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.config;
 
+import com.amazonaws.regions.AwsRegionProvider;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -51,5 +52,6 @@ public class BatchConfig {
         backOffPolicy.setMaxInterval(TimeUnit.DAYS.toMillis(1));
         return backOffPolicy;
     }
+
 }
 
