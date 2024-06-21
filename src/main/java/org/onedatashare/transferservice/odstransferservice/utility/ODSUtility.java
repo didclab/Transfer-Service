@@ -11,7 +11,6 @@ import com.google.api.services.drive.model.FileList;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -23,8 +22,10 @@ public class ODSUtility {
 
     private static String odsClientID = "OneDataShare-DIDCLab";
 
-    private static String gDriveClientId= System.getenv("ODS_GDRIVE_CLIENT_ID");
+//    @Value("${gdrive.client.id}")
+    private static String gDriveClientId = System.getenv("ODS_GDRIVE_CLIENT_ID");
 
+//    @Value("${gdrive.client.secret}")
     private static String gDriveClientSecret = System.getenv("ODS_GDRIVE_CLIENT_SECRET");
 
 //    @Value("${gdrive.appname}")
