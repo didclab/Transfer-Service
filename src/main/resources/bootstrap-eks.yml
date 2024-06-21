@@ -11,4 +11,4 @@ spring:
         backend: secrets
       authentication: aws_iam
       aws-iam:
-        role: aws-role
+        role: eks-role
