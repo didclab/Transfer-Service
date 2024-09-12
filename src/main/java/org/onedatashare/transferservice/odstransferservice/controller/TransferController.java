@@ -28,14 +28,14 @@ public class TransferController {
 
     Logger logger = LoggerFactory.getLogger(TransferController.class);
 
-    JobControl jc;
+    JobControl jobControl;
 
     JobLauncher jobLauncher;
 
     JobParamService jobParamService;
 
     public TransferController(JobControl jobControl, JobLauncher jobLauncher, JobParamService jobParamService) {
-        this.jc = jobControl;
+        this.jobControl = jobControl;
         this.jobLauncher = jobLauncher;
         this.jobParamService = jobParamService;
 
@@ -43,12 +43,9 @@ public class TransferController {
 
     @RequestMapping(value = "/start", method = RequestMethod.POST)
     @Async
-    public ResponseEntity<String> start(@RequestBody TransferJobRequest request) throws Exception {
-        logger.info("Controller Entry point");
-        JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);
-        Job job = jc.concurrentJobDefinition(request);
-        JobExecution jobExecution = jobLauncher.run(job, parameters);
-        return ResponseEntity.status(HttpStatus.OK).body("Your batch job has been submitted with \n ID: " + jobExecution.getJobId());
+    public ResponseEntity<Long> start(@RequestBody TransferJobRequest request) throws Exception {
+        JobExecution jobExecution = this.jobControl.runJob(request);
+        return ResponseEntity.ok(jobExecution.getJobId());
     }
 }
 

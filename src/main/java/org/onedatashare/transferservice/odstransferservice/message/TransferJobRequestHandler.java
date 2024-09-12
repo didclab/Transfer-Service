@@ -22,18 +22,14 @@ import java.util.List;
 public class TransferJobRequestHandler implements MessageHandler {
 
     private final ObjectMapper objectMapper;
-    private final JobParamService jobParamService;
-    private final JobLauncher jobLauncher;
     private final JobControl jobControl;
     private final ExpanderFactory expanderFactory;
 
 
     Logger logger = LoggerFactory.getLogger(TransferJobRequestHandler.class);
 
-    public TransferJobRequestHandler(ObjectMapper messageObjectMapper, JobParamService jobParamService, JobLauncher jobLauncher, JobControl jobControl, ExpanderFactory expanderFactory) {
+    public TransferJobRequestHandler(ObjectMapper messageObjectMapper, JobControl jobControl, ExpanderFactory expanderFactory) {
         this.objectMapper = messageObjectMapper;
-        this.jobParamService = jobParamService;
-        this.jobLauncher = jobLauncher;
         this.jobControl = jobControl;
         this.expanderFactory = expanderFactory;
     }
@@ -45,9 +41,8 @@ public class TransferJobRequestHandler implements MessageHandler {
         logger.info("Job Received: {}", request.toString());
         List<EntityInfo> fileInfo = expanderFactory.getExpander(request.getSource());
         request.getSource().setInfoList(fileInfo);
-        JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);
         try {
-            jobLauncher.run(jobControl.concurrentJobDefinition(request), parameters);
+            this.jobControl.runJob(request);
         } catch (Exception e) {
             logger.error(e.getMessage());
         }

@@ -9,5 +9,5 @@ spring:
       kv:
         enabled: true
         profile-separator: '/'
-        default-context: dev/TransferService
+        default-context: prod/TransferService
         backend: secrets
