@@ -1,9 +1,5 @@
 package org.onedatashare.transferservice.odstransferservice.config;
 
-import com.amazonaws.regions.AwsRegionProvider;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.TaskExecutorJobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
@@ -20,15 +16,6 @@ import java.util.concurrent.TimeUnit;
 
 @Configuration
 public class BatchConfig {
-
-
-    @Bean
-    public ObjectMapper messageObjectMapper() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
-        objectMapper.setDefaultPropertyInclusion(JsonInclude.Include.ALWAYS);
-        return objectMapper;
-    }
 
     @Bean
     public PlatformTransactionManager transactionManager(DataSource dataSource) {

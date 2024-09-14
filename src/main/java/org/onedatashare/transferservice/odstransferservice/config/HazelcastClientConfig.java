@@ -13,8 +13,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 
-import java.util.UUID;
-
 @Configuration
 public class HazelcastClientConfig {
 
@@ -57,5 +55,15 @@ public class HazelcastClientConfig {
     @Bean
     public IMap<String, HazelcastJsonValue> fileTransferNodeRegistrationMap(HazelcastInstance hazelcastInstance) {
         return hazelcastInstance.getMap("file-transfer-node-map");
+    }
+
+    @Bean
+    public IMap<String, HazelcastJsonValue> fileTransferSchedule(HazelcastInstance hazelcastInstance) {
+        return hazelcastInstance.getMap("file-transfer-schedule-map");
+    }
+
+    @Bean
+    public IMap<String, HazelcastJsonValue> carbonIntensityMap(HazelcastInstance hazelcastInstance) {
+        return hazelcastInstance.getMap("carbon-intensity-map");
     }
 }

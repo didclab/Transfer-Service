@@ -5,7 +5,6 @@ import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolContr
 import org.onedatashare.transferservice.odstransferservice.service.ConnectionBag;
 import org.onedatashare.transferservice.odstransferservice.service.FileTransferNodeRegistrationService;
 import org.onedatashare.transferservice.odstransferservice.service.MetricsCollector;
-import org.onedatashare.transferservice.odstransferservice.service.OptimizerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.JobExecution;
@@ -28,15 +27,12 @@ public class JobCompletionListener implements JobExecutionListener {
 
     MetricsCollector metricsCollector;
 
-    OptimizerService optimizerService;
-
     boolean optimizerEnable;
 
     @Autowired
     FileTransferNodeRegistrationService fileTransferNodeRegistrationService;
 
-    public JobCompletionListener(OptimizerService optimizerService, MetricsCollector metricsCollector, ConnectionBag connectionBag, ThreadPoolContract threadPool, Set<Long> jobIds) {
-        this.optimizerService = optimizerService;
+    public JobCompletionListener(MetricsCollector metricsCollector, ConnectionBag connectionBag, ThreadPoolContract threadPool, Set<Long> jobIds) {
         this.metricsCollector = metricsCollector;
         this.connectionBag = connectionBag;
         this.optimizerEnable = false;

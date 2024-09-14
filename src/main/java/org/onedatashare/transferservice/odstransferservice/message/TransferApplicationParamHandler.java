@@ -1,8 +1,7 @@
 package org.onedatashare.transferservice.odstransferservice.message;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.onedatashare.transferservice.odstransferservice.model.optimizer.TransferApplicationParams;
+import org.onedatashare.transferservice.odstransferservice.model.TransferApplicationParams;
 import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolContract;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
