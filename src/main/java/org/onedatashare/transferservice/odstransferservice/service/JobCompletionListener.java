@@ -1,10 +1,7 @@
-package org.onedatashare.transferservice.odstransferservice.service.listner;
+package org.onedatashare.transferservice.odstransferservice.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolContract;
-import org.onedatashare.transferservice.odstransferservice.service.ConnectionBag;
-import org.onedatashare.transferservice.odstransferservice.service.FileTransferNodeRegistrationService;
-import org.onedatashare.transferservice.odstransferservice.service.MetricsCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.JobExecution;

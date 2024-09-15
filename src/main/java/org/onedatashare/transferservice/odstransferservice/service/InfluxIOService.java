@@ -1,4 +1,4 @@
-package org.onedatashare.transferservice.odstransferservice.service.DatabaseService;
+package org.onedatashare.transferservice.odstransferservice.service;
 
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.WriteApi;

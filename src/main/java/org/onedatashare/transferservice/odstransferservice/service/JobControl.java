@@ -6,8 +6,6 @@ import lombok.Setter;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolContract;
-import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.InfluxIOService;
-import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
 import org.onedatashare.transferservice.odstransferservice.service.step.ReaderWriterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

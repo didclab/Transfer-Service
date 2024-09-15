@@ -6,7 +6,6 @@ import lombok.SneakyThrows;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.JobMetric;
 import org.onedatashare.transferservice.odstransferservice.model.metrics.DataInflux;
-import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.InfluxIOService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.JobParameters;
