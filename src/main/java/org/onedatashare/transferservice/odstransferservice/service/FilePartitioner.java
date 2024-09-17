@@ -3,6 +3,8 @@ package org.onedatashare.transferservice.odstransferservice.service;
 import org.onedatashare.transferservice.odstransferservice.model.FilePart;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collections;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.SIXTYFOUR_KB;
@@ -67,6 +69,53 @@ public class FilePartitioner {
             logger.info(lastChunk.toString());
         }
         logger.info("The total size of the queue after parsing file: " + fileName +" " +queue.size());
+        return queue.size();
+    }
+
+    public int resizeParts(long totalSize, String fileName, int newChunkSize){
+        if(totalSize<1) return -1;
+
+        synchronized(this.queue){
+            FilePart firstPart = this.queue.poll();
+            long startPosition = firstPart.getStart();
+            long idx = firstPart.getPartIdx();
+            long sizeLeft = (totalSize-startPosition);
+            this.queue.clear();
+            if(sizeLeft<newChunkSize){
+                FilePart part = new FilePart();
+                part.setLastChunk(true);
+                part.setFileName(fileName);
+                part.setStart(startPosition);
+                part.setEnd(sizeLeft);
+                part.setSize(Long.valueOf(totalSize).intValue());
+                queue.add(part);
+            }
+            else{
+                long chunksOfChunksKB = Math.floorDiv(sizeLeft, newChunkSize);
+                for(long i = idx; i < idx+chunksOfChunksKB; i++){
+                    FilePart part = new FilePart();
+                    part.setLastChunk(false);
+                    part.setFileName(fileName);
+                    part.setPartIdx(i);
+                    part.setSize(newChunkSize);
+                    part.setStart(startPosition);
+                    startPosition+=newChunkSize-1;
+                    part.setEnd(startPosition);
+                    startPosition++;
+                    this.queue.add(part);
+                }
+                FilePart lastChunk = new FilePart();
+                lastChunk.setStart(startPosition);
+                lastChunk.setFileName(fileName);
+                lastChunk.setLastChunk(true);
+                lastChunk.setSize(Long.valueOf(totalSize-startPosition).intValue());
+                lastChunk.setPartIdx(idx+chunksOfChunksKB);
+                lastChunk.setEnd(totalSize);
+                queue.add(lastChunk);
+                logger.info(lastChunk.toString());
+            }
+        }
+        logger.info("The total size of the queue after resizing the queue: " + fileName +" " +queue.size());
         return queue.size();
     }
 
