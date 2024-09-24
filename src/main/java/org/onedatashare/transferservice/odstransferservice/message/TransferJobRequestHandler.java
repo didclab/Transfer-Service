@@ -23,17 +23,17 @@ public class TransferJobRequestHandler implements MessageHandler {
 
     private final ObjectMapper objectMapper;
     private final JobParamService jobParamService;
-    private final JobLauncher jobLauncher;
+    private final JobLauncher asyncJobLauncher;
     private final JobControl jobControl;
     private final ExpanderFactory expanderFactory;
 
 
     Logger logger = LoggerFactory.getLogger(TransferJobRequestHandler.class);
 
-    public TransferJobRequestHandler(ObjectMapper messageObjectMapper, JobParamService jobParamService, JobLauncher jobLauncher, JobControl jobControl, ExpanderFactory expanderFactory) {
+    public TransferJobRequestHandler(ObjectMapper messageObjectMapper, JobParamService jobParamService, JobLauncher asyncJobLauncher, JobControl jobControl, ExpanderFactory expanderFactory) {
         this.objectMapper = messageObjectMapper;
         this.jobParamService = jobParamService;
-        this.jobLauncher = jobLauncher;
+        this.asyncJobLauncher = asyncJobLauncher;
         this.jobControl = jobControl;
         this.expanderFactory = expanderFactory;
     }
@@ -47,7 +47,7 @@ public class TransferJobRequestHandler implements MessageHandler {
         request.getSource().setInfoList(fileInfo);
         JobParameters parameters = jobParamService.translate(new JobParametersBuilder(), request);
         try {
-            jobLauncher.run(jobControl.concurrentJobDefinition(request), parameters);
+            asyncJobLauncher.run(jobControl.concurrentJobDefinition(request), parameters);
         } catch (Exception e) {
             logger.error(e.getMessage());
         }

@@ -68,8 +68,6 @@ public class RabbitMQConsumer {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-//        channel.basicAck(tag, false);
     }
 
     public static MessagePostProcessor embedMessageType(String correlationId) {
