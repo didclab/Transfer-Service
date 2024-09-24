@@ -6,8 +6,7 @@ import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 
-
-import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -15,10 +14,13 @@ import java.util.UUID;
 @NoArgsConstructor
 public class TransferJobRequest {
 
-    @NonNull private String ownerId;
+    @NonNull
+    private String ownerId;
     private int connectionBufferSize;
-    @NonNull private Source source;
-    @NonNull private Destination destination;
+    @NonNull
+    private Source source;
+    @NonNull
+    private Destination destination;
     private TransferOptions options;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private UUID jobUuid;
@@ -28,7 +30,8 @@ public class TransferJobRequest {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Destination {
-        @NonNull private EndpointType type;
+        @NonNull
+        private EndpointType type;
         String credId;
         private AccountEndpointCredential vfsDestCredential;
         private OAuthEndpointCredential oauthDestCredential;
@@ -39,11 +42,13 @@ public class TransferJobRequest {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Source {
-        @NonNull private EndpointType type;
+        @NonNull
+        private EndpointType type;
         String credId;
         private AccountEndpointCredential vfsSourceCredential;
         private OAuthEndpointCredential oauthSourceCredential;
         private String fileSourcePath;
-        @NonNull private ArrayList<EntityInfo> infoList;
+        @NonNull
+        private List<EntityInfo> infoList;
     }
 }

@@ -1,6 +1,8 @@
-package org.onedatashare.transferservice.odstransferservice.service;
+package org.onedatashare.transferservice.odstransferservice.service.expanders;
 
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
+import org.onedatashare.transferservice.odstransferservice.model.credential.EndpointCredential;
+import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -11,21 +13,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
-@Service
-public class VfsExpander {
+public class VfsExpander implements FileExpander {
 
     Logger logger;
 
     public VfsExpander() {
-        this.logger = LoggerFactory.getLogger(FilePartitioner.class);
+        this.logger = LoggerFactory.getLogger(VfsExpander.class);
     }
 
-    public List<EntityInfo> expandDirectory(List<EntityInfo> userResources, String basePath) {
+    public void createClient(EndpointCredential credential) {}
+
+    public List<EntityInfo> expandedFileSystem(List<EntityInfo> userSelectedResources, String basePath) {
         List<EntityInfo> endList = new ArrayList<>();
         Stack<File> traversalStack = new Stack<>(); //only directories on the stack.
-        logger.info("Expanding files VFS: {}", userResources);
-        if (userResources.size() == 0) return endList; //this case should never happen.
-        for (EntityInfo fileInfo : userResources) {
+        logger.info("Expanding files VFS: {}", userSelectedResources);
+        if (userSelectedResources.isEmpty()) return endList; //this case should never happen.
+        for (EntityInfo fileInfo : userSelectedResources) {
             Path path = Path.of(fileInfo.getPath());
             if (path.toFile().isDirectory()) {
                 traversalStack.push(path.toFile());
@@ -39,9 +42,9 @@ public class VfsExpander {
             File[] files = resource.listFiles();
             if (files == null) continue;
             for (File file : files) {
-                if(file.isDirectory()){
+                if (file.isDirectory()) {
                     traversalStack.push(file);
-                }else{
+                } else {
                     endList.add(fileToEntity(file, 0));
                 }
             }
