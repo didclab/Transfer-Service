@@ -1,9 +1,7 @@
 package org.onedatashare.transferservice.odstransferservice.service;
 
-import com.hazelcast.nio.ssl.SSLContextFactory;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
-import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
@@ -13,8 +11,6 @@ import org.springframework.vault.core.VaultTemplate;
 import org.springframework.vault.support.VaultIssuerCertificateRequestResponse;
 
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -32,12 +28,11 @@ import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.Enumeration;
-import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 @Service
-public class VaultSSLService implements SSLContextFactory {
+public class VaultSSLService {
 
     private final VaultPkiOperations vaultPkiOperations;
     @Getter
@@ -83,12 +78,6 @@ public class VaultSSLService implements SSLContextFactory {
             trustStore = resp.getData().createTrustStore(true);
             this.persistStore(trustStore);
         }
-
-        TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
-        tmf.init(trustStore);
-
-        this.sslContext = SSLContext.getInstance("TLSv1.2");
-        this.sslContext.init(null, tmf.getTrustManagers(), null);
     }
 
 
@@ -132,22 +121,5 @@ public class VaultSSLService implements SSLContextFactory {
             } catch (CertificateException e) {
             }
         }
-    }
-
-    @Override
-    public void init(Properties properties) throws Exception {
-    }
-
-    @Override
-    public SSLContext getSSLContext() {
-        if(this.sslContext == null) {
-            try {
-                this.refreshCerts();
-            } catch (KeyStoreException | IOException | NoSuchAlgorithmException | KeyManagementException e) {
-                logger.error(e.getMessage());
-                throw new RuntimeException(e);
-            }
-        }
-        return this.sslContext;
     }
 }
