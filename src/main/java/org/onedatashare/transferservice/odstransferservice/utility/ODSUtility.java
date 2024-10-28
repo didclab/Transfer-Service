@@ -36,16 +36,6 @@ public class ODSUtility {
 
     public static DbxRequestConfig dbxRequestConfig = DbxRequestConfig.newBuilder(odsClientID).build();
 
-    public static DataChunk makeChunk(int size, byte[] data, int startPosition, int chunkIdx, String fileName) {
-        DataChunk dataChunk = new DataChunk();
-        dataChunk.setStartPosition(startPosition);
-        dataChunk.setChunkIdx(chunkIdx);
-        dataChunk.setFileName(fileName);
-        dataChunk.setData(data);
-        dataChunk.setSize(size);
-        return dataChunk;
-    }
-
     public static DataChunk makeChunk(long size, byte[] data, long startPosition, int chunkIdx, String fileName) {
         DataChunk dataChunk = new DataChunk();
         dataChunk.setStartPosition(startPosition);
@@ -57,8 +47,6 @@ public class ODSUtility {
     }
 
     public static Drive authenticateDriveClient(OAuthEndpointCredential oauthCred) throws GeneralSecurityException, IOException {
-        System.out.println(gDriveClientId);
-        System.out.println(gDriveClientSecret);
         GoogleCredential credential1 = new GoogleCredential.Builder().setJsonFactory(GsonFactory.getDefaultInstance())
                 .setClientSecrets(gDriveClientId, gDriveClientSecret)
                 .setTransport(GoogleNetHttpTransport.newTrustedTransport()).build();
@@ -123,7 +111,7 @@ public class ODSUtility {
                 return uri.getHost();
             case s3:
                 ac = (AccountEndpointCredential) credential;
-                URI s3Uri = URI.create(S3Utility.constructS3URI(ac.getUri(), ""));
+                URI s3Uri = URI.create(constructS3URI(ac.getUri(), ""));
                 return s3Uri.getHost();
             case box:
                 return "box.com";
@@ -134,5 +122,14 @@ public class ODSUtility {
             default:
                 return "";
         }
+    }
+
+    public static String constructS3URI(String uri, String fileKey) {
+        StringBuilder builder = new StringBuilder();
+        String[] temp = uri.split(":::");
+        String bucketName = temp[1];
+        String region = temp[0];
+        builder.append("https://").append(bucketName).append(".").append("s3.").append(region).append(".").append("amazonaws.com/").append(fileKey);
+        return builder.toString();
     }
 }
