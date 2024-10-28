@@ -24,15 +24,12 @@ public class JobCompletionListener implements JobExecutionListener {
 
     MetricsCollector metricsCollector;
 
-    boolean optimizerEnable;
-
     @Autowired
     FileTransferNodeRegistrationService fileTransferNodeRegistrationService;
 
     public JobCompletionListener(MetricsCollector metricsCollector, ConnectionBag connectionBag, ThreadPoolContract threadPool, Set<Long> jobIds) {
         this.metricsCollector = metricsCollector;
         this.connectionBag = connectionBag;
-        this.optimizerEnable = false;
         this.threadPool = threadPool;
         this.jobIds = jobIds;
     }
@@ -59,7 +56,7 @@ public class JobCompletionListener implements JobExecutionListener {
         this.threadPool.clearPools();
         System.gc();
         try {
-            this.fileTransferNodeRegistrationService.updateRegistrationInHazelcast(null);
+            this.fileTransferNodeRegistrationService.updateRegistrationInHazelcast(jobExecution);
         } catch (JsonProcessingException e) {
             logger.error("Failed to update status of FTN inside of Hazelcast for job end. Exception \n {}", e.getMessage());
         }

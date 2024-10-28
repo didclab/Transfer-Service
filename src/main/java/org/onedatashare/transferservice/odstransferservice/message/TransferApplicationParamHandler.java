@@ -27,6 +27,5 @@ public class TransferApplicationParamHandler implements MessageHandler {
         TransferApplicationParams params = mesageObjectMapper.readValue(jsonStr, TransferApplicationParams.class);
         logger.info("Parsed TransferApplicationParams: {}", params);
         this.threadPool.applyOptimizer(params.getConcurrency(), params.getParallelism());
-
     }
 }

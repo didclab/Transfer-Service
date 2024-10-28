@@ -60,7 +60,7 @@ public class FileTransferNodeRegistrationLifeCycleListener implements LifecycleL
                 FileTransferNodeMetaData fileTransferNodeMetaData = this.objectMapper.readValue(jsonValue, FileTransferNodeMetaData.class);
                 fileTransferNodeMetaData.setRunningJob(false);
                 fileTransferNodeMetaData.setOnline(false);
-                logger.info("De-Registering client: {}",fileTransferNodeMetaData);
+                logger.info("De-Registering client: {}", fileTransferNodeMetaData);
                 jsonValue = this.objectMapper.writeValueAsString(fileTransferNodeMetaData);
                 this.fileTransferNodeMap.put(this.appName, new HazelcastJsonValue(jsonValue));
             } catch (JsonProcessingException e) {

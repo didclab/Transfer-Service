@@ -37,7 +37,7 @@ public class FileTransferNodeRegistrationService {
 
     @SneakyThrows
     @PostConstruct
-    public void init(){
+    public void init() {
         this.updateRegistrationInHazelcast(null);
     }
 
@@ -49,7 +49,7 @@ public class FileTransferNodeRegistrationService {
             metaDataBuilder.jobUuid(new UUID(0, 0));
         } else {
             metaDataBuilder.jobId(jobExecution.getJobId());
-            metaDataBuilder.runningJob(true);
+            metaDataBuilder.runningJob(jobExecution.isRunning());
             metaDataBuilder.jobUuid(UUID.fromString(jobExecution.getJobParameters().getString(ODSConstants.JOB_UUID)));
         }
         metaDataBuilder.online(true);
