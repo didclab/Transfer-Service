@@ -10,7 +10,6 @@ import org.springframework.vault.core.VaultPkiOperations;
 import org.springframework.vault.core.VaultTemplate;
 import org.springframework.vault.support.VaultIssuerCertificateRequestResponse;
 
-import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -43,9 +42,6 @@ public class VaultSSLService {
 
     @Getter
     public Duration storeDuration;
-
-    SSLContext sslContext;
-
 
     public VaultSSLService(Environment environment, VaultTemplate vaultTemplate) {
         this.vaultPkiOperations = vaultTemplate.opsForPki();
