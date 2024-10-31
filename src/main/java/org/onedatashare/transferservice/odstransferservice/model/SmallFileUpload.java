@@ -35,4 +35,8 @@ public class SmallFileUpload {
 
         return new ByteArrayInputStream(combinedBytes);
     }
+
+    public void clearBuffer(){
+        this.dataChunkPriorityQueue.clear();
+    }
 }

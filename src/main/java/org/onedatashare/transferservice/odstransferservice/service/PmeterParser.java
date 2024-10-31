@@ -19,13 +19,15 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class PmeterParser {
@@ -35,6 +37,7 @@ public class PmeterParser {
     private final PumpStreamHandler streamHandler;
     private final DefaultExecutor pmeterExecutor;
     private final ExecuteWatchdog watchDog;
+    private String pmeterNic;
 
     Logger logger = LoggerFactory.getLogger(PmeterParser.class);
 
@@ -46,9 +49,6 @@ public class PmeterParser {
 
     @Value("${pmeter.report.path}")
     String pmeterMetricsPath;
-
-    @Value("${pmeter.interface}")
-    String pmeterNic;
 
     @Value("${ods.user}")
     String odsUser;
@@ -66,8 +66,9 @@ public class PmeterParser {
     private CommandLine cmdLine;
 
     @PostConstruct
-    public void init() {
-        this.cmdLine = CommandLine.parse(String.format("pmeter " + MEASURE + " %s --user %s --measure %s %s --file_name %s", pmeterNic, odsUser, measureCount, pmeterOptions, pmeterMetricsPath));
+    public void init() throws IOException {
+        this.pmeterNic = this.discoverActiveNetworkInterface();
+        this.cmdLine = CommandLine.parse(String.format("pmeter " + MEASURE + " %s --user %s --measure %s %s --file_name %s", this.pmeterNic, odsUser, measureCount, pmeterOptions, pmeterMetricsPath));
     }
 
     public PmeterParser() {
@@ -82,6 +83,7 @@ public class PmeterParser {
         this.pmeterMapper = new ObjectMapper();
         this.pmeterMapper.registerModule(new JavaTimeModule());
         this.pmeterMapper.configure(SerializationFeature.WRITE_DATE_KEYS_AS_TIMESTAMPS, false);
+
     }
 
 
@@ -155,5 +157,51 @@ public class PmeterParser {
         filePath.toFile().delete();
         filePath.toFile().createNewFile();
         return retList;
+    }
+
+    private String discoverActiveNetworkInterface() throws IOException {
+        // iterate over the network interfaces known to java
+        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+        for (NetworkInterface interface_ : Collections.list(interfaces)) {
+            // we shouldn't care about loopback addresses
+            if (interface_.isLoopback())
+                continue;
+
+            // if you don't expect the interface to be up you can skip this
+            // though it would question the usability of the rest of the code
+            if (!interface_.isUp())
+                continue;
+
+            // iterate over the addresses associated with the interface
+            Enumeration<InetAddress> addresses = interface_.getInetAddresses();
+            for (InetAddress address : Collections.list(addresses)) {
+                // look only for ipv4 addresses
+                logger.info(address.getHostAddress());
+                if (address instanceof Inet6Address)
+                    continue;
+
+                // use a timeout big enough for your needs
+                if (!address.isReachable(3000))
+                    continue;
+
+                // java 7's try-with-resources statement, so that
+                // we close the socket immediately after use
+                try (SocketChannel socket = SocketChannel.open()) {
+                    // again, use a big enough timeout
+                    socket.socket().setSoTimeout(3000);
+
+                    // bind the socket to your local interface
+                    socket.bind(new InetSocketAddress(address, 8080));
+
+                    // try to connect to *somewhere*
+                    socket.connect(new InetSocketAddress("onedatashare.org", 80));
+                } catch (IOException ex) {
+                    continue;
+                }
+                logger.info("Interface used for Transfer-Service: {}", interface_.getDisplayName());
+                return interface_.getDisplayName();
+            }
+        }
+        return "";
     }
 }

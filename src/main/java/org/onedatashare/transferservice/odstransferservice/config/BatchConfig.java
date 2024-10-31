@@ -1,9 +1,5 @@
 package org.onedatashare.transferservice.odstransferservice.config;
 
-import com.amazonaws.regions.AwsRegionProvider;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.TaskExecutorJobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
@@ -21,27 +17,17 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 public class BatchConfig {
 
-
-    @Bean
-    public ObjectMapper messageObjectMapper() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
-        objectMapper.setDefaultPropertyInclusion(JsonInclude.Include.ALWAYS);
-        return objectMapper;
-    }
-
     @Bean
     public PlatformTransactionManager transactionManager(DataSource dataSource) {
         return new DataSourceTransactionManager(dataSource);
     }
 
     @Bean
-    public JobLauncher asyncJobLauncher(JobRepository jobRepository) {
+    public JobLauncher jobLauncher(JobRepository jobRepository) {
         TaskExecutorJobLauncher jobLauncher = new TaskExecutorJobLauncher();
         jobLauncher.setJobRepository(jobRepository);
         SimpleAsyncTaskExecutor taskExecutor = new SimpleAsyncTaskExecutor();
-        taskExecutor.setConcurrencyLimit(4); // Adjust the limit based on the desired parallelism
-        taskExecutor.setThreadNamePrefix("BatchJobExecutor-");
+        taskExecutor.setConcurrencyLimit(1);
         jobLauncher.setTaskExecutor(taskExecutor);
         return jobLauncher;
     }

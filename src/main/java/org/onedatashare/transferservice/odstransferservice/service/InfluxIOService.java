@@ -1,4 +1,4 @@
-package org.onedatashare.transferservice.odstransferservice.service.DatabaseService;
+package org.onedatashare.transferservice.odstransferservice.service;
 
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.WriteApi;
@@ -19,8 +19,8 @@ public class InfluxIOService {
     private final InfluxDBClient influxClient;
     Logger logger = LoggerFactory.getLogger(InfluxIOService.class);
 
-    @Value("${ods.influx.bucket}")
-    private String bucketName;
+    @Value("${ods.user}")
+    private String odsUserName;
 
     @Value("${ods.influx.org}")
     String org;
@@ -35,13 +35,13 @@ public class InfluxIOService {
 
     @PostConstruct
     public void postConstruct() {
-        this.reconfigureBucketForNewJob(this.bucketName);
+        this.reconfigureBucketForNewJob(odsUserName);
     }
 
     public void reconfigureBucketForNewJob(String ownerId) {
-        logger.info("********* Reconfiguring the Bucket ***********");
+        logger.info("********* Reconfiguring the Bucket to Owner {}***********", ownerId);
         if (ownerId == null) {
-            bucket = influxClient.getBucketsApi().findBucketByName(this.bucketName);
+            bucket = influxClient.getBucketsApi().findBucketByName(this.odsUserName);
         } else {
             bucket = influxClient.getBucketsApi().findBucketByName(ownerId);
         }

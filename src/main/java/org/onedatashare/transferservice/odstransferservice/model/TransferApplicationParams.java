@@ -1,4 +1,4 @@
-package org.onedatashare.transferservice.odstransferservice.model.optimizer;
+package org.onedatashare.transferservice.odstransferservice.model;
 
 import lombok.Data;
 

@@ -6,16 +6,18 @@ import lombok.Setter;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.pools.ThreadPoolContract;
-import org.onedatashare.transferservice.odstransferservice.service.DatabaseService.InfluxIOService;
-import org.onedatashare.transferservice.odstransferservice.service.listner.JobCompletionListener;
 import org.onedatashare.transferservice.odstransferservice.service.step.ReaderWriterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.batch.core.Job;
+import org.springframework.batch.core.*;
 import org.springframework.batch.core.job.builder.FlowBuilder;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.job.flow.Flow;
+import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
+import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
 import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.batch.core.step.builder.SimpleStepBuilder;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,6 +61,14 @@ public class JobControl {
     @Autowired
     BackOffPolicy backOffPolicy;
 
+    @Autowired
+    JobLauncher jobLauncher;
+
+    @Autowired
+    JobParamService jobParamService;
+
+    JobExecution latestJobExecution;
+
     private List<Flow> createConcurrentFlow(TransferJobRequest request) {
         String basePath = request.getSource().getFileSourcePath();
         return request.getSource().getInfoList().stream().map(file -> {
@@ -98,6 +108,13 @@ public class JobControl {
                 .start(f)
                 .end()
                 .build();
+    }
+
+    public JobExecution runJob(TransferJobRequest transferJobRequest) throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobParametersInvalidException, JobRestartException {
+        Job job = this.concurrentJobDefinition(transferJobRequest);
+        JobParameters jobParameters = this.jobParamService.translate(new JobParametersBuilder(), transferJobRequest);
+        this.latestJobExecution = this.jobLauncher.run(job, jobParameters);
+        return this.latestJobExecution;
     }
 
 }

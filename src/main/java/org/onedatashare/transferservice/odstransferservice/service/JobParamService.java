@@ -6,12 +6,11 @@ import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequ
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.model.credential.EndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.model.metrics.CarbonScore;
-import org.onedatashare.transferservice.odstransferservice.utility.S3Utility;
+import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -28,8 +27,12 @@ public class JobParamService {
     @Value("${spring.application.name}")
     private String appName;
 
-    @Autowired
     PmeterParser pmeterParser;
+
+    public JobParamService(PmeterParser pmeterParser) {
+        this.pmeterParser = pmeterParser;
+    }
+
     /**
      * Here we are adding basically the whole request except for sensitive credentials to the Job Params table.
      * B/C we do not add
@@ -76,54 +79,30 @@ public class JobParamService {
 
         //adding the source host and source port to use for RTT & Latency measurements.
         if (request.getSource().getVfsSourceCredential() != null) {
-            String sourceIp = this.uriFromEndpointCredential(request.getSource().getVfsSourceCredential(), sourceType);
+            String sourceIp = ODSUtility.uriFromEndpointCredential(request.getSource().getVfsSourceCredential(), sourceType);
             builder.addString(SOURCE_HOST, sourceIp);
             builder.addLong(SOURCE_PORT, (long) this.portFromEndpointCredential(request.getSource().getVfsSourceCredential(), sourceType));
             CarbonScore score = this.pmeterParser.carbonAverageTraceRoute(sourceIp);
             logger.info("Source Carbon Score: {}", score.avgCarbon);
             builder.addLong(CARBON_SCORE_SOURCE, (long) score.avgCarbon);
         } else if (request.getSource().getOauthSourceCredential() != null) {
-            builder.addString(SOURCE_HOST, this.uriFromEndpointCredential(request.getSource().getOauthSourceCredential(), sourceType));
+            builder.addString(SOURCE_HOST, ODSUtility.uriFromEndpointCredential(request.getSource().getOauthSourceCredential(), sourceType));
             builder.addLong(SOURCE_PORT, (long) this.portFromEndpointCredential(request.getSource().getOauthSourceCredential(), sourceType));
         }
         if (request.getDestination().getVfsDestCredential() != null) {
-            String destIp = this.uriFromEndpointCredential(request.getDestination().getVfsDestCredential(), destType);
+            String destIp = ODSUtility.uriFromEndpointCredential(request.getDestination().getVfsDestCredential(), destType);
             builder.addString(DEST_HOST, destIp);
             builder.addLong(DEST_PORT, (long) this.portFromEndpointCredential(request.getDestination().getVfsDestCredential(), destType));
             CarbonScore score = this.pmeterParser.carbonAverageTraceRoute(destIp);
             logger.info("Destination Carbon Score: {}", score.avgCarbon);
-            builder.addLong(CARBON_SCORE_DEST, (long)score.avgCarbon);
+            builder.addLong(CARBON_SCORE_DEST, (long) score.avgCarbon);
         } else if (request.getDestination().getOauthDestCredential() != null) {
-            builder.addString(DEST_HOST, this.uriFromEndpointCredential(request.getDestination().getOauthDestCredential(), destType));
+            builder.addString(DEST_HOST, ODSUtility.uriFromEndpointCredential(request.getDestination().getOauthDestCredential(), destType));
             builder.addLong(DEST_PORT, (long) this.portFromEndpointCredential(request.getDestination().getOauthDestCredential(), destType));
         }
         return builder.toJobParameters();
     }
 
-    public String uriFromEndpointCredential(EndpointCredential credential, EndpointType type) {
-        AccountEndpointCredential ac;
-        switch (type) {
-            case ftp:
-            case sftp:
-            case scp:
-            case http:
-                ac = (AccountEndpointCredential) credential;
-                URI uri = URI.create(ac.getUri());
-                return uri.getHost();
-            case s3:
-                ac = (AccountEndpointCredential) credential;
-                URI s3Uri = URI.create(S3Utility.constructS3URI(ac.getUri(), ""));
-                return s3Uri.getHost();
-            case box:
-                return "box.com";
-            case dropbox:
-                return "dropbox.com";
-            case gdrive:
-                return "drive.google.com";
-            default:
-                return "";
-        }
-    }
 
     public int portFromEndpointCredential(EndpointCredential credential, EndpointType type) {
         switch (type) {
