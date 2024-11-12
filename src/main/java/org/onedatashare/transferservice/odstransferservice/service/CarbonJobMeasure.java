@@ -62,7 +62,8 @@ public class CarbonJobMeasure {
         return jsonJobs.stream().map(hazelcastJsonValue -> {
             try {
                 return this.objectMapper.readValue(hazelcastJsonValue.getValue(), TransferJobRequest.class);
-            } catch (JsonProcessingException ignored) {
+            } catch (JsonProcessingException e) {
+                logger.error("Json Processing Exception: {}\n With message: {}", e, e.getMessage());
             }
             return null;
         }).collect(Collectors.toList());
