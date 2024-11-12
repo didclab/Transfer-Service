@@ -52,7 +52,7 @@ public class CarbonJobMeasure {
 
     public List<TransferJobRequest> getPotentialJobsFromMap() {
         Predicate<UUID, HazelcastJsonValue> potentialJobs;
-        if (odsUser.equals("onedatashare")) {
+        if (odsUser.equals("OneDataShare")) {
             potentialJobs = this.entryObj.get("options.transferNodeName").equal(this.appName).or(this.entryObj.get("options.transferNodeName").equal(""));
         } else {
             potentialJobs = this.entryObj.get("options.transferNodeName").equal(appName).or(this.entryObj.get("source.credId").equal(appName)).or(this.entryObj.get("destination.credId").equal(appName));
