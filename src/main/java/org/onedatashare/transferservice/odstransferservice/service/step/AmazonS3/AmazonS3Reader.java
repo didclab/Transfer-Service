@@ -14,7 +14,6 @@ import org.onedatashare.transferservice.odstransferservice.model.credential.Acco
 import org.onedatashare.transferservice.odstransferservice.pools.S3ConnectionPool;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
-import org.onedatashare.transferservice.odstransferservice.utility.S3Utility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
@@ -48,7 +47,7 @@ public class AmazonS3Reader extends AbstractItemCountingItemStreamItemReader<Dat
     @BeforeStep
     public void beforeStep(StepExecution stepExecution) {
         this.fileName = this.fileInfo.getId();//For an S3 Reader job this should be the object key
-        this.amazonS3URI = new AmazonS3URI(S3Utility.constructS3URI(this.sourceCredential.getUri(), this.fileName));
+        this.amazonS3URI = new AmazonS3URI(ODSUtility.constructS3URI(this.sourceCredential.getUri(), this.fileName));
         this.getSkeleton = new GetObjectRequest(this.amazonS3URI.getBucket(), this.amazonS3URI.getKey());
         logger.info("Starting S3 job for file {} with uri {}", this.fileName, this.amazonS3URI);
     }

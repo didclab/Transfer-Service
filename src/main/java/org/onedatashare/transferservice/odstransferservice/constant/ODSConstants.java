@@ -6,6 +6,7 @@ public class ODSConstants {
     public static final String TIME = "time";
     public static final String SOURCE_HOST = "sourceURI";
     public static final String SOURCE_PORT = "sourcePort";
+    public static final String CARBON_SCORE_SOURCE = "sourceCarbonScore";
     public static final String SOURCE_BASE_PATH = "sourceBasePath";
     public static final String DEST_BASE_PATH = "destBasePath";
     public static final String FILE_COUNT = "fileCount";
@@ -15,6 +16,7 @@ public class ODSConstants {
     public static final String DEST_CREDENTIAL_TYPE = "destCredentialType";
     public static final String DEST_HOST = "destURI";
     public static final String DEST_PORT = "destPort";
+    public static final String CARBON_SCORE_DEST = "destCarbonScore";
     public static final String CHUNK_SIZE = "chunkSize";
     public static final String JOB_UUID = "jobUuid";
     public static final String OWNER_ID = "ownerId";

@@ -8,7 +8,7 @@ import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class AccountEndpointCredential extends EndpointCredential{
+public class AccountEndpointCredential extends EndpointCredential {
     private String uri; //the hostname and port to reach the server
     private String username; //this should be the username for the client
     @ToString.Exclude
@@ -18,12 +18,11 @@ public class AccountEndpointCredential extends EndpointCredential{
 
     public static String[] uriFormat(AccountEndpointCredential credential, EndpointType type) {
         String noTypeUri = "";
-        if(type.equals(EndpointType.sftp)){
+        if (type.equals(EndpointType.sftp)) {
             noTypeUri = credential.getUri().replaceFirst("sftp://", "");
-        }else if(type.equals(EndpointType.ftp)){
+        } else if (type.equals(EndpointType.ftp)) {
             noTypeUri = credential.getUri().replaceFirst("ftp://", "");
-        }
-        else{
+        } else {
             noTypeUri = credential.getUri().replaceFirst("http://", "");
         }
         return noTypeUri.split(":");
