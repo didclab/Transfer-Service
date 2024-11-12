@@ -56,6 +56,7 @@ public class HazelcastClientConfig {
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.setClusterName("prod-scheduler-cluster");
         clientConfig.getNetworkConfig().setSSLConfig(sslConfig);
+        clientConfig.getNetworkConfig().addAddress(env.getProperty("hz.ipaddr", "localhost"));
         return clientConfig;
     }
 
