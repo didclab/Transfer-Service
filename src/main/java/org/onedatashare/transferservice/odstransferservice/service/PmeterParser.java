@@ -37,6 +37,8 @@ public class PmeterParser {
     private final PumpStreamHandler streamHandler;
     private final DefaultExecutor pmeterExecutor;
     private final ExecuteWatchdog watchDog;
+
+    @Value("${pmeter.nic}")
     private String pmeterNic;
 
     Logger logger = LoggerFactory.getLogger(PmeterParser.class);
@@ -67,9 +69,8 @@ public class PmeterParser {
 
     @PostConstruct
     public void init() throws IOException {
-        this.pmeterNic = this.discoverActiveNetworkInterface();
-        if(this.pmeterNic == null || this.pmeterNic.isEmpty()) {
-            this.pmeterNic = "en0";
+        if(this.pmeterNic == null || !this.pmeterNic.isEmpty()) {
+            this.pmeterNic = this.discoverActiveNetworkInterface();
         }
         logger.info("Interface used for monitoring: {}", this.pmeterNic);
         this.cmdLine = CommandLine.parse(String.format("pmeter " + MEASURE + " %s --user %s --measure %s %s --file_name %s", this.pmeterNic, odsUser, measureCount, pmeterOptions, pmeterMetricsPath));
