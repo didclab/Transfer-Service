@@ -1,6 +1,7 @@
 package org.onedatashare.transferservice.odstransferservice.controller;
 
 import org.onedatashare.transferservice.odstransferservice.model.BatchJobData;
+import org.onedatashare.transferservice.odstransferservice.service.JobControl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.JobExecution;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Optional;
 
 
@@ -19,10 +21,12 @@ import java.util.Optional;
 public class JobMonitor {
 
     private final JobExplorer jobExplorer;
+    private final JobControl jobControl;
 
     Logger logger = LoggerFactory.getLogger(JobMonitor.class);
 
-    public JobMonitor(JobExplorer jobExplorer) {
+    public JobMonitor(JobExplorer jobExplorer, JobControl jobControl) {
+        this.jobControl = jobControl;
         this.jobExplorer = jobExplorer;
     }
 

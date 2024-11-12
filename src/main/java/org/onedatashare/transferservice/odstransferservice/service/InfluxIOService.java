@@ -19,8 +19,8 @@ public class InfluxIOService {
     private final InfluxDBClient influxClient;
     Logger logger = LoggerFactory.getLogger(InfluxIOService.class);
 
-    @Value("${ods.user}")
-    private String odsUserName;
+    @Value("${ods.influx.bucket}")
+    private String defaultInfluxBucket;
 
     @Value("${ods.influx.org}")
     String org;
@@ -35,21 +35,16 @@ public class InfluxIOService {
 
     @PostConstruct
     public void postConstruct() {
-        this.reconfigureBucketForNewJob(odsUserName);
+        this.reconfigureBucketForNewJob(this.defaultInfluxBucket);
     }
 
-    public void reconfigureBucketForNewJob(String ownerId) {
-        logger.info("********* Reconfiguring the Bucket to Owner {}***********", ownerId);
-        if (ownerId == null) {
-            bucket = influxClient.getBucketsApi().findBucketByName(this.odsUserName);
-        } else {
-            bucket = influxClient.getBucketsApi().findBucketByName(ownerId);
-        }
-
+    public void reconfigureBucketForNewJob(String bucketName) {
+        logger.info("********* Reconfiguring the Bucket to Owner {}***********", bucketName);
+        bucket = influxClient.getBucketsApi().findBucketByName(bucketName);
         if (bucket == null) {
-            logger.info("Creating the Influx bucket name={}, org={}", ownerId, org);
+            logger.info("Creating the Influx bucket name={}, org={}", bucketName, org);
             try {
-                bucket = this.influxClient.getBucketsApi().createBucket(ownerId, org);
+                bucket = this.influxClient.getBucketsApi().createBucket(bucketName, org);
             } catch (UnprocessableEntityException ignored) {
             }
         }

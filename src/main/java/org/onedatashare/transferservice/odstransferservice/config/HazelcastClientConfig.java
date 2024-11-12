@@ -4,11 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.collection.IQueue;
+import com.hazelcast.config.IndexType;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastJsonValue;
 import com.hazelcast.map.IMap;
-import org.onedatashare.transferservice.odstransferservice.service.FileTransferNodeRegistrationLifeCycleListener;
 import org.onedatashare.transferservice.odstransferservice.service.VaultSSLService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,6 +19,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.vault.core.VaultTemplate;
 
 import java.util.Properties;
+import java.util.Set;
 import java.util.UUID;
 
 @Configuration
@@ -72,16 +73,13 @@ public class HazelcastClientConfig {
         SSLConfig sslConfig = new SSLConfig();
         sslConfig.setEnabled(true);
         sslConfig.setProperties(properties);
-//        sslConfig.setFactoryImplementation(this.vaultSslService);
         return sslConfig;
     }
 
     @Bean
     public HazelcastInstance hazelcastInstance(ClientConfig clientConfig) {
-        HazelcastInstance hazelcastInstance = HazelcastClient.newHazelcastClient(clientConfig);
-        FileTransferNodeRegistrationLifeCycleListener fileTransferNodeRegistrationEventListener = new FileTransferNodeRegistrationLifeCycleListener(hazelcastInstance, env, objectMapper);
-        hazelcastInstance.getLifecycleService().addLifecycleListener(fileTransferNodeRegistrationEventListener);
-        return hazelcastInstance;
+        clientConfig.addLabel(this.env.getProperty("spring.application.name"));
+        return HazelcastClient.newHazelcastClient(clientConfig);
     }
 
     @Bean
@@ -95,7 +93,7 @@ public class HazelcastClientConfig {
     }
 
     @Bean
-    public IMap<HazelcastJsonValue, HazelcastJsonValue> carbsonIntensityMap(@Qualifier("hazelcastInstance") HazelcastInstance hazelcastInstance) {
+    public IMap<UUID, HazelcastJsonValue> carbonIntensityMap(@Qualifier("hazelcastInstance") HazelcastInstance hazelcastInstance) {
         return hazelcastInstance.getMap("carbon-intensity-map");
     }
 

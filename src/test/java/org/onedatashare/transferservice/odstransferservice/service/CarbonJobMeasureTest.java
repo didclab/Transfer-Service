@@ -20,7 +20,7 @@ import java.util.UUID;
 public class CarbonJobMeasureTest {
 
     CarbonJobMeasure testObj;
-    static IMap<HazelcastJsonValue, HazelcastJsonValue> carbonIntensityMap;
+    static IMap<UUID, HazelcastJsonValue> carbonIntensityMap;
     static IMap<UUID, HazelcastJsonValue> fileTransferScheduleMap;
     static ObjectMapper objectMapper;
     @Mock
@@ -44,7 +44,7 @@ public class CarbonJobMeasureTest {
     @Test
     public void testEmptyMapsDefault() {
         testObj.measureCarbonOfPotentialJobs();
-        Assert.assertEquals( 0, carbonIntensityMap.size());
+        Assert.assertEquals(0, carbonIntensityMap.size());
     }
 
     @Test
@@ -61,9 +61,6 @@ public class CarbonJobMeasureTest {
         testObj.measureCarbonOfPotentialJobs();
         Assert.assertEquals(1, carbonIntensityMap.size());
     }
-
-
-
 
 
 }

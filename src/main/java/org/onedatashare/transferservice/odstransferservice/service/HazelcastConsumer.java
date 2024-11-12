@@ -45,17 +45,20 @@ public class HazelcastConsumer implements Runnable {
             try {
                 HazelcastJsonValue jsonMsg = this.messageQueue.take();
                 JsonNode jsonNode = this.objectMapper.readTree(jsonMsg.getValue());
-                String type = ((ObjectNode) jsonNode).get("type").toString();
+                logger.info(jsonNode.toPrettyString());
+                String type = ((ObjectNode) jsonNode).get("type").asText();
                 ((ObjectNode) jsonNode).remove("type");
                 HazelcastJsonValue properJsonMsg = new HazelcastJsonValue(jsonNode.toString());
                 logger.info("Received message: {}", properJsonMsg);
+                logger.info(type);
                 switch (MessageType.valueOf(type)) {
-                    case TRANSFER_JOB_REQUEST:
+                    case MessageType.TRANSFER_JOB_REQUEST:
                         this.transferJobRequestHandler.messageHandler(properJsonMsg);
                         break;
 
-                    case APPLICATION_PARAM_CHANGE:
+                    case MessageType.APPLICATION_PARAM_CHANGE:
                         this.transferParamApplicationHandler.messageHandler(properJsonMsg);
+                        break;
                 }
             } catch (InterruptedException | JsonProcessingException e) {
                 logger.error(e.getMessage());

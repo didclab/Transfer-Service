@@ -68,6 +68,10 @@ public class PmeterParser {
     @PostConstruct
     public void init() throws IOException {
         this.pmeterNic = this.discoverActiveNetworkInterface();
+        if(this.pmeterNic == null || this.pmeterNic.isEmpty()) {
+            this.pmeterNic = "en0";
+        }
+        logger.info("Interface used for monitoring: {}", this.pmeterNic);
         this.cmdLine = CommandLine.parse(String.format("pmeter " + MEASURE + " %s --user %s --measure %s %s --file_name %s", this.pmeterNic, odsUser, measureCount, pmeterOptions, pmeterMetricsPath));
     }
 
@@ -159,7 +163,7 @@ public class PmeterParser {
         return retList;
     }
 
-    private String discoverActiveNetworkInterface() throws IOException {
+    public String discoverActiveNetworkInterface() throws IOException {
         // iterate over the network interfaces known to java
         Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
         for (NetworkInterface interface_ : Collections.list(interfaces)) {

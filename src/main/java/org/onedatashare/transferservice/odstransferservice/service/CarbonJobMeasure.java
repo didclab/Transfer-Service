@@ -7,8 +7,9 @@ import com.hazelcast.map.IMap;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.PredicateBuilder;
 import com.hazelcast.query.Predicates;
-import org.onedatashare.transferservice.odstransferservice.model.CarbonIntensityMapKey;
+import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.CarbonIpEntry;
+import org.onedatashare.transferservice.odstransferservice.model.CarbonMeasurement;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -27,20 +29,20 @@ import java.util.stream.Collectors;
 @Service
 public class CarbonJobMeasure {
 
-    private final IMap<HazelcastJsonValue, HazelcastJsonValue> carbonIntensityMap;
+    private final IMap<UUID, HazelcastJsonValue> carbonIntensityMap;
     private final IMap<UUID, HazelcastJsonValue> fileTransferScheduleMap;
     private final PredicateBuilder.EntryObject entryObj;
     private final PmeterParser pmeterParser;
     private final ObjectMapper objectMapper;
     private final Logger logger = LoggerFactory.getLogger(CarbonJobMeasure.class);
 
-    @Value("spring.application.name")
+    @Value("${spring.application.name}")
     private String appName;
 
-    @Value("ods.user")
+    @Value("${ods.user}")
     private String odsUser;
 
-    public CarbonJobMeasure(IMap<HazelcastJsonValue, HazelcastJsonValue> carbonIntensityMap, IMap<UUID, HazelcastJsonValue> fileTransferScheduleMap, PmeterParser pmeterParser, ObjectMapper objectMapper) {
+    public CarbonJobMeasure(IMap<UUID, HazelcastJsonValue> carbonIntensityMap, IMap<UUID, HazelcastJsonValue> fileTransferScheduleMap, PmeterParser pmeterParser, ObjectMapper objectMapper) {
         this.carbonIntensityMap = carbonIntensityMap;
         this.fileTransferScheduleMap = fileTransferScheduleMap;
         this.entryObj = Predicates.newPredicateBuilder().getEntryObject();
@@ -66,9 +68,10 @@ public class CarbonJobMeasure {
         }).collect(Collectors.toList());
     }
 
-    @Scheduled(cron = "0 0/10 * * * ?")
+    @Scheduled(cron = "*/10 * * * * *")
     public void measureCarbonOfPotentialJobs() {
         List<TransferJobRequest> potentialJobs = getPotentialJobsFromMap();
+        logger.info("Potential jobs from ODS to run: {}", potentialJobs);
         potentialJobs.forEach(transferJobRequest -> {
             try {
                 String sourceIp = "";
@@ -83,10 +86,23 @@ public class CarbonJobMeasure {
                 } else {
                     destIp = ODSUtility.uriFromEndpointCredential(transferJobRequest.getDestination().getOauthDestCredential(), transferJobRequest.getDestination().getType());
                 }
-                List<CarbonIpEntry> sourceCarbonPerIp = this.pmeterParser.carbonPerIp(sourceIp);
-                sourceCarbonPerIp.addAll(this.pmeterParser.carbonPerIp(destIp));
-                CarbonIntensityMapKey mapKey = new CarbonIntensityMapKey(transferJobRequest.getOwnerId(), transferJobRequest.getTransferNodeName(), transferJobRequest.getJobUuid(), LocalDateTime.now());
-                this.carbonIntensityMap.put(new HazelcastJsonValue(this.objectMapper.writeValueAsString(mapKey)), new HazelcastJsonValue(this.objectMapper.writeValueAsString(sourceCarbonPerIp)));
+                List<CarbonIpEntry> totalEntries = new ArrayList<>();
+                if (!transferJobRequest.getSource().getType().equals(EndpointType.vfs)) {
+                    totalEntries.addAll(this.pmeterParser.carbonPerIp(sourceIp));
+                }
+                if (transferJobRequest.getDestination().getType().equals(EndpointType.vfs)) {
+                    totalEntries.addAll(this.pmeterParser.carbonPerIp(destIp));
+                }
+                CarbonMeasurement carbonMeasurement = new CarbonMeasurement();
+                carbonMeasurement.setTimeMeasuredAt(LocalDateTime.now());
+                carbonMeasurement.setJobUuid(transferJobRequest.getJobUuid());
+                carbonMeasurement.setOwnerId(transferJobRequest.getOwnerId());
+                carbonMeasurement.setTransferNodeName(transferJobRequest.getTransferNodeName());
+                carbonMeasurement.setTraceRouteCarbon(totalEntries);
+                HazelcastJsonValue jsonValue = new HazelcastJsonValue(this.objectMapper.writeValueAsString(carbonMeasurement));
+                UUID randomUUID = UUID.randomUUID();
+                this.carbonIntensityMap.put(randomUUID, jsonValue);
+                logger.info("Created Carbon entry with Key={} and Value={}", randomUUID, jsonValue.getValue());
             } catch (JsonProcessingException e) {
                 logger.error("Failed to parse job: {} \n Error received: \t {}", transferJobRequest.toString(), e.getMessage());
             } catch (IOException e) {

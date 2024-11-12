@@ -47,7 +47,7 @@ public class VaultSSLService {
         this.vaultPkiOperations = vaultTemplate.opsForPki();
         this.storePath = Paths.get(System.getProperty("user.home"), "onedatashare", "ftn", "store", "jobscheduler.truststore.p12");
         this.keyStorePassword = environment.getProperty("hz.keystore.password", "changeit");
-        this.storeDuration = Duration.ofMinutes(1);
+        this.storeDuration = Duration.ofDays(1);
         this.scheduler = Executors.newScheduledThreadPool(0, Thread.ofVirtual().factory());
 
     }

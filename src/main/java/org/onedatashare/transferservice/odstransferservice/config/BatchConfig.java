@@ -27,7 +27,7 @@ public class BatchConfig {
         TaskExecutorJobLauncher jobLauncher = new TaskExecutorJobLauncher();
         jobLauncher.setJobRepository(jobRepository);
         SimpleAsyncTaskExecutor taskExecutor = new SimpleAsyncTaskExecutor();
-        taskExecutor.setConcurrencyLimit(1);
+        taskExecutor.setConcurrencyLimit(4);
         jobLauncher.setTaskExecutor(taskExecutor);
         return jobLauncher;
     }
