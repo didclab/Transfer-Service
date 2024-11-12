@@ -68,7 +68,7 @@ public class CarbonJobMeasure {
         }).collect(Collectors.toList());
     }
 
-    @Scheduled(cron = "*/10 * * * * *")
+    @Scheduled(cron = "* */10 * * * *")
     public void measureCarbonOfPotentialJobs() {
         List<TransferJobRequest> potentialJobs = getPotentialJobsFromMap();
         logger.info("Potential jobs from ODS to run: {}", potentialJobs);
