@@ -56,8 +56,8 @@ public class MetricsCollector {
     }
 
     /**
-     * This is not blocking to the transfer job as this is getting run by the thread that is processing the CRON.
-     * BUT, lets say we are using more threads than the CPU can handle to run none stop concurrently(which we are).
+     * This is not blocking to the transfer job as this is getting consumer by the thread that is processing the CRON.
+     * BUT, lets say we are using more threads than the CPU can handle to consumer none stop concurrently(which we are).
      * Then this thread could potentially not be pre-empted by other threads thus slowing down the transfer by a super small amount
      * Why small? B/c the pmeter file is small, its a few json objects max.
      * Job controller which executes the cli script based on the configured cron expression,

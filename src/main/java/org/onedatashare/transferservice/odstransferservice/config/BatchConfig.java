@@ -25,10 +25,8 @@ public class BatchConfig {
     @Bean
     public JobLauncher jobLauncher(JobRepository jobRepository) {
         TaskExecutorJobLauncher jobLauncher = new TaskExecutorJobLauncher();
+        jobLauncher.setTaskExecutor(new SimpleAsyncTaskExecutor());
         jobLauncher.setJobRepository(jobRepository);
-        SimpleAsyncTaskExecutor taskExecutor = new SimpleAsyncTaskExecutor();
-        taskExecutor.setConcurrencyLimit(4);
-        jobLauncher.setTaskExecutor(taskExecutor);
         return jobLauncher;
     }
 

@@ -25,6 +25,10 @@ public class FilePartitioner {
         return this.queue.poll();
     }
 
+    public void returnPart(FilePart part) {
+        this.queue.add(part);
+    }
+
     /**
      * Returning -1 means an error occured.
      * @param totalSize

@@ -14,7 +14,9 @@ import org.onedatashare.transferservice.odstransferservice.model.metrics.CarbonS
 import org.onedatashare.transferservice.odstransferservice.model.metrics.DataInflux;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
@@ -38,7 +40,9 @@ public class PmeterParser {
     private final DefaultExecutor pmeterExecutor;
     private final ExecuteWatchdog watchDog;
 
-    @Value("${pmeter.nic}")
+    @Autowired
+    Environment environment;
+
     private String pmeterNic;
 
     Logger logger = LoggerFactory.getLogger(PmeterParser.class);
@@ -69,7 +73,10 @@ public class PmeterParser {
 
     @PostConstruct
     public void init() throws IOException {
-        if(this.pmeterNic == null || !this.pmeterNic.isEmpty()) {
+
+        this.pmeterNic = this.environment.getProperty("pmeter.nic", "");
+        logger.info("PMETER Nic is {}", this.pmeterNic);
+        if (this.pmeterNic == null || this.pmeterNic.isEmpty()) {
             this.pmeterNic = this.discoverActiveNetworkInterface();
         }
         logger.info("Interface used for monitoring: {}", this.pmeterNic);
@@ -88,7 +95,6 @@ public class PmeterParser {
         this.pmeterMapper = new ObjectMapper();
         this.pmeterMapper.registerModule(new JavaTimeModule());
         this.pmeterMapper.configure(SerializationFeature.WRITE_DATE_KEYS_AS_TIMESTAMPS, false);
-
     }
 
 
@@ -189,11 +195,7 @@ public class PmeterParser {
                 if (!address.isReachable(3000))
                     continue;
 
-                // java 7's try-with-resources statement, so that
-                // we close the socket immediately after use
                 try (SocketChannel socket = SocketChannel.open()) {
-                    // again, use a big enough timeout
-                    socket.socket().setSoTimeout(3000);
 
                     // bind the socket to your local interface
                     socket.bind(new InetSocketAddress(address, 8080));
