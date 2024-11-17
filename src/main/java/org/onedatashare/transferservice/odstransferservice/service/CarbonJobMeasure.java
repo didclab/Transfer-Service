@@ -72,7 +72,7 @@ public class CarbonJobMeasure {
     @Scheduled(cron = "0 * * * * *")
     public void measureCarbonOfPotentialJobs() {
         List<TransferJobRequest> potentialJobs = getPotentialJobsFromMap();
-        logger.info("Potential jobs from ODS to run: {}", potentialJobs);
+        logger.info("Potential jobs from ODS to consumer: {}", potentialJobs);
         potentialJobs.forEach(transferJobRequest -> {
             try {
                 String sourceIp = "";

@@ -11,19 +11,23 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+
 @Service
 public class MessageHandlerRouter {
 
     TransferApplicationParamHandler transferApplicationParamHandler;
     TransferJobRequestHandler transferJobRequestHandler;
+    StopJobRequestHandler stopJobRequestHandler;
     private final TaskExecutor executorService;
     private Logger logger;
 
-    public MessageHandlerRouter(ThreadPoolContract threadPoolContract, TransferJobRequestHandler transferJobRequestHandler, TransferApplicationParamHandler transferApplicationParamHandler) {
+    public MessageHandlerRouter(StopJobRequestHandler stopJobRequestHandler, ThreadPoolContract threadPoolContract, TransferJobRequestHandler transferJobRequestHandler, TransferApplicationParamHandler transferApplicationParamHandler) {
         this.transferJobRequestHandler = transferJobRequestHandler;
         this.transferApplicationParamHandler = transferApplicationParamHandler;
         this.executorService = threadPoolContract.createExecutor(4, "hz-consumer");
         this.logger = LoggerFactory.getLogger(MessageHandlerRouter.class);
+        this.stopJobRequestHandler = stopJobRequestHandler;
     }
 
     public void processMessage(HazelcastJsonValue properJsonMsg, String type) {
@@ -47,6 +51,14 @@ public class MessageHandlerRouter {
                     }
                 });
                 break;
+            case STOP_JOB:
+                this.executorService.execute(() -> {
+                    try {
+                        this.stopJobRequestHandler.messageHandler(properJsonMsg);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
         }
     }
 

@@ -8,6 +8,7 @@ import com.hazelcast.core.HazelcastJsonValue;
 import org.onedatashare.transferservice.odstransferservice.message.MessageHandlerRouter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -25,10 +26,13 @@ public class HazelcastConsumer {
         this.objectMapper = objectMapper;
         this.messageHandlerRouter = messageHandlerRouter;
         this.logger = LoggerFactory.getLogger(HazelcastConsumer.class);
+
     }
 
+    @Async
     @Scheduled(cron = "0/10 * * * * *")
     public void consumer() {
+        logger.info("Running Hazelcast Consumer Thread");
         HazelcastJsonValue jsonMsg = null;
         try {
             jsonMsg = this.messageQueue.take();

@@ -36,7 +36,8 @@ public class CarbonJobMeasureTest {
 
     @BeforeEach
     public void beforeEachTest() {
-        testObj = new CarbonJobMeasure(carbonIntensityMap, fileTransferScheduleMap, pmeterParser, objectMapper);
+        //FileTransferNodeRegistrationService fileTransferNodeRegistrationService, IMap<UUID, HazelcastJsonValue> carbonIntensityMap, IMap<UUID, HazelcastJsonValue> fileTransferScheduleMap, PmeterParser pmeterParser, ObjectMapper objectMapper
+//        testObj = new CarbonJobMeasure(carbonIntensityMap, fileTransferScheduleMap, pmeterParser, objectMapper);
         ReflectionTestUtils.setField(testObj, "appName", "odsNode");
         ReflectionTestUtils.setField(testObj, "odsUser", "odsNode");
     }

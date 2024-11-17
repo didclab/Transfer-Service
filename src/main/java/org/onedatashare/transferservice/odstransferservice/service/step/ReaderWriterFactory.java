@@ -31,6 +31,8 @@ import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsR
 import org.onedatashare.transferservice.odstransferservice.service.step.vfs.VfsWriter;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 
 import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.FIVE_MB;
@@ -42,11 +44,18 @@ public class ReaderWriterFactory {
     private final ConnectionBag connectionBag;
     private final InfluxCache influxCache;
     private final MetricsCollector metricsCollector;
+    private final RetryTemplate retryTemplate;
 
-    public ReaderWriterFactory(ConnectionBag connectionBag, InfluxCache influxCache, MetricsCollector metricsCollector) {
+    public ReaderWriterFactory(RetryTemplate retryTemplate, ConnectionBag connectionBag, InfluxCache influxCache, MetricsCollector metricsCollector) {
         this.connectionBag = connectionBag;
         this.influxCache = influxCache;
         this.metricsCollector = metricsCollector;
+        this.retryTemplate = retryTemplate;
+    }
+
+    public void configureRetryTemplate(TransferOptions transferOptions) {
+        SimpleRetryPolicy simpleRetryPolicy = new SimpleRetryPolicy(transferOptions.getRetry());
+        this.retryTemplate.setRetryPolicy(simpleRetryPolicy);
     }
 
     public ItemReader<DataChunk> getRightReader(TransferJobRequest.Source source, EntityInfo fileInfo, TransferOptions transferOptions) {
@@ -54,6 +63,7 @@ public class ReaderWriterFactory {
             case http:
                 HttpReader hr = new HttpReader(fileInfo, source.getVfsSourceCredential());
                 hr.setPool(connectionBag.getHttpReaderPool());
+                hr.setRetry(this.retryTemplate);
                 return hr;
             case vfs:
                 VfsReader vfsReader = new VfsReader(source.getVfsSourceCredential(), fileInfo);

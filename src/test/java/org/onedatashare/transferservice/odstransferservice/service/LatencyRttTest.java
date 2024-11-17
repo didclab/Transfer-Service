@@ -52,7 +52,7 @@ public class LatencyRttTest {
     }
 
     /**
-     * This test covers scp, sftp as both run over port 22.
+     * This test covers scp, sftp as both consumer over port 22.
      * @throws IOException
      */
     @Test

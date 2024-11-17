@@ -19,6 +19,8 @@ import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemStreamException;
+import org.springframework.http.HttpStatus;
+import org.springframework.retry.support.RetryTemplate;
 
 import java.io.IOException;
 import java.net.URI;
@@ -39,9 +41,9 @@ public class HttpReader implements SetPool, ItemReader<DataChunk> {
     HttpConnectionPool httpConnectionPool;
     Boolean range;
     AccountEndpointCredential sourceCred;
-    Boolean compressable;
-    private String uri;
+    private URI uri;
     Logger logger;
+    private RetryTemplate retryTemplate;
 
 
     public HttpReader(EntityInfo fileInfo, AccountEndpointCredential credential) {
@@ -59,7 +61,7 @@ public class HttpReader implements SetPool, ItemReader<DataChunk> {
         this.sBasePath = params.getString(SOURCE_BASE_PATH);
         this.filePartitioner.createParts(this.fileInfo.getSize(), this.fileInfo.getId());
         this.fileName = Paths.get(fileInfo.getId()).getFileName().toString();
-        this.uri = sourceCred.getUri() + Paths.get(fileInfo.getPath()).toString();
+        this.uri = URI.create(sourceCred.getUri() + Paths.get(fileInfo.getPath()));
         this.open();
     }
 
@@ -75,10 +77,10 @@ public class HttpReader implements SetPool, ItemReader<DataChunk> {
         this.httpConnectionPool = (HttpConnectionPool) connectionPool;
     }
 
-    public HttpRequest compressMode(String uri, FilePart filePart, boolean valid) {
+    public HttpRequest compressMode(FilePart filePart, boolean valid) {
         HttpRequest request = HttpRequest.newBuilder()
                 .GET()
-                .uri(URI.create(uri))
+                .uri(this.uri)
                 .setHeader(ODSConstants.ACCEPT_ENCODING, ODSConstants.GZIP)
                 .setHeader(valid ? ODSConstants.RANGE : ODSConstants.AccessControlExposeHeaders,
                         valid ? String.format(ODSConstants.byteRange, filePart.getStart(), filePart.getEnd()) : ODSConstants.ContentRange)
@@ -86,10 +88,10 @@ public class HttpReader implements SetPool, ItemReader<DataChunk> {
         return request;
     }
 
-    public HttpRequest rangeMode(String uri, FilePart filePart, boolean valid) {
+    public HttpRequest rangeMode(FilePart filePart, boolean valid) {
         HttpRequest request = HttpRequest.newBuilder()
                 .GET()
-                .uri(URI.create(uri))
+                .uri(this.uri)
                 .setHeader(valid ? ODSConstants.RANGE : ODSConstants.AccessControlExposeHeaders,
                         valid ? String.format(ODSConstants.byteRange, filePart.getStart(), filePart.getEnd()) : ODSConstants.ContentRange)
                 .build();
@@ -97,17 +99,31 @@ public class HttpReader implements SetPool, ItemReader<DataChunk> {
     }
 
     @Override
-    public DataChunk read() throws IOException, InterruptedException {
+    public DataChunk read() {
         FilePart filePart = this.filePartitioner.nextPart();
         if (filePart == null) return null;
         HttpRequest request;
         if (this.httpConnectionPool.getCompress()) {
-            request = compressMode(uri, filePart, this.range);
+            request = compressMode(filePart, this.range);
         } else {
-            request = rangeMode(uri, filePart, this.range);
+            request = rangeMode(filePart, this.range);
         }
-        HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
-        return ODSUtility.makeChunk(response.body().length, response.body(), filePart.getStart(), Long.valueOf(filePart.getPartIdx()).intValue(), this.fileName);
+
+        try {
+            return this.retryTemplate.execute(context -> {
+                try {
+                    HttpResponse<byte[]> response = this.client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+                    byte[] data =response.body();
+                    return ODSUtility.makeChunk(data.length, data, filePart.getStart(), Long.valueOf(filePart.getPartIdx()).intValue(), this.fileName);
+                } catch (IOException | InterruptedException e) {
+                    logger.error("Http request of FilePart: {} failed with error: {}", filePart, e.getMessage());
+                    throw e;
+                }
+            });
+        } catch (Exception e) {
+            return null;
+        }
+
     }
 
     public void open() throws ItemStreamException {
@@ -116,12 +132,14 @@ public class HttpReader implements SetPool, ItemReader<DataChunk> {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        String filePath = Paths.get(fileInfo.getPath()).toString();
-        uri = sourceCred.getUri() + filePath;
     }
 
 
     public void close() throws ItemStreamException {
         this.httpConnectionPool.returnObject(this.client);
+    }
+
+    public void setRetry(RetryTemplate retryTemplate) {
+        this.retryTemplate = retryTemplate;
     }
 }
