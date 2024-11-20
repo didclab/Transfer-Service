@@ -4,7 +4,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
-import com.onedatashare.commonservice.model.credential.AccountEndpointCredential;
+import com.onedatashare.commonutils.model.credential.AccountEndpointCredential;
 import lombok.Setter;
 import org.onedatashare.transferservice.odstransferservice.model.AWSSinglePutRequestMetaData;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;

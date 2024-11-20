@@ -1,10 +1,10 @@
 package org.onedatashare.transferservice.odstransferservice.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.onedatashare.commonservice.model.credential.AccountEndpointCredential;
-import com.onedatashare.commonservice.model.credential.OAuthEndpointCredential;
+import com.onedatashare.commonutils.model.credential.AccountEndpointCredential;
+import com.onedatashare.commonutils.model.credential.OAuthEndpointCredential;
 import lombok.*;
-import com.onedatashare.commonservice.model.credential.EndpointCredentialType;
+import com.onedatashare.commonutils.model.credential.EndpointCredentialType;
 
 import java.util.List;
 import java.util.UUID;

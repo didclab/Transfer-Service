@@ -1,6 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.googleDrive;
 
-import com.onedatashare.commonservice.model.credential.OAuthEndpointCredential;
+import com.onedatashare.commonutils.model.credential.OAuthEndpointCredential;
 import org.apache.commons.pool2.ObjectPool;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;

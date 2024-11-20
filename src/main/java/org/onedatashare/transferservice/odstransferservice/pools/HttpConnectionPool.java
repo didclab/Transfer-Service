@@ -1,12 +1,11 @@
 package org.onedatashare.transferservice.odstransferservice.pools;
 
-import com.onedatashare.commonservice.model.credential.AccountEndpointCredential;
+import com.onedatashare.commonutils.model.credential.AccountEndpointCredential;
 import org.apache.commons.pool2.ObjectPool;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class HttpConnectionPool implements ObjectPool<HttpClient> {

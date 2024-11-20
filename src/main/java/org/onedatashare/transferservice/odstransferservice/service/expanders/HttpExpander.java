@@ -1,7 +1,7 @@
 package org.onedatashare.transferservice.odstransferservice.service.expanders;
 
-import com.onedatashare.commonservice.model.credential.AccountEndpointCredential;
-import com.onedatashare.commonservice.model.credential.EndpointCredential;
+import com.onedatashare.commonutils.model.credential.AccountEndpointCredential;
+import com.onedatashare.commonutils.model.credential.EndpointCredential;
 import lombok.SneakyThrows;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -10,7 +10,6 @@ import org.jsoup.select.Elements;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.net.URL;

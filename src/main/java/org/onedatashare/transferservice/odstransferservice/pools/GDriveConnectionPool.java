@@ -1,6 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.pools;
 
-import com.onedatashare.commonservice.model.credential.EndpointCredential;
+import com.onedatashare.commonutils.model.credential.EndpointCredential;
 import org.apache.commons.pool2.ObjectPool;
 
 import java.net.http.HttpClient;

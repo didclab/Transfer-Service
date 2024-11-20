@@ -1,8 +1,8 @@
 package org.onedatashare.transferservice.odstransferservice.service;
 
-import com.onedatashare.commonservice.model.credential.AccountEndpointCredential;
-import com.onedatashare.commonservice.model.credential.EndpointCredential;
-import com.onedatashare.commonservice.model.credential.EndpointCredentialType;
+import com.onedatashare.commonutils.model.credential.AccountEndpointCredential;
+import com.onedatashare.commonutils.model.credential.EndpointCredential;
+import com.onedatashare.commonutils.model.credential.EndpointCredentialType;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.model.metrics.CarbonScore;

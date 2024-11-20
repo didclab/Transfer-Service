@@ -1,6 +1,6 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.http;
 
-import com.onedatashare.commonservice.model.credential.AccountEndpointCredential;
+import com.onedatashare.commonutils.model.credential.AccountEndpointCredential;
 import org.apache.commons.pool2.ObjectPool;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;

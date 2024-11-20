@@ -1,7 +1,7 @@
 package org.onedatashare.transferservice.odstransferservice.pools;
 
-import com.onedatashare.commonservice.model.credential.AccountEndpointCredential;
-import com.onedatashare.commonservice.model.credential.EndpointCredentialType;
+import com.onedatashare.commonutils.model.credential.AccountEndpointCredential;
+import com.onedatashare.commonutils.model.credential.EndpointCredentialType;
 import lombok.SneakyThrows;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPReply;

@@ -5,7 +5,7 @@ import com.dropbox.core.v2.DbxClientV2;
 import com.dropbox.core.v2.files.CommitInfo;
 import com.dropbox.core.v2.files.FileMetadata;
 import com.dropbox.core.v2.files.UploadSessionCursor;
-import com.onedatashare.commonservice.model.credential.OAuthEndpointCredential;
+import com.onedatashare.commonutils.model.credential.OAuthEndpointCredential;
 import lombok.SneakyThrows;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;

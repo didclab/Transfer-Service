@@ -8,8 +8,8 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
-import com.onedatashare.commonservice.model.credential.EndpointCredentialType;
-import com.onedatashare.commonservice.model.credential.OAuthEndpointCredential;
+import com.onedatashare.commonutils.model.credential.EndpointCredentialType;
+import com.onedatashare.commonutils.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 
 import java.io.ByteArrayInputStream;

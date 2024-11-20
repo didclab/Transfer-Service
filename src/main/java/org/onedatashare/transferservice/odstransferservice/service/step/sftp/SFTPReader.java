@@ -4,7 +4,7 @@ import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
-import com.onedatashare.commonservice.model.credential.AccountEndpointCredential;
+import com.onedatashare.commonutils.model.credential.AccountEndpointCredential;
 import org.apache.commons.pool2.ObjectPool;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.ClassUtils;
 
 import java.io.IOException;

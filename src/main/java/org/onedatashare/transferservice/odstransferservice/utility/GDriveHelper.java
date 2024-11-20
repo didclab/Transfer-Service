@@ -2,7 +2,7 @@ package org.onedatashare.transferservice.odstransferservice.utility;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.onedatashare.commonservice.model.credential.OAuthEndpointCredential;
+import com.onedatashare.commonutils.model.credential.OAuthEndpointCredential;
 import lombok.Builder;
 import lombok.Getter;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;

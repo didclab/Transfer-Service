@@ -1,8 +1,8 @@
 package org.onedatashare.transferservice.odstransferservice.service;
 
-import com.onedatashare.commonservice.model.credential.AccountEndpointCredential;
-import com.onedatashare.commonservice.model.credential.EndpointCredentialType;
-import com.onedatashare.commonservice.model.credential.OAuthEndpointCredential;
+import com.onedatashare.commonutils.model.credential.AccountEndpointCredential;
+import com.onedatashare.commonutils.model.credential.EndpointCredentialType;
+import com.onedatashare.commonutils.model.credential.OAuthEndpointCredential;
 import lombok.Getter;
 import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequest;
 import org.onedatashare.transferservice.odstransferservice.model.TransferOptions;

@@ -2,7 +2,7 @@ package org.onedatashare.transferservice.odstransferservice.service.step.box;
 
 import com.box.sdk.BoxAPIConnection;
 import com.box.sdk.BoxFolder;
-import com.onedatashare.commonservice.model.credential.OAuthEndpointCredential;
+import com.onedatashare.commonutils.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.model.BoxSmallFileUpload;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
