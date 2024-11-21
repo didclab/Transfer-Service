@@ -15,6 +15,7 @@ import org.onedatashare.transferservice.odstransferservice.model.metrics.DataInf
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
@@ -38,8 +39,7 @@ public class PmeterParser {
     private final DefaultExecutor pmeterExecutor;
     private final ExecuteWatchdog watchDog;
 
-    @Value("${pmeter.nic}")
-    private String pmeterNic;
+    public String pmeterNic;
 
     Logger logger = LoggerFactory.getLogger(PmeterParser.class);
 
@@ -67,16 +67,8 @@ public class PmeterParser {
     ObjectMapper pmeterMapper;
     private CommandLine cmdLine;
 
-    @PostConstruct
-    public void init() throws IOException {
-        if(this.pmeterNic == null || !this.pmeterNic.isEmpty()) {
-            this.pmeterNic = this.discoverActiveNetworkInterface();
-        }
-        logger.info("Interface used for monitoring: {}", this.pmeterNic);
-        this.cmdLine = CommandLine.parse(String.format("pmeter " + MEASURE + " %s --user %s --measure %s %s --file_name %s", this.pmeterNic, odsUser, measureCount, pmeterOptions, pmeterMetricsPath));
-    }
 
-    public PmeterParser() {
+    public PmeterParser(Environment environment) {
         this.outputStream = new ByteArrayOutputStream();
         this.streamHandler = new PumpStreamHandler(outputStream);
 
@@ -88,7 +80,16 @@ public class PmeterParser {
         this.pmeterMapper = new ObjectMapper();
         this.pmeterMapper.registerModule(new JavaTimeModule());
         this.pmeterMapper.configure(SerializationFeature.WRITE_DATE_KEYS_AS_TIMESTAMPS, false);
+        this.pmeterNic = environment.getProperty("pmeter.nic", "");
+    }
 
+    @PostConstruct
+    public void init() throws IOException {
+        if(this.pmeterNic.isEmpty()) {
+            this.pmeterNic = this.discoverActiveNetworkInterface();
+        }
+        logger.info("Interface used for monitoring: {}", this.pmeterNic);
+        this.cmdLine = CommandLine.parse(String.format("pmeter " + MEASURE + " %s --user %s --measure %s %s --file_name %s", this.pmeterNic, odsUser, measureCount, pmeterOptions, pmeterMetricsPath));
     }
 
 

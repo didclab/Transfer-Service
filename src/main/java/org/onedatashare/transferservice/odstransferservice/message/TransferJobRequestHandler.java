@@ -20,7 +20,6 @@ public class TransferJobRequestHandler implements MessageHandler {
     private final JobControl jobControl;
     private final ExpanderFactory expanderFactory;
 
-
     Logger logger = LoggerFactory.getLogger(TransferJobRequestHandler.class);
 
     public TransferJobRequestHandler(ObjectMapper messageObjectMapper, JobControl jobControl, ExpanderFactory expanderFactory) {
@@ -32,7 +31,13 @@ public class TransferJobRequestHandler implements MessageHandler {
     @Override
     public void messageHandler(HazelcastJsonValue jsonMessage) throws JsonProcessingException {
         String jsonStr = jsonMessage.getValue();
-        TransferJobRequest request = objectMapper.readValue(jsonStr, TransferJobRequest.class);
+        TransferJobRequest request = null;
+        try {
+            request = objectMapper.readValue(jsonStr, TransferJobRequest.class);
+        } catch (JsonProcessingException e) {
+            logger.error("Failed to parse Transfer Job Request: {}", jsonStr);
+            return;
+        }
         logger.info("Job Received: {}", request.toString());
         List<EntityInfo> fileInfo = expanderFactory.getExpander(request.getSource());
         request.getSource().setInfoList(fileInfo);
