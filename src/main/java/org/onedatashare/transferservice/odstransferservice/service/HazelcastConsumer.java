@@ -41,7 +41,7 @@ public class HazelcastConsumer {
     }
 
 
-    @Scheduled(cron = "0/5 * * * * *", fixedDelay = 0)
+    @Scheduled(cron = "0/5 * * * * *")
     public void runConsumer() throws InterruptedException, JsonProcessingException {
         HazelcastJsonValue jsonMsg = this.messageQueue.poll();
         if(jsonMsg == null) return;
