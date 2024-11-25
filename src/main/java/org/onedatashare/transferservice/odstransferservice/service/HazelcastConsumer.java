@@ -37,21 +37,19 @@ public class HazelcastConsumer {
         this.transferParamApplicationHandler = transferApplicationParamHandler;
         this.logger = LoggerFactory.getLogger(HazelcastConsumer.class);
         this.stopJobRequestHandler = stopJobRequestHandler;
-        this.executor = threadPoolContract.createExecutor(4, "HazelcastConsumer");
+        this.executor = threadPoolContract.createExecutor(10, "HazelcastConsumer");
     }
 
 
     @Scheduled(cron = "0/5 * * * * *")
-    public void runConsumer() throws InterruptedException, JsonProcessingException {
+    public void runConsumer() throws JsonProcessingException {
         HazelcastJsonValue jsonMsg = this.messageQueue.poll();
-        if(jsonMsg == null) return;
+        if (jsonMsg == null) return;
         JsonNode jsonNode = this.objectMapper.readTree(jsonMsg.getValue());
-        logger.info(jsonNode.toPrettyString());
+        logger.info("Got Msg: {}", jsonNode.toPrettyString());
         String type = ((ObjectNode) jsonNode).get("type").asText();
         ((ObjectNode) jsonNode).remove("type");
         HazelcastJsonValue properJsonMsg = new HazelcastJsonValue(jsonNode.toString());
-        logger.info("Received message: {}", properJsonMsg);
-        logger.info(type);
         this.executor.execute(() -> {
             switch (MessageType.valueOf(type)) {
                 case MessageType.TRANSFER_JOB_REQUEST:
