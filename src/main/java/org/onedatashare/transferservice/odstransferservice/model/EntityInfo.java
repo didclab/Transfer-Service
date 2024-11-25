@@ -17,6 +17,10 @@ public class EntityInfo {
     private long size;
     private int chunkSize;
 
+    private String name;
+    private String parent;
+    private String checksum;
+
     @Override
     public String toString(){
         ObjectMapper objectMapper = new ObjectMapper();

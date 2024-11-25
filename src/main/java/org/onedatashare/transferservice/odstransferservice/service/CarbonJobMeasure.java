@@ -14,6 +14,7 @@ import org.onedatashare.transferservice.odstransferservice.model.TransferJobRequ
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -42,6 +43,9 @@ public class CarbonJobMeasure {
     @Value("${ods.user}")
     private String odsUser;
 
+    @Autowired
+    private ExpanderService expanderService;
+
     public CarbonJobMeasure(IMap<UUID, HazelcastJsonValue> carbonIntensityMap, IMap<UUID, HazelcastJsonValue> fileTransferScheduleMap, PmeterParser pmeterParser, ObjectMapper objectMapper) {
         this.carbonIntensityMap = carbonIntensityMap;
         this.fileTransferScheduleMap = fileTransferScheduleMap;
@@ -61,7 +65,8 @@ public class CarbonJobMeasure {
         Collection<HazelcastJsonValue> jsonJobs = this.fileTransferScheduleMap.values(potentialJobs);
         return jsonJobs.stream().map(hazelcastJsonValue -> {
             try {
-                return this.objectMapper.readValue(hazelcastJsonValue.getValue(), TransferJobRequest.class);
+                TransferJobRequest job = this.objectMapper.readValue(hazelcastJsonValue.getValue(), TransferJobRequest.class);
+                return expanderService.expandFiles(job);
             } catch (JsonProcessingException e) {
                 logger.error("Json Processing Exception: {}\n With message: {}", e, e.getMessage());
             }
