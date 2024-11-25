@@ -76,7 +76,6 @@ public class HttpExpander implements FileExpander{
             if (directory.text().contains("..") || directory.text().contains(".")) {
                 continue;
             }
-            logger.info("File: {}", directory.baseUri() + directory.text());
             Document doc = Jsoup.connect(directory.baseUri() + basePath +directory.text()).get();
             Elements links = doc.select("body a");
             for (Element elem : links) {
@@ -98,7 +97,6 @@ public class HttpExpander implements FileExpander{
         URL url = new URL(elem.absUrl("href"));
         long fileSize = url.openConnection().getContentLengthLong();
         Path path = Path.of(url.getPath());
-        logger.info("File path: {}, name: {}, size: {},", path, elem.text(), fileSize);
         fileInfo.setId(elem.text());
         fileInfo.setSize(fileSize);
         fileInfo.setPath(path.toAbsolutePath().toString());
@@ -115,7 +113,6 @@ public class HttpExpander implements FileExpander{
         URLConnection conn = url.openConnection();
         long fileSize = conn.getContentLengthLong();
         String fileName = Paths.get(conn.getURL().getFile()).getFileName().toString();
-        logger.info("File path: {}, name: {}, size: {},", url.getPath(), fileName, fileSize);
         fileInfo.setId(fileName);
         fileInfo.setSize(fileSize);
         fileInfo.setPath(url.getPath());
