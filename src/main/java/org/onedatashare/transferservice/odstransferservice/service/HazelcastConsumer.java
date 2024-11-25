@@ -37,7 +37,7 @@ public class HazelcastConsumer {
         this.transferParamApplicationHandler = transferApplicationParamHandler;
         this.logger = LoggerFactory.getLogger(HazelcastConsumer.class);
         this.stopJobRequestHandler = stopJobRequestHandler;
-        this.executor = threadPoolContract.createExecutor(-1, "HazelcastConsumer");
+        this.executor = threadPoolContract.createExecutor(10, "HazelcastConsumer");
     }
 
 

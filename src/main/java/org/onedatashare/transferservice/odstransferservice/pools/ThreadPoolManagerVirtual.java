@@ -29,7 +29,9 @@ public class ThreadPoolManagerVirtual implements ThreadPoolContract {
         SimpleAsyncTaskExecutor executor = new SimpleAsyncTaskExecutor();
         executor.setThreadNamePrefix(prefix);
         executor.setVirtualThreads(true);
-        executor.setConcurrencyLimit(threadCount);
+        if(threadCount > 0){
+            executor.setConcurrencyLimit(threadCount);
+        }
         if (this.executorHashmap == null) {
             this.executorHashmap = new HashMap<>();
         }
