@@ -121,7 +121,7 @@ public class CarbonJobMeasure {
             } catch (JsonProcessingException e) {
                 logger.error("Failed to parse job: {} \n Error received: \t {}", transferJobRequest.toString(), e.getMessage());
             } catch (IOException e) {
-                logger.error("Failed to measure ip: {} \n Error received: \t {}", transferJobRequest.toString(), e.getMessage());
+                logger.error("Failed to measure ip: {} \n Error received: \t {}", transferJobRequest.toString(), e);
             }
         });
     }
