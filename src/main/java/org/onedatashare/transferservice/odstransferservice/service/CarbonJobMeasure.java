@@ -102,6 +102,8 @@ public class CarbonJobMeasure {
                     destIp = ODSUtility.uriFromEndpointCredential(transferJobRequest.getDestination().getOauthDestCredential(), transferJobRequest.getDestination().getType());
                 }
                 List<CarbonIpEntry> totalEntries = new ArrayList<>();
+                logger.info("Source IP: {}", sourceIp);
+                logger.info("Destination IP: {}", destIp);
                 if (!transferJobRequest.getSource().getType().equals(EndpointType.vfs)) {
                     totalEntries.addAll(this.pmeterParser.carbonPerIp(sourceIp));
                 }
