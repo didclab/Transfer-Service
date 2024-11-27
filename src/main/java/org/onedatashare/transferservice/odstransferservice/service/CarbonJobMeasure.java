@@ -7,6 +7,7 @@ import com.hazelcast.map.IMap;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.PredicateBuilder;
 import com.hazelcast.query.Predicates;
+import jakarta.annotation.PostConstruct;
 import org.onedatashare.transferservice.odstransferservice.Enum.EndpointType;
 import org.onedatashare.transferservice.odstransferservice.model.CarbonIpEntry;
 import org.onedatashare.transferservice.odstransferservice.model.CarbonMeasurement;
@@ -35,6 +36,7 @@ public class CarbonJobMeasure {
     private final PmeterParser pmeterParser;
     private final ObjectMapper objectMapper;
     private final Logger logger = LoggerFactory.getLogger(CarbonJobMeasure.class);
+    private boolean odsConnector;
 
     @Value("${spring.application.name}")
     private String appName;
@@ -48,14 +50,26 @@ public class CarbonJobMeasure {
         this.entryObj = Predicates.newPredicateBuilder().getEntryObject();
         this.pmeterParser = pmeterParser;
         this.objectMapper = objectMapper;
+        this.odsConnector = false;
+    }
+
+    @PostConstruct
+    public void init() {
+        //set ODS Connector
+        if(this.odsUser.equals("OneDataShare") || this.appName.equals("ODSTransferService")) {
+            this.odsConnector = true;
+        }
+
     }
 
     public List<TransferJobRequest> getPotentialJobsFromMap() {
         Predicate<UUID, HazelcastJsonValue> potentialJobs;
-        if (odsUser.equals("OneDataShare")) {
-            potentialJobs = this.entryObj.get("options.transferNodeName").equal("");
+        if (this.odsConnector) {
+            logger.info("{}} Querying Hazelcast for jobs", this.appName);
+            potentialJobs = this.entryObj.get("transferNodeName").equal("");
         } else {
-            potentialJobs = this.entryObj.get("options.transferNodeName").equal(appName).or(this.entryObj.get("source.credId").equal(appName)).or(this.entryObj.get("destination.credId").equal(appName));
+            logger.info("ODS Connector: {} Querying Hazelcast for jobs", this.appName);
+            potentialJobs = this.entryObj.get("transferNodeName").equal(appName).or(this.entryObj.get("source.credId").equal(appName)).or(this.entryObj.get("destination.credId").equal(appName));
         }
 
         Collection<HazelcastJsonValue> jsonJobs = this.fileTransferScheduleMap.values(potentialJobs);
