@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.annotation.PostConstruct;
+import lombok.SneakyThrows;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteWatchdog;
@@ -20,11 +21,9 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.Inet6Address;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
-import java.nio.channels.SocketChannel;
+import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,6 +38,7 @@ public class PmeterParser {
     private final DefaultExecutor pmeterExecutor;
     private final ExecuteWatchdog watchDog;
 
+    @Value("${pmeter.nic}")
     public String pmeterNic;
 
     Logger logger = LoggerFactory.getLogger(PmeterParser.class);
@@ -80,12 +80,13 @@ public class PmeterParser {
         this.pmeterMapper = new ObjectMapper();
         this.pmeterMapper.registerModule(new JavaTimeModule());
         this.pmeterMapper.configure(SerializationFeature.WRITE_DATE_KEYS_AS_TIMESTAMPS, false);
-        this.pmeterNic = environment.getProperty("pmeter.nic", "");
+
+
     }
 
     @PostConstruct
     public void init() throws IOException {
-        if(this.pmeterNic.isEmpty()) {
+        if (this.pmeterNic == null || this.pmeterNic.isEmpty()) {
             this.pmeterNic = this.discoverActiveNetworkInterface();
         }
         logger.info("Interface used for monitoring: {}", this.pmeterNic);
@@ -165,49 +166,16 @@ public class PmeterParser {
         return retList;
     }
 
-    public String discoverActiveNetworkInterface() throws IOException {
+    @SneakyThrows
+    public String discoverActiveNetworkInterface() {
         // iterate over the network interfaces known to java
-        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-        for (NetworkInterface interface_ : Collections.list(interfaces)) {
-            // we shouldn't care about loopback addresses
-            if (interface_.isLoopback())
-                continue;
+        try (Socket socket = new Socket("google.com", 80)) {
+            InetAddress localAddress = socket.getLocalAddress();
+            System.out.println("Local Address: " + localAddress.getHostAddress());
 
-            // if you don't expect the interface to be up you can skip this
-            // though it would question the usability of the rest of the code
-            if (!interface_.isUp())
-                continue;
-
-            // iterate over the addresses associated with the interface
-            Enumeration<InetAddress> addresses = interface_.getInetAddresses();
-            for (InetAddress address : Collections.list(addresses)) {
-                // look only for ipv4 addresses
-                logger.info(address.getHostAddress());
-                if (address instanceof Inet6Address)
-                    continue;
-
-                // use a timeout big enough for your needs
-                if (!address.isReachable(3000))
-                    continue;
-
-                // java 7's try-with-resources statement, so that
-                // we close the socket immediately after use
-                try (SocketChannel socket = SocketChannel.open()) {
-                    // again, use a big enough timeout
-                    socket.socket().setSoTimeout(3000);
-
-                    // bind the socket to your local interface
-                    socket.bind(new InetSocketAddress(address, 8080));
-
-                    // try to connect to *somewhere*
-                    socket.connect(new InetSocketAddress("onedatashare.org", 80));
-                } catch (IOException ex) {
-                    continue;
-                }
-                logger.info("Interface used for Transfer-Service: {}", interface_.getDisplayName());
-                return interface_.getDisplayName();
-            }
+            // Get the network interface for the local address
+            NetworkInterface networkInterface = NetworkInterface.getByInetAddress(localAddress);
+            return networkInterface.getName();
         }
-        return "";
     }
 }
