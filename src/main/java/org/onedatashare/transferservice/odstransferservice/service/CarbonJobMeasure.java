@@ -69,7 +69,7 @@ public class CarbonJobMeasure {
             potentialJobs = this.entryObj.get("transferNodeName").equal("");
         } else {
             logger.info("ODS Connector: {} Querying Hazelcast for jobs", this.appName);
-            potentialJobs = this.entryObj.get("transferNodeName").equal(appName).or(this.entryObj.get("source.credId").equal(appName)).or(this.entryObj.get("destination.credId").equal(appName));
+            potentialJobs = this.entryObj.get("transferNodeName").equal(appName).or(this.entryObj.get("source.credId").equal(appName)).or(this.entryObj.get("destination.credId").equal(appName)).or(this.entryObj.get("ownerId").equal(this.odsUser));
         }
 
         Collection<HazelcastJsonValue> jsonJobs = this.fileTransferScheduleMap.values(potentialJobs);
