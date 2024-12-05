@@ -43,4 +43,11 @@ public class JobMonitor {
             return ResponseEntity.ok(BatchJobData.builder().build());
         }
     }
+
+    @GetMapping("/latest")
+    public ResponseEntity<BatchJobData> getLatestJobExecution() {
+        JobExecution jobExecution = this.jobControl.getLatestJobExecution();
+        if(jobExecution == null) {return ResponseEntity.ok(null);}
+        return ResponseEntity.ok(BatchJobData.convertFromJobExecution(jobExecution));
+    }
 }
