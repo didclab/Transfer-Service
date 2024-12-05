@@ -4,7 +4,7 @@ import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
-import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
+import org.onedatashare.transferservice.odstransferservice.service.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
@@ -70,8 +70,7 @@ public class VfsWriter extends ODSBaseWriter implements ItemWriter<DataChunk> {
         for (int i = 0; i < items.size(); i++) {
             DataChunk chunk = items.get(i);
             int bytesWritten = this.fileChannel.write(ByteBuffer.wrap(chunk.getData()), chunk.getStartPosition());
-            if (chunk.getSize() != bytesWritten)
-                chunk = null;
+            chunk = null;
         }
     }
 }

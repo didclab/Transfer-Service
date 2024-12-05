@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: TransferService
+  cloud:
+    vault:
+      uri: ${VAULT_URI}
+      kv:
+        enabled: true
+        profile-separator: '/'
+        default-context: prod/TransferService
+        backend: secrets
+      authentication: approle
+      app-role:
+        role-id: ${VAULT_ROLE_ID}
+        secret-id: ${VAULT_SECRET_ID}

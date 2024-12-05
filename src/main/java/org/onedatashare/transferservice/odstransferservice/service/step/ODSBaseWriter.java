@@ -2,9 +2,7 @@ package org.onedatashare.transferservice.odstransferservice.service.step;
 
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
-import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.onedatashare.transferservice.odstransferservice.service.MetricsCollector;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterRead;
 import org.springframework.batch.core.annotation.AfterWrite;
@@ -36,7 +34,7 @@ public class ODSBaseWriter {
     @BeforeWrite
     public void beforeWrite() {
         LocalDateTime startWriteTime = LocalDateTime.now();
-        this.writeStartTimes.put(Thread.currentThread().getId(), startWriteTime);
+        this.writeStartTimes.put(Thread.currentThread().threadId(), startWriteTime);
     }
 
     @AfterWrite
@@ -44,26 +42,28 @@ public class ODSBaseWriter {
         List<? extends DataChunk> items = chunk.getItems();
         LocalDateTime writeEndTime = LocalDateTime.now();
         long totalBytes = items.stream().mapToLong(DataChunk::getSize).sum();
-        LocalDateTime writeStartTime = this.writeStartTimes.get(Thread.currentThread().getId());
+        long threadId = Thread.currentThread().threadId();
+        LocalDateTime writeStartTime = this.writeStartTimes.remove(threadId);
         //this is a cache for the optimizer directly in. This i actually think should be deleted and all data querying maybe ideally is done through the monitoring interface
-        influxCache.addMetric(Thread.currentThread().getId(), stepExecution, totalBytes, writeStartTime, writeEndTime, InfluxCache.ThroughputType.WRITER, items.get(0).getSize());
+        influxCache.addMetric(threadId, stepExecution, totalBytes, writeStartTime, writeEndTime, InfluxCache.ThroughputType.WRITER, items.get(0).getSize());
 
     }
 
     @BeforeRead
     public void beforeRead() {
         LocalDateTime startReadTime = LocalDateTime.now();
-        this.readStartTimes.put(Thread.currentThread().getId(), startReadTime);
+        this.readStartTimes.put(Thread.currentThread().threadId(), startReadTime);
     }
 
     @AfterRead
     public void afterRead(DataChunk item) {
         LocalDateTime endTime = LocalDateTime.now();
+        long threadId = Thread.currentThread().threadId();
         if (item == null) {
             return;
         }
-        LocalDateTime readStartTime = this.readStartTimes.get(Thread.currentThread().getId());
+        LocalDateTime readStartTime = this.readStartTimes.remove(threadId);
         if (readStartTime == null) return;
-        influxCache.addMetric(Thread.currentThread().getId(), stepExecution, item.getSize(), readStartTime, endTime, InfluxCache.ThroughputType.READER, item.getSize());
+        influxCache.addMetric(threadId, stepExecution, item.getSize(), readStartTime, endTime, InfluxCache.ThroughputType.READER, item.getSize());
     }
 }

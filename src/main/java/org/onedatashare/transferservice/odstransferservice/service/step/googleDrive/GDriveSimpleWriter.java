@@ -6,7 +6,7 @@ import com.google.api.services.drive.model.File;
 import org.onedatashare.transferservice.odstransferservice.constant.ODSConstants;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
-import org.onedatashare.transferservice.odstransferservice.model.FileBuffer;
+import org.onedatashare.transferservice.odstransferservice.model.SmallFileUpload;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
 import org.slf4j.Logger;
@@ -32,7 +32,7 @@ public class GDriveSimpleWriter implements ItemWriter<DataChunk> {
     private final OAuthEndpointCredential credential;
     Drive client;
     private String basePath;
-    FileBuffer fileBuffer;
+    SmallFileUpload smallFileUpload;
     private String fileName;
     private String mimeType;
     private File fileMetaData;
@@ -41,7 +41,7 @@ public class GDriveSimpleWriter implements ItemWriter<DataChunk> {
     public GDriveSimpleWriter(OAuthEndpointCredential credential, EntityInfo fileInfo) {
         this.credential = credential;
         this.fileInfo = fileInfo;
-        this.fileBuffer = new FileBuffer();
+        this.smallFileUpload = new SmallFileUpload();
     }
 
     @BeforeStep
@@ -60,7 +60,7 @@ public class GDriveSimpleWriter implements ItemWriter<DataChunk> {
 
     @Override
     public void write(Chunk<? extends DataChunk> items) {
-        fileBuffer.addAllChunks(items.getItems());
+        this.smallFileUpload.addAllChunks(items.getItems());
     }
 
 
@@ -68,7 +68,7 @@ public class GDriveSimpleWriter implements ItemWriter<DataChunk> {
     public void afterStep() throws Exception {
         try {
             logger.debug("Transferring file to the server");
-            InputStream inputStream = this.fileBuffer.condenseListToOneStream(this.fileInfo.getSize());
+            InputStream inputStream = this.smallFileUpload.condenseListToOneStream();
             InputStreamContent inputStreamContent = new InputStreamContent(this.mimeType, inputStream);
             this.fileMetaData = new File()
                     .setName(this.fileName)
@@ -86,8 +86,7 @@ public class GDriveSimpleWriter implements ItemWriter<DataChunk> {
             throw e;
         }
         this.client = null;
-        this.fileBuffer.clear();
-        this.fileBuffer = null;
-
+        this.smallFileUpload.clearBuffer();
+        this.smallFileUpload = null;
     }
 }

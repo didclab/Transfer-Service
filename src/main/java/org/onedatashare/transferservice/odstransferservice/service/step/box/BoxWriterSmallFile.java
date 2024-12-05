@@ -1,14 +1,15 @@
 package org.onedatashare.transferservice.odstransferservice.service.step.box;
+ 
+import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.*;
 
-import com.box.sdk.BoxAPIConnection;
-import com.box.sdk.BoxFileUploadSession;
-import com.box.sdk.BoxFolder;
-import org.onedatashare.transferservice.odstransferservice.model.BoxSmallFileUpload;
+import java.util.List;
+
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
+import org.onedatashare.transferservice.odstransferservice.model.SmallFileUpload;
 import org.onedatashare.transferservice.odstransferservice.model.credential.OAuthEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
-import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
+import org.onedatashare.transferservice.odstransferservice.service.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,26 +20,24 @@ import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
 
-import java.util.HashMap;
-import java.util.List;
-
-import static org.onedatashare.transferservice.odstransferservice.constant.ODSConstants.DEST_BASE_PATH;
+import com.box.sdk.BoxAPIConnection;
+import com.box.sdk.BoxFolder;
 
 public class BoxWriterSmallFile extends ODSBaseWriter implements ItemWriter<DataChunk> {
 
-    private BoxAPIConnection boxAPIConnection;
     EntityInfo fileInfo;
     String destinationBasePath;
     BoxFolder boxFolder;
-    BoxSmallFileUpload smallFileUpload;
-    private String fileName;
+    SmallFileUpload smallFileUpload;
     Logger logger = LoggerFactory.getLogger(BoxWriterSmallFile.class);
+    private final BoxAPIConnection boxAPIConnection;
+    private String fileName;
 
     public BoxWriterSmallFile(OAuthEndpointCredential credential, EntityInfo fileInfo, MetricsCollector metricsCollector, InfluxCache influxCache) {
         super(metricsCollector, influxCache);
         this.boxAPIConnection = new BoxAPIConnection(credential.getToken());
         this.fileInfo = fileInfo;
-        smallFileUpload = new BoxSmallFileUpload();
+        smallFileUpload = new SmallFileUpload();
     }
 
     @BeforeStep
@@ -55,7 +54,7 @@ public class BoxWriterSmallFile extends ODSBaseWriter implements ItemWriter<Data
      */
     @AfterStep
     public ExitStatus afterStep(StepExecution stepExecution) {
-        boxFolder.uploadFile(this.smallFileUpload.condenseListToOneStream(this.fileInfo.getSize()), fileName);
+        boxFolder.uploadFile(this.smallFileUpload.condenseListToOneStream(), fileName);
         return stepExecution.getExitStatus();
     }
 

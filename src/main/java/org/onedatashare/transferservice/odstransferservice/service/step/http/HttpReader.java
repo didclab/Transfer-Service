@@ -10,12 +10,15 @@ import org.onedatashare.transferservice.odstransferservice.model.credential.Acco
 import org.onedatashare.transferservice.odstransferservice.pools.HttpConnectionPool;
 import org.onedatashare.transferservice.odstransferservice.service.FilePartitioner;
 import org.onedatashare.transferservice.odstransferservice.utility.ODSUtility;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.AfterStep;
 import org.springframework.batch.core.annotation.BeforeStep;
-import org.springframework.batch.item.*;
+import org.springframework.batch.item.ItemReader;
+import org.springframework.batch.item.ItemStreamException;
 
 import java.io.IOException;
 import java.net.URI;
@@ -38,6 +41,7 @@ public class HttpReader implements SetPool, ItemReader<DataChunk> {
     AccountEndpointCredential sourceCred;
     Boolean compressable;
     private String uri;
+    Logger logger;
 
 
     public HttpReader(EntityInfo fileInfo, AccountEndpointCredential credential) {
@@ -46,6 +50,7 @@ public class HttpReader implements SetPool, ItemReader<DataChunk> {
         this.filePartitioner = new FilePartitioner(fileInfo.getChunkSize());
         this.sourceCred = credential;
         this.range = true;
+        this.logger = LoggerFactory.getLogger(HttpReader.class);
     }
 
     @BeforeStep
@@ -92,7 +97,7 @@ public class HttpReader implements SetPool, ItemReader<DataChunk> {
     }
 
     @Override
-    public DataChunk read() throws Exception, UnexpectedInputException, ParseException, NonTransientResourceException {
+    public DataChunk read() throws IOException, InterruptedException {
         FilePart filePart = this.filePartitioner.nextPart();
         if (filePart == null) return null;
         HttpRequest request;
@@ -102,9 +107,7 @@ public class HttpReader implements SetPool, ItemReader<DataChunk> {
             request = rangeMode(uri, filePart, this.range);
         }
         HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
-        System.out.println(Thread.currentThread().toString() + "File Chunk: " + filePart.toString());
-        DataChunk chunk = ODSUtility.makeChunk(response.body().length, response.body(), filePart.getStart(), Long.valueOf(filePart.getPartIdx()).intValue(), this.fileName);
-        return chunk;
+        return ODSUtility.makeChunk(response.body().length, response.body(), filePart.getStart(), Long.valueOf(filePart.getPartIdx()).intValue(), this.fileName);
     }
 
     public void open() throws ItemStreamException {
@@ -115,20 +118,6 @@ public class HttpReader implements SetPool, ItemReader<DataChunk> {
         }
         String filePath = Paths.get(fileInfo.getPath()).toString();
         uri = sourceCred.getUri() + filePath;
-//        HttpRequest request = HttpRequest.newBuilder()
-//                .GET()
-//                .uri(URI.create(uri)) //make http a string constant as well
-//                .setHeader(ODSConstants.ACCEPT_ENCODING, ODSConstants.GZIP)
-//                .setHeader(ODSConstants.RANGE, String.format(ODSConstants.byteRange, 0, 1)) //make Range into a string constant as well as bytes
-//                .build();
-//        HttpResponse<byte[]> response = null;
-//        try {
-//            response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
-//        } catch (IOException | InterruptedException e) {
-//            throw new RuntimeException(e);
-//        }
-//        range = response.statusCode() == 206;
-//        compressable = response.headers().allValues(ODSConstants.CONTENT_ENCODING).size() != 0;
     }
 
 

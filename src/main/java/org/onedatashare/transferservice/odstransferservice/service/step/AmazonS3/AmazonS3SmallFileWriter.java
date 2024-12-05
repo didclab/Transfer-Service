@@ -5,13 +5,13 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import lombok.Setter;
-import org.onedatashare.transferservice.odstransferservice.model.AWSSinglePutRequestMetaData;
 import org.onedatashare.transferservice.odstransferservice.model.DataChunk;
 import org.onedatashare.transferservice.odstransferservice.model.EntityInfo;
+import org.onedatashare.transferservice.odstransferservice.model.SmallFileUpload;
 import org.onedatashare.transferservice.odstransferservice.model.credential.AccountEndpointCredential;
 import org.onedatashare.transferservice.odstransferservice.pools.S3ConnectionPool;
 import org.onedatashare.transferservice.odstransferservice.service.InfluxCache;
-import org.onedatashare.transferservice.odstransferservice.service.cron.MetricsCollector;
+import org.onedatashare.transferservice.odstransferservice.service.MetricsCollector;
 import org.onedatashare.transferservice.odstransferservice.service.step.ODSBaseWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +34,7 @@ public class AmazonS3SmallFileWriter extends ODSBaseWriter implements ItemWriter
     private final AccountEndpointCredential destCredential;
     Logger logger = LoggerFactory.getLogger(AmazonS3SmallFileWriter.class);
     private String destBasepath;
-    private AWSSinglePutRequestMetaData putObjectRequest;
+    private SmallFileUpload smallFileUpload;
     private AmazonS3 client;
     @Setter
     private S3ConnectionPool pool;
@@ -46,7 +46,7 @@ public class AmazonS3SmallFileWriter extends ODSBaseWriter implements ItemWriter
         this.fileName = fileInfo.getId();
         this.fileInfo = fileInfo;
         this.destCredential = destCredential;
-        this.putObjectRequest = new AWSSinglePutRequestMetaData();
+        this.smallFileUpload = new SmallFileUpload();
         String[] temp = this.destCredential.getUri().split(":::");
         this.bucketName = temp[1];
     }
@@ -62,11 +62,11 @@ public class AmazonS3SmallFileWriter extends ODSBaseWriter implements ItemWriter
 
     @AfterStep
     public ExitStatus afterStep(StepExecution stepExecution) {
-        PutObjectRequest putObjectRequest = new PutObjectRequest(this.bucketName, Paths.get(this.destBasepath, fileName).toString(), this.putObjectRequest.condenseListToOneStream(this.fileInfo.getSize()), makeMetaDataForSinglePutRequest(this.fileInfo.getSize()));
+        PutObjectRequest putObjectRequest = new PutObjectRequest(this.bucketName, Paths.get(this.destBasepath, fileName).toString(), this.smallFileUpload.condenseListToOneStream(), makeMetaDataForSinglePutRequest(this.fileInfo.getSize()));
         PutObjectResult result = client.putObject(putObjectRequest);
         logger.info("Pushed the final chunk of the small file");
         logger.info(result.toString());
-        this.putObjectRequest.clear();
+        this.smallFileUpload.getDataChunkPriorityQueue().clear();
         this.pool.returnObject(this.client);
         return stepExecution.getExitStatus();
     }
@@ -81,6 +81,6 @@ public class AmazonS3SmallFileWriter extends ODSBaseWriter implements ItemWriter
     public void write(Chunk<? extends DataChunk> chunk) throws Exception {
         List<? extends DataChunk> items = chunk.getItems();
         this.fileName = items.get(0).getFileName();
-        this.putObjectRequest.addAllChunks(items);
+        this.smallFileUpload.addAllChunks(items);
     }
 }
